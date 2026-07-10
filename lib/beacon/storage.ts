@@ -5,8 +5,14 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 /**
  * 画像アップロード。HANDOFF の指示に従う:
  *   - Base64 で DB に入れない。Supabase Storage 'avatars' バケットへ。
- *   - パス規約: {handle}/av.jpg（アイコン）, {handle}/bn.jpg（ヘッダー）
  *   - アップロード前に canvas 縮小（アイコン 256px / ヘッダー 800px）。
+ *
+ * パス規約: {handle}/{kind}-{timestamp}.jpg（アップロードごとにユニーク）。
+ *   当初は {handle}/av.jpg の固定パス上書き（upsert）を想定していたが、Supabase の
+ *   upsert は INSERT ... ON CONFLICT DO UPDATE となり anon の UPDATE ポリシーまで
+ *   要求する。セットアップを INSERT ポリシー1本で済ませられるよう、毎回ユニークな
+ *   ファイル名で純粋な INSERT を行う方式にした（古い画像はバケットに残るが、
+ *   プロフィールが参照するのは常に最新 URL のみ）。
  */
 
 const BUCKET = "avatars";
@@ -47,14 +53,14 @@ export async function uploadImage(
   file: File,
 ): Promise<string> {
   const blob = await resizeToJpeg(file, kind);
-  const path = `${handle.toLowerCase()}/${kind}.jpg`;
+  // アップロードごとにユニークなパス（純粋な INSERT。upsert=UPDATE 権限を避ける）
+  const path = `${handle.toLowerCase()}/${kind}-${Date.now()}.jpg`;
 
   const { error } = await db.storage
     .from(BUCKET)
-    .upload(path, blob, { upsert: true, contentType: "image/jpeg" });
+    .upload(path, blob, { contentType: "image/jpeg" });
   if (error) throw new Error(error.message);
 
   const { data } = db.storage.from(BUCKET).getPublicUrl(path);
-  // キャッシュバスター（同一パス upsert のため）
-  return `${data.publicUrl}?v=${Date.now()}`;
+  return data.publicUrl;
 }

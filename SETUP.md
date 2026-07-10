@@ -29,19 +29,26 @@ npm run dev
 
 ## 3. Storage バケット作成（画像用）
 
+storage スキーマは `supabase_storage_admin` 所有で、SQL Editor から直接
+バケット insert / ポリシー作成すると権限エラーになる環境がある。そこで2段で行う:
+
+**3-1. バケット作成（ダッシュボード）**
+
 1. 左メニュー **Storage** → **New bucket**
 2. Name: `avatars` / **Public bucket をON** → 作成
-3. パス規約: `avatars/{handle}/av.jpg`（アイコン）, `avatars/{handle}/bn.jpg`（ヘッダー）
-   - アップロードは匿名（anon）から行うため、公開バケットの
-     **INSERT/UPDATE ポリシー**を anon に許可する必要がある。
-     Storage → avatars → Policies で以下を追加（本人パスの制限は
-     アプリ側の RPC 認証に委ねる簡易版。厳密化は後述）:
-     - `insert`: `bucket_id = 'avatars'`（roles: anon, authenticated）
-     - `update`: `bucket_id = 'avatars'`（roles: anon, authenticated）
-     - `select`: 公開バケットなので自動で読める
+   - パス規約: `avatars/{handle}/av.jpg`（アイコン）, `avatars/{handle}/bn.jpg`（ヘッダー）
 
-   > より厳密にするなら、画像アップロードも RPC 化して service_role で
-   > 書く方式に寄せる。まずは上記の簡易版で動作確認 → 後で締める。
+**3-2. anon 書込ポリシー（SQL Editor）**
+
+`supabase/storage-policies.sql` の中身を **SQL Editor** に貼って **Run**。
+これで anon の `insert`/`update` が許可される（`select` は public バケットなので自動）。
+
+> `must be owner of table objects` 等が出る場合は、ダッシュボードの
+> Storage → `avatars` → **Policies** から同等のポリシーを作成:
+> operation `INSERT` / `UPDATE`、roles `anon`、expression `bucket_id = 'avatars'`。
+>
+> より厳密にするなら、画像アップロードも RPC 化して service_role で
+> 書く方式に寄せる。まずは上記の簡易版で動作確認 → 後で締める。
 
 ## 4. 環境変数
 
@@ -58,10 +65,17 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOi...
 
 ## 5. 動作確認の順序（実装を進めるとき）
 
-1. `create_account` でアカウント作成 → 返る復旧コードを控える
-2. `verify_login` でログイン
-3. `update_profile` / `save_channels` / `save_cal` で書き込み
-4. `/@{handle}` を開いて公開表示を確認
+1. トップ `/` で「IDを作成」→ 表示された**復旧コードを必ず控える**
+   （作成時のみ表示。以降は再表示されない）
+2. ログアウト → 同じIDで再ログイン（パスコード再入力）
+3. プロフィール編集（名前/自己紹介/アイコン画像）・リンク追加/並替/停止・
+   カレンダーメモ（公開/非公開）を保存
+4. `/@{handle}` を開いて公開表示・OGP を確認
+5. 「退会（アカウントを削除）」で削除できることを確認
+
+> 疎通だけ手早く確認したいときは `node scripts/conn-test.mjs` を実行。
+> `.env.local` を使って全RPC・RLS・Storage をランダムなIDで検証し、最後に
+> 退会して後片付けします（手順2・3が済んでいれば「全項目 OK」）。
 
 ---
 

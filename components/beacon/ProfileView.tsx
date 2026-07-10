@@ -1,0 +1,429 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import type { Channel } from "@/lib/beacon/types";
+import { TYPES, grad, typeMeta } from "@/lib/beacon/constants";
+import { dkey } from "@/lib/beacon/format";
+import { cryptoId, type Me, type ToastFn } from "./appTypes";
+import { TypeBadge, VerifiedBadge } from "./icons";
+
+/**
+ * プロフィール表示 + 編集タブ（リンク / カレンダー）。beacon.html の prof-view を移植。
+ * 書き込みは onSaveChannels / onSaveCal を通じてサーバーRPC（毎回パスコード）で行う。
+ */
+
+export function ProfileView({
+  me,
+  handle,
+  onEdit,
+  onPreview,
+  onShowRc,
+  onSaveChannels,
+  onSaveCal,
+  onLoadCal,
+  toast,
+}: {
+  me: Me;
+  handle: string;
+  onEdit: () => void;
+  onPreview: () => void;
+  onShowRc: () => void;
+  onSaveChannels: (next: Channel[]) => Promise<boolean>;
+  onSaveCal: (date: string, memo: string, pub: boolean) => Promise<boolean>;
+  onLoadCal: () => void;
+  toast: ToastFn;
+}) {
+  const [tab, setTab] = useState<"links" | "cal">("links");
+
+  useEffect(() => {
+    if (tab === "cal" && !me.calLoaded) onLoadCal();
+  }, [tab, me.calLoaded, onLoadCal]);
+
+  return (
+    <div>
+      <div className="xcard">
+        <div
+          className="banner"
+          style={
+            me.profile.bn_url
+              ? { background: "none" }
+              : { background: grad(me.profile.theme) }
+          }
+        >
+          {me.profile.bn_url && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={me.profile.bn_url} alt="" />
+          )}
+        </div>
+        <div className="xhead">
+          <div className="xactions">
+            <button className="pill line" onClick={onEdit}>
+              プロフィールを編集
+            </button>
+          </div>
+          <div className="xav">
+            {me.profile.av_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={me.profile.av_url} alt="" />
+            ) : (
+              me.profile.emoji || handle[0]?.toUpperCase()
+            )}
+          </div>
+          <div className="xname">
+            <span>{me.profile.name || `@${handle}`}</span>
+            <VerifiedBadge />
+          </div>
+          <div className="xid">@{handle}</div>
+          {me.profile.bio && <div className="xbio">{me.profile.bio}</div>}
+          <div className="xmeta">
+            <span className="live" />
+            <span>Beacon で公開中</span>
+          </div>
+          <button
+            className="pill solid"
+            style={{ marginTop: 12, width: "100%" }}
+            onClick={onPreview}
+          >
+            プレビュー
+          </button>
+          <div className="xtabs">
+            <button
+              className={`xtab ${tab === "links" ? "on" : ""}`}
+              onClick={() => setTab("links")}
+            >
+              リンク
+            </button>
+            <button
+              className={`xtab ${tab === "cal" ? "on" : ""}`}
+              onClick={() => setTab("cal")}
+            >
+              カレンダー
+            </button>
+          </div>
+        </div>
+
+        {tab === "links" ? (
+          <LinksPane me={me} onSaveChannels={onSaveChannels} toast={toast} />
+        ) : (
+          <CalendarPane me={me} onSaveCal={onSaveCal} toast={toast} />
+        )}
+      </div>
+
+      <div className="note">
+        「支援」には、ほしいものリストやFantiaなど外部の支援ページのURLを貼れます。
+        Beaconはお金のやり取りを仲介しません。
+      </div>
+      <button className="btn ghost" style={{ marginTop: 10 }} onClick={onShowRc}>
+        復旧コードを確認する
+      </button>
+    </div>
+  );
+}
+
+// ---------- リンクタブ ----------
+
+function LinksPane({
+  me,
+  onSaveChannels,
+  toast,
+}: {
+  me: Me;
+  onSaveChannels: (next: Channel[]) => Promise<boolean>;
+  toast: ToastFn;
+}) {
+  const [adding, setAdding] = useState(false);
+  const [type, setType] = useState("x");
+  const [url, setUrl] = useState("");
+  const [label, setLabel] = useState("");
+  const [desc, setDesc] = useState("");
+
+  const chans = me.channels;
+
+  function move(id: string, d: -1 | 1) {
+    const i = chans.findIndex((c) => c.id === id);
+    const j = i + d;
+    if (j < 0 || j >= chans.length) return;
+    const next = [...chans];
+    [next[i], next[j]] = [next[j], next[i]];
+    onSaveChannels(next);
+  }
+  async function toggle(id: string) {
+    const next = chans.map((c) =>
+      c.id === id
+        ? { ...c, status: c.status === "live" ? "dead" : "live" }
+        : c,
+    ) as Channel[];
+    if (await onSaveChannels(next)) {
+      const c = next.find((x) => x.id === id);
+      toast(c?.status === "dead" ? "停止にしました" : "有効にしました");
+    }
+  }
+  function del(id: string) {
+    void onSaveChannels(chans.filter((c) => c.id !== id));
+  }
+  async function add() {
+    const u = url.trim();
+    if (!u) {
+      toast("URLを入れてください");
+      return;
+    }
+    const next: Channel[] = [
+      ...chans,
+      {
+        id: cryptoId(),
+        type,
+        url: u,
+        label: label.trim(),
+        descr: desc.trim(),
+        status: "live",
+      },
+    ];
+    if (await onSaveChannels(next)) {
+      setUrl("");
+      setLabel("");
+      setDesc("");
+      toast("追加しました");
+    }
+  }
+
+  return (
+    <div className="xpane">
+      <div>
+        {chans.length ? (
+          chans.map((c, i) => (
+            <div key={c.id} className={`chan ${c.status === "dead" ? "dead" : ""}`}>
+              <div className="mv">
+                <button
+                  disabled={i === 0}
+                  onClick={() => move(c.id!, -1)}
+                  aria-label="上へ"
+                >
+                  ▲
+                </button>
+                <button
+                  disabled={i === chans.length - 1}
+                  onClick={() => move(c.id!, 1)}
+                  aria-label="下へ"
+                >
+                  ▼
+                </button>
+              </div>
+              <TypeBadge type={c.type} />
+              <div className="meta">
+                <div className="lb">{c.label || typeMeta(c.type).lb}</div>
+                <div className={`u ${c.status === "dead" ? "strike" : ""}`}>
+                  {c.url}
+                </div>
+                {c.descr && (
+                  <div className="u" style={{ color: "var(--emd)" }}>
+                    {c.descr}
+                  </div>
+                )}
+              </div>
+              <button
+                className={`tog ${c.status}`}
+                onClick={() => toggle(c.id!)}
+              >
+                {c.status === "live" ? "有効" : "停止"}
+              </button>
+              <button className="del" onClick={() => del(c.id!)} aria-label="削除">
+                ×
+              </button>
+            </div>
+          ))
+        ) : (
+          <div className="empty">リンクを追加してください。</div>
+        )}
+      </div>
+
+      <button
+        className="btn ghost"
+        style={{ marginTop: 4 }}
+        onClick={() => setAdding((v) => !v)}
+      >
+        ＋ リンクを追加
+      </button>
+
+      {adding && (
+        <div style={{ marginTop: 10 }}>
+          <label className="f">サービスとURL</label>
+          <div className="addrow">
+            <select value={type} onChange={(e) => setType(e.target.value)}>
+              {Object.entries(TYPES).map(([k, v]) => (
+                <option key={k} value={k}>
+                  {v.lb}
+                </option>
+              ))}
+            </select>
+            <input
+              className="plain"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://..."
+            />
+          </div>
+          <label className="f">表示名（任意）</label>
+          <input
+            className="plain"
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            placeholder="例: メイン垢 / サブ垢"
+            maxLength={20}
+          />
+          <label className="f">説明（任意）</label>
+          <input
+            className="plain"
+            value={desc}
+            onChange={(e) => setDesc(e.target.value)}
+            placeholder="例: DMはこちらが早いです"
+            maxLength={40}
+          />
+          <button className="btn sig" onClick={add}>
+            追加する
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------- カレンダータブ ----------
+
+const DOW = ["日", "月", "火", "水", "木", "金", "土"];
+
+function CalendarPane({
+  me,
+  onSaveCal,
+  toast,
+}: {
+  me: Me;
+  onSaveCal: (date: string, memo: string, pub: boolean) => Promise<boolean>;
+  toast: ToastFn;
+}) {
+  const now = new Date();
+  const [y, setY] = useState(now.getFullYear());
+  const [m, setM] = useState(now.getMonth());
+  const [sel, setSel] = useState<string | null>(null);
+  const [memo, setMemo] = useState("");
+  const [pub, setPub] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const first = new Date(y, m, 1).getDay();
+  const days = new Date(y, m + 1, 0).getDate();
+
+  function selectDay(k: string) {
+    setSel(k);
+    const e = me.cal[k];
+    setMemo(e?.memo ?? "");
+    setPub(e?.pub ?? false);
+  }
+  function nav(d: -1 | 1) {
+    let nm = m + d;
+    let ny = y;
+    if (nm < 0) {
+      nm = 11;
+      ny--;
+    } else if (nm > 11) {
+      nm = 0;
+      ny++;
+    }
+    setM(nm);
+    setY(ny);
+    setSel(null);
+    setMemo("");
+    setPub(false);
+  }
+  async function save() {
+    if (!sel) {
+      toast("日付を選んでください");
+      return;
+    }
+    setBusy(true);
+    try {
+      if (await onSaveCal(sel, memo.trim(), pub)) toast("保存しました");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const selLabel = sel
+    ? `${y}年${m + 1}月${+sel.split("-")[2]}日のメモ`
+    : "日付を選んでください";
+
+  return (
+    <div className="xpane">
+      {!me.calLoaded && (
+        <div className="sub">カレンダーを読み込んでいます…</div>
+      )}
+      <div className="calhead">
+        <button className="calnav" onClick={() => nav(-1)}>
+          ‹
+        </button>
+        <div className="calmon">
+          {y}年{m + 1}月
+        </div>
+        <button className="calnav" onClick={() => nav(1)}>
+          ›
+        </button>
+      </div>
+      <div className="calgrid">
+        {DOW.map((d) => (
+          <div key={d} className="dow">
+            {d}
+          </div>
+        ))}
+      </div>
+      <div className="calgrid">
+        {Array.from({ length: first }).map((_, i) => (
+          <div key={`b${i}`} className="day blank" />
+        ))}
+        {Array.from({ length: days }).map((_, i) => {
+          const d = i + 1;
+          const k = dkey(y, m, d);
+          const isToday =
+            d === now.getDate() &&
+            m === now.getMonth() &&
+            y === now.getFullYear();
+          const entry = me.cal[k];
+          return (
+            <div
+              key={k}
+              className={`day ${isToday ? "today" : ""} ${sel === k ? "sel" : ""}`}
+              onClick={() => selectDay(k)}
+            >
+              {d}
+              {entry?.memo && (
+                <span className={`dot ${entry.pub ? "" : "priv"}`} />
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <label className="f" style={{ marginTop: 14 }}>
+        {selLabel}
+      </label>
+      <textarea
+        className="plain"
+        value={memo}
+        onChange={(e) => setMemo(e.target.value)}
+        placeholder="例: 20時以降 空きあり"
+      />
+      <label className="chk">
+        <input
+          type="checkbox"
+          checked={pub}
+          onChange={(e) => setPub(e.target.checked)}
+        />
+        <span>このメモを公開ページに表示する</span>
+      </label>
+      <button className="btn sig" disabled={busy} onClick={save}>
+        {busy ? "保存中…" : "保存する"}
+      </button>
+      <div className="note" style={{ marginTop: 12 }}>
+        公開にすると、相手（フォロワー）にもこの日のメモが見えます。空き日の告知などに
+        使えます。予定などプライベートな内容は公開にしないでください。
+      </div>
+    </div>
+  );
+}

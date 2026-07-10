@@ -1,0 +1,130 @@
+import type { ReactNode } from "react";
+import type { CalMemo, Channel, Profile } from "@/lib/beacon/types";
+import { grad, typeMeta } from "@/lib/beacon/constants";
+import { fmtMd } from "@/lib/beacon/format";
+import { TypeBadge, VerifiedBadge } from "./icons";
+
+/**
+ * 公開プロフィールの見た目（X風カード）。beacon.html の renderPublicFor を移植。
+ * サーバー(/@handle)とクライアント(アプリ内プレビュー)の双方から使う純表示コンポーネント
+ * （hooks を持たないので "use client" 不要）。
+ */
+
+export interface PublicCardData {
+  handle: string;
+  profile: Pick<
+    Profile,
+    "name" | "bio" | "emoji" | "theme" | "av_url" | "bn_url"
+  >;
+  channels: Channel[]; // live/dead 両方。ここで振り分ける
+  pubcal: CalMemo[]; // 公開メモのみ
+}
+
+function Avatar({ url, emoji, handle }: { url: string; emoji: string; handle: string }) {
+  return (
+    <div className="xav">
+      {url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={url} alt="" />
+      ) : (
+        emoji || (handle[0] ?? "?").toUpperCase()
+      )}
+    </div>
+  );
+}
+
+export function PublicProfileCard({
+  data,
+  actions,
+  metaLabel = "Beacon で公開中",
+}: {
+  data: PublicCardData;
+  /** フォローボタン等、カード右上のアクション。 */
+  actions?: ReactNode;
+  metaLabel?: string;
+}) {
+  const { handle, profile, channels, pubcal } = data;
+  const live = channels.filter((c) => c.status === "live");
+  const dead = channels.filter((c) => c.status === "dead");
+
+  return (
+    <div className="xcard">
+      <div
+        className="banner"
+        style={profile.bn_url ? { background: "none" } : { background: grad(profile.theme) }}
+      >
+        {profile.bn_url && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={profile.bn_url} alt="" />
+        )}
+      </div>
+      <div className="xhead">
+        {actions && <div className="xactions">{actions}</div>}
+        <Avatar url={profile.av_url} emoji={profile.emoji} handle={handle} />
+        <div className="xname">
+          <span>{profile.name || `@${handle}`}</span>
+          <VerifiedBadge />
+        </div>
+        <div className="xid">@{handle}</div>
+        {profile.bio && <div className="xbio">{profile.bio}</div>}
+        <div className="xmeta">
+          <span className="live" />
+          <span>{metaLabel}</span>
+        </div>
+      </div>
+
+      <div className="xpane" style={{ paddingTop: 4, paddingBottom: 0 }}>
+        {live.length ? (
+          live.map((c, i) => (
+            <a
+              key={c.id ?? `${c.type}-${i}`}
+              className="plink"
+              href={c.url}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <TypeBadge type={c.type} />
+              <div className="pmeta">
+                <div className="lb2">{c.label || typeMeta(c.type).lb}</div>
+                {c.descr && <div className="ds">{c.descr}</div>}
+              </div>
+              <span className="go">→</span>
+            </a>
+          ))
+        ) : (
+          <div className="empty">有効なリンクがありません。</div>
+        )}
+        {dead.map((c, i) => (
+          <div key={c.id ?? `dead-${i}`} className="pdead">
+            <span className="s">{c.label || typeMeta(c.type).lb}</span>
+            は現在使えません
+          </div>
+        ))}
+      </div>
+
+      {pubcal.length > 0 && (
+        <div className="calpub" style={{ padding: "0 16px 18px" }}>
+          <h2 style={{ margin: "8px 4px 10px" }}>カレンダー</h2>
+          {pubcal.map((e) => (
+            <div key={e.d} className="pi">
+              <span className="d">{fmtMd(e.d)}</span>
+              <span className="m">{e.memo}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** 公開ページ末尾の「あなたも無料で作る」導線。 */
+export function CreateYoursFooter({ href = "/" }: { href?: string }) {
+  return (
+    <a className="vfoot" href={href}>
+      <div className="k">Beacon — 凍結されても変わらないID</div>
+      <div className="m">
+        あなたも<span className="s">無料で作る →</span>
+      </div>
+    </a>
+  );
+}

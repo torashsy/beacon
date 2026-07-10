@@ -1,3 +1,4 @@
+import { cache } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -8,11 +9,24 @@ import {
 } from "@/lib/beacon/rpc";
 
 /**
- * 公開ページ /@{handle}。誰でも閲覧可能（RLS で公開読み取り）。
+ * generateMetadata と PublicPage は同一リクエスト内で二度 profile を読む。
+ * React cache でリクエスト単位にメモ化し、Supabase への往復を1回にまとめる。
+ */
+const loadProfile = cache(async (handle: string) => {
+  const db = await createClient();
+  return getPublicProfile(db, handle);
+});
+import { toSnapshot } from "@/lib/beacon/follows";
+import {
+  CreateYoursFooter,
+  PublicProfileCard,
+} from "@/components/beacon/PublicProfileCard";
+import { FollowButton } from "@/components/beacon/FollowButton";
+
+/**
+ * 公開ページ /@{handle}。誰でも閲覧可能（profiles / channels / cal_public は
+ * RLS で公開読み取り）。beacon.html の renderPublicFor を移植。
  * URL 規約は「先頭に @ を付ける」。@ なしのパスはここでは扱わない。
- *
- * ★スタブ: 表示は reference/beacon.html の renderPublicFor を移植する。
- *   末尾に「あなたも無料で作る」導線（→ "/"）を必ず入れること。
  */
 
 type Params = { handle: string };
@@ -33,8 +47,7 @@ export async function generateMetadata({
   const handle = normalizeHandleParam((await params).handle);
   if (!handle) return { title: "Beacon" };
 
-  const db = await createClient();
-  const profile = await getPublicProfile(db, handle);
+  const profile = await loadProfile(handle);
   if (!profile) return { title: "Beacon" };
 
   const title = `${profile.name || handle} · Beacon`;
@@ -60,47 +73,34 @@ export default async function PublicPage({
   const handle = normalizeHandleParam((await params).handle);
   if (!handle) notFound();
 
-  const db = await createClient();
-  const profile = await getPublicProfile(db, handle);
+  const profile = await loadProfile(handle);
   if (!profile) notFound();
 
+  const db = await createClient();
   const [channels, cal] = await Promise.all([
     getPublicChannels(db, handle),
     getPublicCal(db, handle),
   ]);
-  const liveChannels = channels.filter((c) => c.status === "live");
+
+  const snapshot = toSnapshot(profile, channels, cal);
 
   return (
-    <main className="wrap" style={{ paddingTop: 24, paddingBottom: 40 }}>
-      <h1 style={{ fontWeight: 800, fontSize: 22 }}>
-        {profile.emoji} {profile.name || `@${handle}`}
-      </h1>
-      {profile.bio && (
-        <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 6 }}>
-          {profile.bio}
-        </p>
-      )}
-
-      {/* ★リンク一覧・カレンダーの見た目は beacon.html を移植 */}
-      <ul style={{ listStyle: "none", marginTop: 16, display: "grid", gap: 8 }}>
-        {liveChannels.map((c) => (
-          <li key={c.id ?? c.url}>
-            <a href={c.url} target="_blank" rel="noopener noreferrer">
-              {c.label || c.url}
-            </a>
-          </li>
-        ))}
-      </ul>
-
-      <p style={{ color: "var(--faint)", fontSize: 12, marginTop: 16 }}>
-        公開メモ {cal.length} 件（表示は未実装スタブ）
-      </p>
-
-      <footer style={{ marginTop: 32 }}>
-        <a href="/" style={{ color: "var(--emd)", fontWeight: 700 }}>
-          あなたも無料で作る →
-        </a>
-      </footer>
+    <main className="wrap" style={{ paddingTop: 8, paddingBottom: 40 }}>
+      <div className="top">
+        <div className="logo">
+          Beacon<span className="dot">.</span>
+        </div>
+      </div>
+      <PublicProfileCard
+        data={{
+          handle,
+          profile,
+          channels,
+          pubcal: cal,
+        }}
+        actions={<FollowButton snapshot={snapshot} />}
+      />
+      <CreateYoursFooter href="/" />
     </main>
   );
 }

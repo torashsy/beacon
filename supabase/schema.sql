@@ -78,6 +78,12 @@ drop policy if exists pub_calpub on cal_public;
 create policy pub_calpub on cal_public for select using (true);
 -- accounts / cal_private / auth_attempts は誰も直接読めない（RPC経由のみ）
 
+-- RLS の select ポリシーに加えて、テーブルレベルの SELECT 権限も anon に付与する。
+-- （PostgREST 経由の匿名読み取りには GRANT が必須。無いと permission denied になる）
+grant select on profiles   to anon, authenticated;
+grant select on channels   to anon, authenticated;
+grant select on cal_public to anon, authenticated;
+
 -- ---- 認証ヘルパー ----
 create or replace function _check_pass(p_handle text, p_pass text)
 returns boolean language plpgsql security definer as $$
@@ -201,8 +207,14 @@ grant execute on function save_cal(text,text,date,text,boolean)                 
 grant execute on function get_private_cal(text,text)                                  to anon;
 grant execute on function delete_account(text,text)                                   to anon;
 
--- ---- Storage（画像用）----
--- ダッシュボードで 'avatars' バケット(public)を作成すること。
+-- ---- Storage（画像用: avatars バケット）----
 -- パス規約: avatars/{handle}/av.jpg, avatars/{handle}/bn.jpg
+-- バケット作成と anon 書込ポリシーは storage スキーマ（supabase_storage_admin 所有）
+-- への操作で、SQL Editor から直接 insert/create policy すると環境によっては
+-- 権限エラーになる。そのためこの schema.sql には含めず、SETUP.md 手順3で
+--   1) ダッシュボードで 'avatars'(public) バケットを作成
+--   2) supabase/storage-policies.sql を SQL Editor で実行（anon の insert/update 許可）
+-- の2段で設定する（本体スキーマの実行を安全に保つため分離）。
+
 -- フォローリストはサーバーに置かない（端末ローカル保存）。
 -- 発信者を横断的に検索・一覧するAPI/画面は絶対に実装しないこと。
