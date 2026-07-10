@@ -60,8 +60,9 @@ export function FollowsView({
             <div className="empty">該当する人がいません。</div>
           ) : (
             shown.map((f) => {
-              const live = f.channels.filter((c) => c.status === "live").length;
-              const dead = f.channels.filter((c) => c.status === "dead").length;
+              const links = f.channels.filter((c) => c.type !== "heading");
+              const live = links.filter((c) => c.status === "live").length;
+              const dead = links.filter((c) => c.status === "dead").length;
               return (
                 <div
                   key={f.handle}
