@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Profile } from "@/lib/beacon/types";
-import { EMOJIS, grad } from "@/lib/beacon/constants";
+import { COLORS, EMOJIS, grad } from "@/lib/beacon/constants";
 import { CameraIcon } from "./icons";
 
 /**
@@ -22,6 +22,7 @@ export interface EditResult {
   name: string;
   bio: string;
   emoji: string;
+  theme: number;
   av: ImageEdit;
   bn: ImageEdit;
 }
@@ -41,6 +42,7 @@ export function ProfileEdit({
   const [name, setName] = useState(profile.name);
   const [bio, setBio] = useState(profile.bio);
   const [emoji, setEmoji] = useState(profile.emoji || EMOJIS[0]);
+  const [theme, setTheme] = useState(profile.theme ?? 0);
   const [av, setAv] = useState<ImageEdit>({ mode: "keep" });
   const [bn, setBn] = useState<ImageEdit>({ mode: "keep" });
   const [busy, setBusy] = useState(false);
@@ -83,7 +85,7 @@ export function ProfileEdit({
   async function save() {
     setBusy(true);
     try {
-      await onSave({ name: name.trim(), bio: bio.trim(), emoji, av, bn });
+      await onSave({ name: name.trim(), bio: bio.trim(), emoji, theme, av, bn });
     } finally {
       setBusy(false);
     }
@@ -119,7 +121,7 @@ export function ProfileEdit({
       <div className="xcard">
         <div
           className="ebanner"
-          style={bnUrl ? { background: "none" } : { background: grad(profile.theme) }}
+          style={bnUrl ? { background: "none" } : { background: grad(theme) }}
           onClick={() => bnInput.current?.click()}
         >
           {bnUrl && (
@@ -197,6 +199,22 @@ export function ProfileEdit({
               >
                 {em}
               </button>
+            ))}
+          </div>
+          <label className="f">ヘッダーの色（画像を使わない場合）</label>
+          <div className="emojis">
+            {COLORS.map((c, i) => (
+              <button
+                key={i}
+                type="button"
+                aria-label={`カラー${i + 1}`}
+                className={`em ${theme === i && !bnUrl ? "on" : ""}`}
+                style={{ background: `linear-gradient(135deg,${c[0]},${c[1]})` }}
+                onClick={() => {
+                  setTheme(i);
+                  setBn({ mode: "remove" }); // 色選択でヘッダー画像は外す
+                }}
+              />
             ))}
           </div>
         </div>

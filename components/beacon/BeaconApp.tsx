@@ -315,6 +315,7 @@ export function BeaconApp() {
           name: edit.name,
           bio: edit.bio,
           emoji: edit.emoji,
+          theme: edit.theme,
           av_url,
           bn_url,
         };

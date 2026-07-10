@@ -2,13 +2,19 @@
 
 import { useEffect, useState } from "react";
 import type { Channel } from "@/lib/beacon/types";
-import { TYPES, grad, typeMeta } from "@/lib/beacon/constants";
+import {
+  grad,
+  HEADING_TYPE,
+  TYPES,
+  typeMeta,
+} from "@/lib/beacon/constants";
 import { dkey } from "@/lib/beacon/format";
 import { cryptoId, type Me, type ToastFn } from "./appTypes";
 import { TypeBadge, VerifiedBadge } from "./icons";
 
 /**
- * プロフィール表示 + 編集タブ（リンク / カレンダー）。beacon.html の prof-view を移植。
+ * プロフィール表示 + 編集タブ（リンク / カレンダー）。beacon.html の prof-view を移植し、
+ * リンクの編集・セクション見出し・シェア(URLコピー/共有/QR) を追加拡張。
  * 書き込みは onSaveChannels / onSaveCal を通じてサーバーRPC（毎回パスコード）で行う。
  */
 
@@ -34,10 +40,48 @@ export function ProfileView({
   toast: ToastFn;
 }) {
   const [tab, setTab] = useState<"links" | "cal">("links");
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (tab === "cal" && !me.calLoaded) onLoadCal();
   }, [tab, me.calLoaded, onLoadCal]);
+
+  const pageUrl = () => `${window.location.origin}/@${handle}`;
+
+  async function copyUrl() {
+    try {
+      await navigator.clipboard.writeText(pageUrl());
+      toast("URLをコピーしました");
+    } catch {
+      toast("コピーできませんでした");
+    }
+  }
+
+  async function share() {
+    try {
+      await navigator.share({ title: `@${handle} · Beacon`, url: pageUrl() });
+    } catch {
+      /* キャンセルは無視 */
+    }
+  }
+
+  async function openQr() {
+    try {
+      const { toDataURL } = await import("qrcode");
+      setQrDataUrl(
+        await toDataURL(pageUrl(), {
+          width: 512,
+          margin: 2,
+          color: { dark: "#17242b", light: "#ffffff" },
+        }),
+      );
+    } catch {
+      toast("QRコードを作成できませんでした");
+    }
+  }
+
+  const canShare =
+    typeof navigator !== "undefined" && typeof navigator.share === "function";
 
   return (
     <div>
@@ -86,6 +130,19 @@ export function ProfileView({
           >
             プレビュー
           </button>
+          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+            <button className="pill line" style={{ flex: 1 }} onClick={copyUrl}>
+              URLをコピー
+            </button>
+            {canShare && (
+              <button className="pill line" style={{ flex: 1 }} onClick={share}>
+                共有
+              </button>
+            )}
+            <button className="pill line" style={{ flex: 1 }} onClick={openQr}>
+              QRコード
+            </button>
+          </div>
           <div className="xtabs">
             <button
               className={`xtab ${tab === "links" ? "on" : ""}`}
@@ -116,6 +173,41 @@ export function ProfileView({
       <button className="btn ghost" style={{ marginTop: 10 }} onClick={onShowRc}>
         復旧コードを確認する
       </button>
+
+      {qrDataUrl && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(23,36,43,.55)",
+            zIndex: 60,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 24,
+          }}
+          onClick={() => setQrDataUrl(null)}
+        >
+          <div
+            className="card"
+            style={{ textAlign: "center", width: "100%", maxWidth: 320 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={qrDataUrl}
+              alt={`@${handle} のQRコード`}
+              style={{ width: "100%", borderRadius: 12 }}
+            />
+            <div className="xid" style={{ marginTop: 8 }}>
+              @{handle}
+            </div>
+            <button className="btn ghost" onClick={() => setQrDataUrl(null)}>
+              閉じる
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -131,13 +223,33 @@ function LinksPane({
   onSaveChannels: (next: Channel[]) => Promise<boolean>;
   toast: ToastFn;
 }) {
-  const [adding, setAdding] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [type, setType] = useState("x");
   const [url, setUrl] = useState("");
   const [label, setLabel] = useState("");
   const [desc, setDesc] = useState("");
 
   const chans = me.channels;
+  const isHeading = type === HEADING_TYPE;
+
+  function resetForm() {
+    setFormOpen(false);
+    setEditingId(null);
+    setType("x");
+    setUrl("");
+    setLabel("");
+    setDesc("");
+  }
+
+  function startEdit(c: Channel) {
+    setEditingId(c.id!);
+    setType(c.type);
+    setUrl(c.url);
+    setLabel(c.label);
+    setDesc(c.descr);
+    setFormOpen(true);
+  }
 
   function move(id: string, d: -1 | 1) {
     const i = chans.findIndex((c) => c.id === id);
@@ -145,8 +257,9 @@ function LinksPane({
     if (j < 0 || j >= chans.length) return;
     const next = [...chans];
     [next[i], next[j]] = [next[j], next[i]];
-    onSaveChannels(next);
+    void onSaveChannels(next);
   }
+
   async function toggle(id: string) {
     const next = chans.map((c) =>
       c.id === id
@@ -158,31 +271,35 @@ function LinksPane({
       toast(c?.status === "dead" ? "停止にしました" : "有効にしました");
     }
   }
+
   function del(id: string) {
+    if (editingId === id) resetForm();
     void onSaveChannels(chans.filter((c) => c.id !== id));
   }
-  async function add() {
+
+  async function submit() {
+    const lb = label.trim();
     const u = url.trim();
-    if (!u) {
+    if (isHeading && !lb) {
+      toast("見出しの文字を入れてください");
+      return;
+    }
+    if (!isHeading && !u) {
       toast("URLを入れてください");
       return;
     }
-    const next: Channel[] = [
-      ...chans,
-      {
-        id: cryptoId(),
-        type,
-        url: u,
-        label: label.trim(),
-        descr: desc.trim(),
-        status: "live",
-      },
-    ];
+    const fields = {
+      type,
+      url: isHeading ? "" : u,
+      label: lb,
+      descr: isHeading ? "" : desc.trim(),
+    };
+    const next: Channel[] = editingId
+      ? chans.map((c) => (c.id === editingId ? { ...c, ...fields } : c))
+      : [...chans, { id: cryptoId(), ...fields, status: "live" }];
     if (await onSaveChannels(next)) {
-      setUrl("");
-      setLabel("");
-      setDesc("");
-      toast("追加しました");
+      toast(editingId ? "保存しました" : "追加しました");
+      resetForm();
     }
   }
 
@@ -191,7 +308,11 @@ function LinksPane({
       <div>
         {chans.length ? (
           chans.map((c, i) => (
-            <div key={c.id} className={`chan ${c.status === "dead" ? "dead" : ""}`}>
+            <div
+              key={c.id}
+              className={`chan ${c.status === "dead" ? "dead" : ""}`}
+              style={editingId === c.id ? { borderColor: "var(--em)" } : undefined}
+            >
               <div className="mv">
                 <button
                   disabled={i === 0}
@@ -208,24 +329,56 @@ function LinksPane({
                   ▼
                 </button>
               </div>
-              <TypeBadge type={c.type} />
-              <div className="meta">
-                <div className="lb">{c.label || typeMeta(c.type).lb}</div>
-                <div className={`u ${c.status === "dead" ? "strike" : ""}`}>
-                  {c.url}
-                </div>
-                {c.descr && (
-                  <div className="u" style={{ color: "var(--emd)" }}>
-                    {c.descr}
-                  </div>
+              {c.type === HEADING_TYPE ? (
+                <span
+                  className="ic-badge"
+                  style={{
+                    background: "var(--eml)",
+                    color: "var(--emd)",
+                    fontWeight: 800,
+                    fontSize: 15,
+                  }}
+                >
+                  ¶
+                </span>
+              ) : (
+                <TypeBadge type={c.type} />
+              )}
+              <div
+                className="meta"
+                style={{ cursor: "pointer" }}
+                onClick={() => startEdit(c)}
+                title="タップして編集"
+              >
+                {c.type === HEADING_TYPE ? (
+                  <>
+                    <div className="lb">{c.label}</div>
+                    <div className="u" style={{ color: "var(--faint)" }}>
+                      見出し
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="lb">{c.label || typeMeta(c.type).lb}</div>
+                    <div className={`u ${c.status === "dead" ? "strike" : ""}`}>
+                      {c.url}
+                    </div>
+                    {c.descr && (
+                      <div className="u" style={{ color: "var(--emd)" }}>
+                        {c.descr}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
-              <button
-                className={`tog ${c.status}`}
-                onClick={() => toggle(c.id!)}
-              >
-                {c.status === "live" ? "有効" : "停止"}
-              </button>
+              {c.type !== HEADING_TYPE && (
+                <button
+                  className={`tog ${c.status}`}
+                  onClick={() => toggle(c.id!)}
+                >
+                  {c.status === "live" ? "有効" : "停止"}
+                </button>
+              )}
               <button className="del" onClick={() => del(c.id!)} aria-label="削除">
                 ×
               </button>
@@ -236,17 +389,22 @@ function LinksPane({
         )}
       </div>
 
-      <button
-        className="btn ghost"
-        style={{ marginTop: 4 }}
-        onClick={() => setAdding((v) => !v)}
-      >
-        ＋ リンクを追加
-      </button>
+      {!formOpen && (
+        <button
+          className="btn ghost"
+          style={{ marginTop: 4 }}
+          onClick={() => setFormOpen(true)}
+        >
+          ＋ リンクを追加
+        </button>
+      )}
 
-      {adding && (
+      {formOpen && (
         <div style={{ marginTop: 10 }}>
-          <label className="f">サービスとURL</label>
+          <label className="f">
+            {editingId ? "編集" : "追加"}
+            {isHeading ? "（見出し）" : ""}
+          </label>
           <div className="addrow">
             <select value={type} onChange={(e) => setType(e.target.value)}>
               {Object.entries(TYPES).map(([k, v]) => (
@@ -254,32 +412,51 @@ function LinksPane({
                   {v.lb}
                 </option>
               ))}
+              <option value={HEADING_TYPE}>— 見出し —</option>
             </select>
-            <input
-              className="plain"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://..."
-            />
+            {!isHeading && (
+              <input
+                className="plain"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="https://..."
+              />
+            )}
+            {isHeading && (
+              <input
+                className="plain"
+                value={label}
+                onChange={(e) => setLabel(e.target.value)}
+                placeholder="例: SNS / ショップ / 支援"
+                maxLength={20}
+              />
+            )}
           </div>
-          <label className="f">表示名（任意）</label>
-          <input
-            className="plain"
-            value={label}
-            onChange={(e) => setLabel(e.target.value)}
-            placeholder="例: メイン垢 / サブ垢"
-            maxLength={20}
-          />
-          <label className="f">説明（任意）</label>
-          <input
-            className="plain"
-            value={desc}
-            onChange={(e) => setDesc(e.target.value)}
-            placeholder="例: DMはこちらが早いです"
-            maxLength={40}
-          />
-          <button className="btn sig" onClick={add}>
-            追加する
+          {!isHeading && (
+            <>
+              <label className="f">表示名（任意）</label>
+              <input
+                className="plain"
+                value={label}
+                onChange={(e) => setLabel(e.target.value)}
+                placeholder="例: メイン垢 / サブ垢"
+                maxLength={20}
+              />
+              <label className="f">説明（任意）</label>
+              <input
+                className="plain"
+                value={desc}
+                onChange={(e) => setDesc(e.target.value)}
+                placeholder="例: DMはこちらが早いです"
+                maxLength={40}
+              />
+            </>
+          )}
+          <button className="btn sig" onClick={submit}>
+            {editingId ? "保存する" : "追加する"}
+          </button>
+          <button className="btn ghost" onClick={resetForm}>
+            キャンセル
           </button>
         </div>
       )}
@@ -407,7 +584,7 @@ function CalendarPane({
         className="plain"
         value={memo}
         onChange={(e) => setMemo(e.target.value)}
-        placeholder="例: 20時以降 空きあり"
+        placeholder="例: ライブ出演 19:00〜 / 20時以降 空きあり"
       />
       <label className="chk">
         <input

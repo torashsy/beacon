@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import type { CalMemo, Channel, Profile } from "@/lib/beacon/types";
-import { grad, typeMeta } from "@/lib/beacon/constants";
+import { grad, HEADING_TYPE, typeMeta } from "@/lib/beacon/constants";
 import { fmtMd } from "@/lib/beacon/format";
 import { TypeBadge, VerifiedBadge } from "./icons";
 
@@ -44,8 +44,7 @@ export function PublicProfileCard({
   metaLabel?: string;
 }) {
   const { handle, profile, channels, pubcal } = data;
-  const live = channels.filter((c) => c.status === "live");
-  const dead = channels.filter((c) => c.status === "dead");
+  const hasLinks = channels.some((c) => c.type !== HEADING_TYPE);
 
   return (
     <div className="xcard">
@@ -74,32 +73,45 @@ export function PublicProfileCard({
       </div>
 
       <div className="xpane" style={{ paddingTop: 4, paddingBottom: 0 }}>
-        {live.length ? (
-          live.map((c, i) => (
-            <a
-              key={c.id ?? `${c.type}-${i}`}
-              className="plink"
-              href={c.url}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <TypeBadge type={c.type} />
-              <div className="pmeta">
-                <div className="lb2">{c.label || typeMeta(c.type).lb}</div>
-                {c.descr && <div className="ds">{c.descr}</div>}
-              </div>
-              <span className="go">→</span>
-            </a>
-          ))
+        {hasLinks ? (
+          // 並び順のまま描画する（見出しで区切れるように。停止リンクもその場に表示）
+          channels.map((c, i) => {
+            const key = c.id ?? `${c.type}-${i}`;
+            if (c.type === HEADING_TYPE) {
+              return (
+                <h2 key={key} style={{ margin: "14px 4px 8px" }}>
+                  {c.label}
+                </h2>
+              );
+            }
+            if (c.status === "dead") {
+              return (
+                <div key={key} className="pdead">
+                  <span className="s">{c.label || typeMeta(c.type).lb}</span>
+                  は現在使えません
+                </div>
+              );
+            }
+            return (
+              <a
+                key={key}
+                className="plink"
+                href={c.url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <TypeBadge type={c.type} />
+                <div className="pmeta">
+                  <div className="lb2">{c.label || typeMeta(c.type).lb}</div>
+                  {c.descr && <div className="ds">{c.descr}</div>}
+                </div>
+                <span className="go">→</span>
+              </a>
+            );
+          })
         ) : (
           <div className="empty">有効なリンクがありません。</div>
         )}
-        {dead.map((c, i) => (
-          <div key={c.id ?? `dead-${i}`} className="pdead">
-            <span className="s">{c.label || typeMeta(c.type).lb}</span>
-            は現在使えません
-          </div>
-        ))}
       </div>
 
       {pubcal.length > 0 && (
