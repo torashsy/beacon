@@ -4,6 +4,7 @@ import { grad, HEADING_TYPE, typeMeta } from "@/lib/beacon/constants";
 import { fmtMd } from "@/lib/beacon/format";
 import { safeUrl } from "@/lib/beacon/safe";
 import { TypeBadge, VerifiedBadge } from "./icons";
+import { TrackedLink } from "./TrackedLink";
 
 /**
  * 公開プロフィールの見た目（X風カード）。beacon.html の renderPublicFor を移植。
@@ -38,11 +39,14 @@ export function PublicProfileCard({
   data,
   actions,
   metaLabel = "Beacon で公開中",
+  trackHandle,
 }: {
   data: PublicCardData;
   /** フォローボタン等、カード右上のアクション。 */
   actions?: ReactNode;
   metaLabel?: string;
+  /** 指定時はリンククリックを集計する（公開ページのみ。プレビューでは渡さない）。 */
+  trackHandle?: string;
 }) {
   const { handle, profile, channels, pubcal } = data;
   const hasLinks = channels.some((c) => c.type !== HEADING_TYPE);
@@ -94,12 +98,12 @@ export function PublicProfileCard({
               );
             }
             return (
-              <a
+              <TrackedLink
                 key={key}
                 className="plink"
                 href={safeUrl(c.url)}
-                target="_blank"
-                rel="noopener noreferrer"
+                rawUrl={c.url}
+                trackHandle={trackHandle}
               >
                 <TypeBadge type={c.type} />
                 <div className="pmeta">
@@ -107,7 +111,7 @@ export function PublicProfileCard({
                   {c.descr && <div className="ds">{c.descr}</div>}
                 </div>
                 <span className="go">→</span>
-              </a>
+              </TrackedLink>
             );
           })
         ) : (

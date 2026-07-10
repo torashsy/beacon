@@ -90,6 +90,7 @@ export default async function PublicPage({
           pubcal: cal,
         }}
         actions={<FollowButton snapshot={snapshot} />}
+        trackHandle={handle}
       />
       <CreateYoursFooter href="/" />
     </main>
