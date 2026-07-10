@@ -24,6 +24,7 @@ export function AuthView({
   onLogin,
   onReset,
   onEnter,
+  onBack,
   toast,
 }: {
   initialHandle: string;
@@ -34,6 +35,8 @@ export function AuthView({
   onReset: (handle: string, code: string, newPass: string) => Promise<void>;
   /** 復旧コードを控えたあとアプリへ入る。 */
   onEnter: () => void;
+  /** ランディングへ戻る（作成/ログイン画面のみ表示）。 */
+  onBack?: () => void;
   toast: ToastFn;
 }) {
   const [pane, setPane] = useState<Pane>(initialPane);
@@ -133,6 +136,11 @@ export function AuthView({
     <section className="view">
       {pane === "create" && (
         <div>
+          {onBack && (
+            <a className="backlink" onClick={onBack}>
+              ← 戻る
+            </a>
+          )}
           <h1>IDを作成</h1>
           <div className="lead">
             メールアドレスは不要です。IDとパスコードだけで作れます。
@@ -201,6 +209,11 @@ export function AuthView({
 
       {pane === "login" && (
         <div>
+          {onBack && (
+            <a className="backlink" onClick={onBack}>
+              ← 戻る
+            </a>
+          )}
           <h1>ログイン</h1>
           <div className="lead">別の端末で作ったIDにも、これで入れます。</div>
           <div className="card">

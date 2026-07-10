@@ -35,6 +35,7 @@ import {
   type View,
 } from "./appTypes";
 import { AuthView } from "./AuthView";
+import { LandingView } from "./LandingView";
 import { ProfileView } from "./ProfileView";
 import { ProfileEdit, type EditResult } from "./ProfileEdit";
 import { FollowsView } from "./FollowsView";
@@ -89,6 +90,8 @@ export function BeaconApp() {
   const [authInitialPane, setAuthInitialPane] = useState<"create" | "login">(
     "create",
   );
+  // 初回訪問はランディングを見せる。ハンドルの控えがある再訪者は直接ログインへ。
+  const [landing, setLanding] = useState(true);
 
   // トースト
   const [toastMsg, setToastMsg] = useState("");
@@ -115,6 +118,7 @@ export function BeaconApp() {
     if (stored) {
       setAuthInitialHandle(stored);
       setAuthInitialPane("login");
+      setLanding(false); // 再訪者はランディングを飛ばしてログインへ
     }
     setBooting(false);
   }, []);
@@ -365,6 +369,7 @@ export function BeaconApp() {
       setEditing(false);
       setAuthInitialHandle("");
       setAuthInitialPane("create");
+      setLanding(true); // 退会後は最初のランディングへ
       setView("auth");
       toast("退会しました");
     }
@@ -434,18 +439,31 @@ export function BeaconApp() {
           )}
         </div>
 
-        {view === "auth" && (
-          <AuthView
-            key={authInitialPane + authInitialHandle}
-            initialHandle={authInitialHandle}
-            initialPane={authInitialPane}
-            onCreate={doCreate}
-            onLogin={doLogin}
-            onReset={doReset}
-            onEnter={enterAfterCreate}
-            toast={toast}
-          />
-        )}
+        {view === "auth" &&
+          (landing ? (
+            <LandingView
+              onCreate={() => {
+                setAuthInitialPane("create");
+                setLanding(false);
+              }}
+              onLogin={() => {
+                setAuthInitialPane("login");
+                setLanding(false);
+              }}
+            />
+          ) : (
+            <AuthView
+              key={authInitialPane + authInitialHandle}
+              initialHandle={authInitialHandle}
+              initialPane={authInitialPane}
+              onCreate={doCreate}
+              onLogin={doLogin}
+              onReset={doReset}
+              onEnter={enterAfterCreate}
+              onBack={() => setLanding(true)}
+              toast={toast}
+            />
+          ))}
 
         {view === "profile" &&
           me &&
