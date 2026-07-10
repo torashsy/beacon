@@ -29,13 +29,17 @@ npm run dev
 
 ## 3. Storage バケット作成（画像用）
 
+手順2で `schema.sql` を流していれば、`avatars` バケット（public）と anon の
+INSERT/UPDATE ポリシーは**自動で作成済み**です（`schema.sql` 末尾の Storage 節）。
+Storage → `avatars` が存在し public になっていることを確認するだけでOK。
+
+ダッシュボードで手動作成する場合:
+
 1. 左メニュー **Storage** → **New bucket**
 2. Name: `avatars` / **Public bucket をON** → 作成
 3. パス規約: `avatars/{handle}/av.jpg`（アイコン）, `avatars/{handle}/bn.jpg`（ヘッダー）
    - アップロードは匿名（anon）から行うため、公開バケットの
-     **INSERT/UPDATE ポリシー**を anon に許可する必要がある。
-     Storage → avatars → Policies で以下を追加（本人パスの制限は
-     アプリ側の RPC 認証に委ねる簡易版。厳密化は後述）:
+     **INSERT/UPDATE ポリシー**を anon に許可する:
      - `insert`: `bucket_id = 'avatars'`（roles: anon, authenticated）
      - `update`: `bucket_id = 'avatars'`（roles: anon, authenticated）
      - `select`: 公開バケットなので自動で読める

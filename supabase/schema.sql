@@ -78,6 +78,12 @@ drop policy if exists pub_calpub on cal_public;
 create policy pub_calpub on cal_public for select using (true);
 -- accounts / cal_private / auth_attempts は誰も直接読めない（RPC経由のみ）
 
+-- RLS の select ポリシーに加えて、テーブルレベルの SELECT 権限も anon に付与する。
+-- （PostgREST 経由の匿名読み取りには GRANT が必須。無いと permission denied になる）
+grant select on profiles   to anon, authenticated;
+grant select on channels   to anon, authenticated;
+grant select on cal_public to anon, authenticated;
+
 -- ---- 認証ヘルパー ----
 create or replace function _check_pass(p_handle text, p_pass text)
 returns boolean language plpgsql security definer as $$
@@ -201,8 +207,22 @@ grant execute on function save_cal(text,text,date,text,boolean)                 
 grant execute on function get_private_cal(text,text)                                  to anon;
 grant execute on function delete_account(text,text)                                   to anon;
 
--- ---- Storage（画像用）----
--- ダッシュボードで 'avatars' バケット(public)を作成すること。
+-- ---- Storage（画像用: avatars バケット）----
 -- パス規約: avatars/{handle}/av.jpg, avatars/{handle}/bn.jpg
+-- 公開バケットを作成し、anon からの insert/update を許可する（本人パスの制限は
+-- アプリ側の RPC 認証に委ねる簡易版）。ダッシュボードでの手動作成でも可（SETUP.md 手順3）。
+insert into storage.buckets (id, name, public)
+  values ('avatars', 'avatars', true)
+  on conflict (id) do update set public = true;
+
+drop policy if exists avatars_anon_insert on storage.objects;
+create policy avatars_anon_insert on storage.objects
+  for insert to anon with check (bucket_id = 'avatars');
+
+drop policy if exists avatars_anon_update on storage.objects;
+create policy avatars_anon_update on storage.objects
+  for update to anon using (bucket_id = 'avatars') with check (bucket_id = 'avatars');
+-- select は public バケットのため自動で読める。
+
 -- フォローリストはサーバーに置かない（端末ローカル保存）。
 -- 発信者を横断的に検索・一覧するAPI/画面は絶対に実装しないこと。
