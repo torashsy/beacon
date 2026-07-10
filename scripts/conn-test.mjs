@@ -159,12 +159,12 @@ try {
       "/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAAA//EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAT8Qf//Z",
       "base64",
     );
-    const path = `${handle}/av.jpg`;
-    const up = await db.storage.from("avatars").upload(path, buf, { upsert: true, contentType: "image/jpeg" });
+    // storage.ts と同じ方式: ユニークパスへ純粋な INSERT（upsert なし＝anon INSERTポリシーのみで足りる）
+    const path = `${handle}/av-${Date.now()}.jpg`;
+    const up = await db.storage.from("avatars").upload(path, buf, { contentType: "image/jpeg" });
     if (up.error) throw up.error;
     const { data: pub } = db.storage.from("avatars").getPublicUrl(path);
-    log(!!pub.publicUrl, "Storage avatars upload (anon)", pub.publicUrl);
-    await db.storage.from("avatars").remove([path]);
+    log(!!pub.publicUrl, "Storage avatars upload (anon INSERT)", pub.publicUrl);
   } catch (e) {
     // バケット未作成/ポリシー未設定はここで検出
     log(false, "Storage avatars upload (anon)", String(e?.message ?? e) + "  ← SETUP手順3を確認");
