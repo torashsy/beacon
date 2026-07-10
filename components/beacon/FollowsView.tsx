@@ -159,11 +159,9 @@ export function FollowsView({
                     )}
                   </div>
                   <div className="who">
-                    <div className="nm">
-                      {f.name || `@${f.handle}`}
-                      <FollowBadge st={st} />
-                    </div>
+                    <div className="nm">{f.name || `@${f.handle}`}</div>
                     <div className="id">@{f.handle}</div>
+                    <FollowBadge st={st} />
                     <div className="st">
                       <b>{live}件のリンク</b>
                       {dead ? `・${dead}件停止中` : ""}・{ago(f.updated)}
@@ -214,7 +212,9 @@ function FollowBadge({ st }: { st: FollowState }) {
     return (
       <span
         style={{
-          marginLeft: 8,
+          display: "inline-block",
+          whiteSpace: "nowrap",
+          margin: "3px 0 1px",
           fontSize: 10.5,
           fontWeight: 700,
           color: "#fff",
@@ -231,7 +231,9 @@ function FollowBadge({ st }: { st: FollowState }) {
     return (
       <span
         style={{
-          marginLeft: 8,
+          display: "inline-block",
+          whiteSpace: "nowrap",
+          margin: "3px 0 1px",
           fontSize: 10.5,
           fontWeight: 700,
           color: "var(--emd)",
@@ -248,7 +250,9 @@ function FollowBadge({ st }: { st: FollowState }) {
     return (
       <span
         style={{
-          marginLeft: 8,
+          display: "inline-block",
+          whiteSpace: "nowrap",
+          margin: "3px 0 1px",
           fontSize: 10.5,
           fontWeight: 700,
           color: "var(--alert)",
