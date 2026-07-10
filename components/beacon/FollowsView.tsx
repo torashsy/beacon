@@ -1,101 +1,35 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
-import { getPublicPage } from "@/lib/beacon/rpc";
 import { ago } from "@/lib/beacon/format";
 import { HEADING_TYPE } from "@/lib/beacon/constants";
-import {
-  type FollowSnapshot,
-  toSnapshot,
-} from "@/lib/beacon/follows";
+import type { FollowSnapshot, FollowStatus } from "@/lib/beacon/follows";
 
 /**
- * フォロー中一覧。データは端末ローカル(localStorage)のみ。
- * 「変化検知」: 開いた時に各相手の公開ページを取得し、フォロー時のスナップショットと
- * 比較して「新しい連絡先が増えた／連絡先が変わった／削除された」をバッジ表示する。
- * これがフォローの存在意義（相手の垢が変わっても今の連絡先が分かる）。
- * サーバーへの横断検索・一覧はしない（自分がフォローしたIDを個別に取得するだけ）。
+ * フォロー中一覧（表示専用）。データは端末ローカル(localStorage)のみ。
+ * 変化検知（各相手の最新取得と差分）は BeaconApp 側で行い、ここは states を
+ * 受け取ってバッジ表示するだけ（ナビの更新ドットと計算を共有するため）。
+ * サーバーへの横断検索・一覧はしない。
  */
-
-type DiffState = "loading" | "same" | "new" | "changed" | "deleted";
-
-interface FollowState {
-  state: DiffState;
-  addedLive: number; // 増えた有効リンク数
-  fresh?: FollowSnapshot; // 取得した最新（「最新にする」で採用）
-}
-
-function liveUrls(channels: { type: string; url: string; status: string }[]) {
-  return new Set(
-    channels
-      .filter((c) => c.type !== HEADING_TYPE && c.status === "live")
-      .map((c) => c.url),
-  );
-}
 
 export function FollowsView({
   follows,
+  states,
   onUnfollow,
   onUpdateSnapshot,
+  loggedIn,
+  onLoginPrompt,
 }: {
   follows: FollowSnapshot[];
+  states: Record<string, FollowStatus>;
   onUnfollow: (handle: string) => void;
   onUpdateSnapshot: (snap: FollowSnapshot) => void;
+  loggedIn: boolean;
+  onLoginPrompt: () => void;
 }) {
   const [q, setQ] = useState("");
-  const [states, setStates] = useState<Record<string, FollowState>>({});
   const router = useRouter();
-  const db = useMemo(() => createClient(), []);
-
-  // 開いたときに各フォローの最新を取得して差分を計算
-  useEffect(() => {
-    let cancelled = false;
-    const handles = follows.map((f) => f.handle);
-    if (!handles.length) return;
-    setStates((prev) => {
-      const next = { ...prev };
-      for (const h of handles) if (!next[h]) next[h] = { state: "loading", addedLive: 0 };
-      return next;
-    });
-    (async () => {
-      await Promise.all(
-        follows.map(async (snap) => {
-          try {
-            const page = await getPublicPage(db, snap.handle);
-            if (cancelled) return;
-            if (!page) {
-              setStates((s) => ({ ...s, [snap.handle]: { state: "deleted", addedLive: 0 } }));
-              return;
-            }
-            const snapLive = liveUrls(snap.channels);
-            const curLive = liveUrls(page.channels);
-            const added = [...curLive].filter((u) => !snapLive.has(u));
-            const removed = [...snapLive].filter((u) => !curLive.has(u));
-            const nameChanged = (page.profile.name || "") !== (snap.name || "");
-            const fresh = toSnapshot(page.profile, page.channels, page.cal);
-            let state: DiffState = "same";
-            if (added.length) state = "new";
-            else if (removed.length || nameChanged) state = "changed";
-            setStates((s) => ({
-              ...s,
-              [snap.handle]: { state, addedLive: added.length, fresh },
-            }));
-          } catch {
-            if (!cancelled)
-              setStates((s) => ({ ...s, [snap.handle]: { state: "same", addedLive: 0 } }));
-          }
-        }),
-      );
-    })();
-    return () => {
-      cancelled = true;
-    };
-    // follows の顔ぶれが変わった時だけ再取得
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [follows.map((f) => f.handle).join(","), db]);
-
   const query = q.trim().toLowerCase();
   const shown = follows.filter(
     (f) =>
@@ -112,6 +46,18 @@ export function FollowsView({
     <section className="view">
       <h1>フォロー中</h1>
       <div className="lead">相手の垢が変わっても、今の連絡先が分かります。</div>
+      {!loggedIn && (
+        <div className="note" style={{ marginBottom: 12 }}>
+          この一覧はこの端末だけに保存されています。
+          <a
+            onClick={onLoginPrompt}
+            style={{ color: "var(--emd)", fontWeight: 700, cursor: "pointer" }}
+          >
+            ログイン
+          </a>
+          すると自分のページも編集できます。
+        </div>
+      )}
       <div className="search">
         <span className="ic">🔍</span>
         <input
@@ -178,10 +124,6 @@ export function FollowsView({
                       onClick={(e) => {
                         e.stopPropagation();
                         if (st.fresh) onUpdateSnapshot(st.fresh);
-                        setStates((s) => ({
-                          ...s,
-                          [f.handle]: { state: "same", addedLive: 0 },
-                        }));
                       }}
                     >
                       最新にする
@@ -207,22 +149,18 @@ export function FollowsView({
   );
 }
 
-function FollowBadge({ st }: { st: FollowState }) {
+function FollowBadge({ st }: { st: FollowStatus }) {
+  const base = {
+    display: "inline-block" as const,
+    whiteSpace: "nowrap" as const,
+    margin: "3px 0 1px",
+    fontSize: 10.5,
+    fontWeight: 700,
+    borderRadius: 999,
+  };
   if (st.state === "new") {
     return (
-      <span
-        style={{
-          display: "inline-block",
-          whiteSpace: "nowrap",
-          margin: "3px 0 1px",
-          fontSize: 10.5,
-          fontWeight: 700,
-          color: "#fff",
-          background: "var(--em)",
-          borderRadius: 999,
-          padding: "2px 8px",
-        }}
-      >
+      <span style={{ ...base, color: "#fff", background: "var(--em)", padding: "2px 8px" }}>
         新しい連絡先{st.addedLive > 1 ? ` +${st.addedLive}` : ""}
       </span>
     );
@@ -231,14 +169,9 @@ function FollowBadge({ st }: { st: FollowState }) {
     return (
       <span
         style={{
-          display: "inline-block",
-          whiteSpace: "nowrap",
-          margin: "3px 0 1px",
-          fontSize: 10.5,
-          fontWeight: 700,
+          ...base,
           color: "var(--emd)",
           border: "1.5px solid rgba(16,185,129,.45)",
-          borderRadius: 999,
           padding: "1px 8px",
         }}
       >
@@ -250,14 +183,9 @@ function FollowBadge({ st }: { st: FollowState }) {
     return (
       <span
         style={{
-          display: "inline-block",
-          whiteSpace: "nowrap",
-          margin: "3px 0 1px",
-          fontSize: 10.5,
-          fontWeight: 700,
+          ...base,
           color: "var(--alert)",
           border: "1.5px solid rgba(224,87,107,.45)",
-          borderRadius: 999,
           padding: "1px 8px",
         }}
       >
