@@ -403,6 +403,10 @@ export function BeaconApp() {
     [toast],
   );
 
+  const onUpdateSnapshot = useCallback((snap: FollowSnapshot) => {
+    setFollows(addFollow(snap));
+  }, []);
+
   function goNav(v: "profile" | "follows" | "howto") {
     setNavTab(v);
     setView(v);
@@ -488,7 +492,11 @@ export function BeaconApp() {
           ))}
 
         {view === "follows" && (
-          <FollowsView follows={follows} onUnfollow={onUnfollow} />
+          <FollowsView
+            follows={follows}
+            onUnfollow={onUnfollow}
+            onUpdateSnapshot={onUpdateSnapshot}
+          />
         )}
 
         {view === "howto" && <HowtoView />}
