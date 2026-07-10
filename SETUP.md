@@ -66,6 +66,10 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOi...
 4. `/@{handle}` を開いて公開表示・OGP を確認
 5. 「退会（アカウントを削除）」で削除できることを確認
 
+> 疎通だけ手早く確認したいときは `node scripts/conn-test.mjs` を実行。
+> `.env.local` を使って全RPC・RLS・Storage をランダムなIDで検証し、最後に
+> 退会して後片付けします（手順2・3が済んでいれば「全項目 OK」）。
+
 ---
 
 ## 6. Vercel デプロイ
