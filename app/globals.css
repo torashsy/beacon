@@ -1,0 +1,43 @@
+/*
+ * Beacon デザイントークン。reference/beacon.html の :root からそのまま移植。
+ * 本実装では beacon.html の <style> を参照しつつ各コンポーネントへ展開する。
+ */
+:root {
+  --text: #17242b;
+  --muted: #6e8580;
+  --faint: #adc1bb;
+  --em: #10b981;
+  --emd: #0b9a6d;
+  --eml: #e7f8f1;
+  --em2: #2ac98c;
+  --alert: #e0576b;
+  --surface: #fff;
+  --border: #e4eeea;
+  --ink: #f4faf8;
+  --radius: 18px;
+  --shadow: 0 6px 20px rgba(23, 72, 58, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #f7fbfa;
+  color: var(--text);
+  font-family: "Noto Sans JP", "Inter", system-ui, sans-serif;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+.wrap {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+a {
+  color: inherit;
+}
