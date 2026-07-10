@@ -1,4 +1,6 @@
 import type { CalMemo, Channel, Profile } from "./types";
+import type { PublicPage } from "./rpc";
+import { HEADING_TYPE } from "./constants";
 
 /**
  * フォロー中一覧は「端末ローカル(localStorage)」だけに置く。
@@ -81,4 +83,47 @@ export function removeFollow(handle: string): FollowSnapshot[] {
   const list = loadFollows().filter((f) => f.handle !== handle.toLowerCase());
   persist(list);
   return list;
+}
+
+// ---- 変化検知（フォロー時のスナップショット vs 現在の公開ページ）----
+
+export type FollowDiffState =
+  | "loading"
+  | "same"
+  | "new"
+  | "changed"
+  | "deleted";
+
+export interface FollowStatus {
+  state: FollowDiffState;
+  addedLive: number; // 増えた有効リンク数
+  fresh?: FollowSnapshot; // 取得した最新（「最新にする」で採用）
+}
+
+function liveUrlSet(
+  channels: { type: string; url: string; status: string }[],
+): Set<string> {
+  return new Set(
+    channels
+      .filter((c) => c.type !== HEADING_TYPE && c.status === "live")
+      .map((c) => c.url),
+  );
+}
+
+/** スナップショットと現在ページを比較して差分状態を返す。page=null は削除ずみ。 */
+export function diffFollow(
+  snap: FollowSnapshot,
+  page: PublicPage | null,
+): FollowStatus {
+  if (!page) return { state: "deleted", addedLive: 0 };
+  const snapLive = liveUrlSet(snap.channels);
+  const curLive = liveUrlSet(page.channels);
+  const added = [...curLive].filter((u) => !snapLive.has(u));
+  const removed = [...snapLive].filter((u) => !curLive.has(u));
+  const nameChanged = (page.profile.name || "") !== (snap.name || "");
+  const fresh = toSnapshot(page.profile, page.channels, page.cal);
+  if (added.length) return { state: "new", addedLive: added.length, fresh };
+  if (removed.length || nameChanged)
+    return { state: "changed", addedLive: 0, fresh };
+  return { state: "same", addedLive: 0, fresh };
 }

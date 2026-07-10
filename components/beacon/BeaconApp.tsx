@@ -19,11 +19,13 @@ import type { CalMemo, Channel } from "@/lib/beacon/types";
 import { normalizeRecoveryCode } from "@/lib/beacon/format";
 import {
   addFollow,
+  diffFollow,
+  type FollowSnapshot,
+  type FollowStatus,
   K_HANDLE,
   loadFollows,
   removeFollow,
   toSnapshot,
-  type FollowSnapshot,
 } from "@/lib/beacon/follows";
 import {
   type CalMap,
@@ -31,8 +33,10 @@ import {
   ensureIds,
   type Me,
   type Session,
-  type View,
 } from "./appTypes";
+
+type NavTab = "profile" | "follows" | "howto";
+type Overlay = "none" | "auth" | "public";
 import { AuthView } from "./AuthView";
 import { LandingView } from "./LandingView";
 import { ProfileView } from "./ProfileView";
@@ -76,21 +80,21 @@ export function BeaconApp() {
   const [booting, setBooting] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
   const [me, setMe] = useState<Me | null>(null);
-  const [view, setView] = useState<View>("auth");
-  const [navTab, setNavTab] = useState<"profile" | "follows" | "howto">(
-    "profile",
-  );
+  const [navTab, setNavTab] = useState<NavTab>("profile");
+  // 全画面オーバーレイ（ナビを隠す）: 認証フォーム / 公開プレビュー
+  const [overlay, setOverlay] = useState<Overlay>("none");
   const [editing, setEditing] = useState(false);
   const [rcPlain, setRcPlain] = useState<string | null>(null);
   const [follows, setFollows] = useState<FollowSnapshot[]>([]);
+  const [followStates, setFollowStates] = useState<
+    Record<string, FollowStatus>
+  >({});
   const [preview, setPreview] = useState<PublicCardData | null>(null);
 
   const [authInitialHandle, setAuthInitialHandle] = useState("");
   const [authInitialPane, setAuthInitialPane] = useState<"create" | "login">(
     "create",
   );
-  // 初回訪問はランディングを見せる。ハンドルの控えがある再訪者は直接ログインへ。
-  const [landing, setLanding] = useState(true);
 
   // トースト
   const [toastMsg, setToastMsg] = useState("");
@@ -105,9 +109,11 @@ export function BeaconApp() {
 
   const calLoading = useRef(false);
 
-  // 起動: 控えた handle があればログイン画面をプリフィル（自動ログインはしない）
+  // 起動: フォロー一覧を読み込み、控えた handle があればログインのプリフィルに使う。
+  // ログインは要求せず、ナビ（フォロー中/使い方）は最初から使える。
   useEffect(() => {
-    setFollows(loadFollows());
+    const loaded = loadFollows();
+    setFollows(loaded);
     let stored = "";
     try {
       stored = window.localStorage.getItem(K_HANDLE) ?? "";
@@ -117,12 +123,9 @@ export function BeaconApp() {
     if (stored) {
       setAuthInitialHandle(stored);
       setAuthInitialPane("login");
-      setLanding(false); // 再訪者はランディングを飛ばしてログインへ
     }
     setBooting(false);
   }, []);
-
-  const inApp = view !== "auth";
 
   // ---- データ読み込み ----
   const loadMe = useCallback(
@@ -185,7 +188,7 @@ export function BeaconApp() {
       setSession({ handle, pass });
       persistHandle(handle);
       setMe(await loadMe(handle, pass));
-      setView("profile");
+      setOverlay("none");
       setNavTab("profile");
       setEditing(false);
       toast("ログインしました");
@@ -201,7 +204,7 @@ export function BeaconApp() {
   );
 
   const enterAfterCreate = useCallback(() => {
-    setView("profile");
+    setOverlay("none");
     setNavTab("profile");
     setEditing(false);
     toast("作成しました");
@@ -221,8 +224,15 @@ export function BeaconApp() {
     }
     setAuthInitialHandle(last);
     setAuthInitialPane("login");
-    setView("auth");
+    setOverlay("none");
+    setNavTab("profile"); // ログアウト後はランディング（プロフィールタブ）へ
   }, [session]);
+
+  /** 認証フォームを開く（ランディングのボタンから）。 */
+  const openAuth = useCallback((pane: "create" | "login") => {
+    setAuthInitialPane(pane);
+    setOverlay("auth");
+  }, []);
 
   // ---- 書込ヘルパー ----
   const runWrite = useCallback(
@@ -368,8 +378,8 @@ export function BeaconApp() {
       setEditing(false);
       setAuthInitialHandle("");
       setAuthInitialPane("create");
-      setLanding(true); // 退会後は最初のランディングへ
-      setView("auth");
+      setOverlay("none");
+      setNavTab("profile"); // 退会後はランディングへ
       toast("退会しました");
     }
   }, [db, session, runWrite, toast]);
@@ -383,8 +393,43 @@ export function BeaconApp() {
       channels: me.channels,
       pubcal: publicMemos(me.cal),
     });
-    setView("public");
+    setOverlay("public");
   }, [me, session]);
+
+  // ---- フォローの変化検知（ナビの更新ドットと一覧のバッジを共有）----
+  const checkFollows = useCallback(
+    async (list: FollowSnapshot[]) => {
+      if (!list.length) return;
+      setFollowStates((prev) => {
+        const next = { ...prev };
+        for (const f of list)
+          if (!next[f.handle]) next[f.handle] = { state: "loading", addedLive: 0 };
+        return next;
+      });
+      await Promise.all(
+        list.map(async (snap) => {
+          try {
+            const page = await getPublicPage(db, snap.handle);
+            setFollowStates((s) => ({ ...s, [snap.handle]: diffFollow(snap, page) }));
+          } catch {
+            setFollowStates((s) => ({
+              ...s,
+              [snap.handle]: { state: "same", addedLive: 0 },
+            }));
+          }
+        }),
+      );
+    },
+    [db],
+  );
+
+  // フォローの顔ぶれ（handle集合）が変わったら再チェック
+  const followKey = follows.map((f) => f.handle).join(",");
+  useEffect(() => {
+    if (!followKey) return;
+    void checkFollows(follows);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [followKey, checkFollows]);
 
   const followSelf = useCallback(() => {
     if (!me || !session) return;
@@ -405,11 +450,16 @@ export function BeaconApp() {
 
   const onUpdateSnapshot = useCallback((snap: FollowSnapshot) => {
     setFollows(addFollow(snap));
+    setFollowStates((s) => ({
+      ...s,
+      [snap.handle]: { state: "same", addedLive: 0 },
+    }));
   }, []);
 
-  function goNav(v: "profile" | "follows" | "howto") {
+  function goNav(v: NavTab) {
     setNavTab(v);
-    setView(v);
+    setEditing(false);
+    setOverlay("none");
   }
 
   if (booting) {
@@ -428,6 +478,15 @@ export function BeaconApp() {
     ? follows.some((f) => f.handle === session.handle)
     : false;
 
+  const followUpdates = follows.filter((f) => {
+    const st = followStates[f.handle]?.state;
+    return st === "new" || st === "changed" || st === "deleted";
+  }).length;
+
+  // ナビ（下部タブ）を出すのは通常モードのみ。認証フォーム・プレビュー・
+  // プロフィール編集の全画面時は隠す。
+  const showNav = overlay === "none" && !editing;
+
   return (
     <>
       <div className="wrap">
@@ -435,75 +494,32 @@ export function BeaconApp() {
           <div className="logo">
             Beacon<span className="dot">.</span>
           </div>
-          {inApp && (
+          {session && overlay === "none" && (
             <div className="tag" onClick={logout}>
               ログアウト
             </div>
           )}
         </div>
 
-        {view === "auth" &&
-          (landing ? (
-            <LandingView
-              onCreate={() => {
-                setAuthInitialPane("create");
-                setLanding(false);
-              }}
-              onLogin={() => {
-                setAuthInitialPane("login");
-                setLanding(false);
-              }}
-            />
-          ) : (
-            <AuthView
-              key={authInitialPane + authInitialHandle}
-              initialHandle={authInitialHandle}
-              initialPane={authInitialPane}
-              onCreate={doCreate}
-              onLogin={doLogin}
-              onReset={doReset}
-              onEnter={enterAfterCreate}
-              onBack={() => setLanding(true)}
-              toast={toast}
-            />
-          ))}
-
-        {view === "profile" &&
-          me &&
-          session &&
-          (editing ? (
-            <ProfileEdit
-              profile={me.profile}
-              onCancel={() => setEditing(false)}
-              onSave={saveProfile}
-            />
-          ) : (
-            <ProfileView
-              me={me}
-              handle={session.handle}
-              onEdit={() => setEditing(true)}
-              onPreview={openPreview}
-              onShowRc={showRc}
-              onSaveChannels={persistChannels}
-              onSaveCal={persistCal}
-              onLoadCal={loadCal}
-              toast={toast}
-            />
-          ))}
-
-        {view === "follows" && (
-          <FollowsView
-            follows={follows}
-            onUnfollow={onUnfollow}
-            onUpdateSnapshot={onUpdateSnapshot}
+        {/* 全画面: 認証フォーム */}
+        {overlay === "auth" && (
+          <AuthView
+            key={authInitialPane + authInitialHandle}
+            initialHandle={authInitialHandle}
+            initialPane={authInitialPane}
+            onCreate={doCreate}
+            onLogin={doLogin}
+            onReset={doReset}
+            onEnter={enterAfterCreate}
+            onBack={() => setOverlay("none")}
+            toast={toast}
           />
         )}
 
-        {view === "howto" && <HowtoView />}
-
-        {view === "public" && preview && (
+        {/* 全画面: 公開プレビュー */}
+        {overlay === "public" && preview && (
           <section className="view">
-            <a className="backlink" onClick={() => setView("profile")}>
+            <a className="backlink" onClick={() => setOverlay("none")}>
               ← 戻る
             </a>
             <PublicProfileCard
@@ -528,18 +544,60 @@ export function BeaconApp() {
           </section>
         )}
 
-        {view === "profile" && me && session && !editing && (
-          <button
-            className="btn ghost"
-            style={{ marginTop: 10, color: "var(--alert)" }}
-            onClick={doDeleteAccount}
-          >
-            退会（アカウントを削除）
-          </button>
+        {/* 通常モード: プロフィール / フォロー中 / 使い方 */}
+        {overlay === "none" && navTab === "profile" && (
+          session && me ? (
+            editing ? (
+              <ProfileEdit
+                profile={me.profile}
+                onCancel={() => setEditing(false)}
+                onSave={saveProfile}
+              />
+            ) : (
+              <>
+                <ProfileView
+                  me={me}
+                  handle={session.handle}
+                  onEdit={() => setEditing(true)}
+                  onPreview={openPreview}
+                  onShowRc={showRc}
+                  onSaveChannels={persistChannels}
+                  onSaveCal={persistCal}
+                  onLoadCal={loadCal}
+                  toast={toast}
+                />
+                <button
+                  className="btn ghost"
+                  style={{ marginTop: 10, color: "var(--alert)" }}
+                  onClick={doDeleteAccount}
+                >
+                  退会（アカウントを削除）
+                </button>
+              </>
+            )
+          ) : (
+            <LandingView
+              onCreate={() => openAuth("create")}
+              onLogin={() => openAuth("login")}
+            />
+          )
         )}
+
+        {overlay === "none" && navTab === "follows" && (
+          <FollowsView
+            follows={follows}
+            states={followStates}
+            onUnfollow={onUnfollow}
+            onUpdateSnapshot={onUpdateSnapshot}
+            loggedIn={!!session}
+            onLoginPrompt={() => openAuth("login")}
+          />
+        )}
+
+        {overlay === "none" && navTab === "howto" && <HowtoView />}
       </div>
 
-      {inApp && view !== "public" && (
+      {showNav && (
         <div className="nav">
           <button
             className={`ni ${navTab === "profile" ? "on" : ""}`}
@@ -550,8 +608,32 @@ export function BeaconApp() {
           <button
             className={`ni ${navTab === "follows" ? "on" : ""}`}
             onClick={() => goNav("follows")}
+            style={{ position: "relative" }}
           >
             <span className="i">📋</span>フォロー中
+            {followUpdates > 0 && (
+              <span
+                aria-label={`${followUpdates}件の更新`}
+                style={{
+                  position: "absolute",
+                  top: 2,
+                  right: "50%",
+                  marginRight: -18,
+                  minWidth: 16,
+                  height: 16,
+                  padding: "0 4px",
+                  borderRadius: 999,
+                  background: "var(--alert)",
+                  color: "#fff",
+                  fontSize: 10,
+                  fontWeight: 800,
+                  lineHeight: "16px",
+                  textAlign: "center",
+                }}
+              >
+                {followUpdates}
+              </span>
+            )}
           </button>
           <button
             className={`ni ${navTab === "howto" ? "on" : ""}`}
