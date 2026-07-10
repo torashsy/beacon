@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { CalMemo, Channel, Profile } from "@/lib/beacon/types";
 import { grad, HEADING_TYPE, typeMeta } from "@/lib/beacon/constants";
 import { fmtMd } from "@/lib/beacon/format";
+import { safeUrl } from "@/lib/beacon/safe";
 import { TypeBadge, VerifiedBadge } from "./icons";
 
 /**
@@ -96,7 +97,7 @@ export function PublicProfileCard({
               <a
                 key={key}
                 className="plink"
-                href={c.url}
+                href={safeUrl(c.url)}
                 target="_blank"
                 rel="noopener noreferrer"
               >

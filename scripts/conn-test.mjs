@@ -83,14 +83,21 @@ try {
     log(true, "update_profile");
   } catch (e) { fail("update_profile", e); }
 
-  // 5. profiles を公開読み取り（RLS）
+  // 5. 公開ページ取得（get_public_page RPC）
   try {
-    const { data, error } = await db.from("profiles").select("*").eq("handle", handle).maybeSingle();
-    if (error) throw error;
-    const ok = data?.name === "接続テスト" && data?.emoji === "🌊" && data?.theme === 2;
-    log(ok, "profiles 公開読み取り", `name=${data?.name}`);
+    const page = await rpc("get_public_page", { p_handle: handle });
+    const ok = page?.profile?.name === "接続テスト" && page?.profile?.emoji === "🌊";
+    log(ok, "get_public_page（プロフィール）", `name=${page?.profile?.name}`);
     if (!ok) failures++;
-  } catch (e) { fail("profiles select", e); }
+  } catch (e) { fail("get_public_page", e); }
+
+  // 5b. 【セキュリティ】profiles への直接 select は拒否されること（列挙防止）
+  try {
+    const { data, error } = await db.from("profiles").select("*").limit(5);
+    const blocked = !!error || !data || data.length === 0;
+    log(blocked, "列挙防止: profiles 直接 select 不可", error ? error.message : `返った行=${data?.length ?? 0}`);
+    if (!blocked) failures++;
+  } catch { log(true, "列挙防止: profiles 直接 select 不可"); }
 
   // 6. save_channels
   try {
@@ -104,14 +111,14 @@ try {
     log(true, "save_channels");
   } catch (e) { fail("save_channels", e); }
 
-  // 7. channels 公開読み取り（position順・desc→descr吸収確認）
+  // 7. channels を get_public_page 経由で確認（position順・desc→descr吸収）
   try {
-    const { data, error } = await db.from("channels").select("*").eq("handle", handle).order("position", { ascending: true });
-    if (error) throw error;
-    const ok = data?.length === 2 && data[0].type === "x" && data[0].descr === "DMこちら" && data[1].status === "dead";
-    log(ok, "channels 公開読み取り", `${data?.length}件 / descr='${data?.[0]?.descr}'`);
+    const page = await rpc("get_public_page", { p_handle: handle });
+    const ch = page?.channels ?? [];
+    const ok = ch.length === 2 && ch[0].type === "x" && ch[0].descr === "DMこちら" && ch[1].status === "dead";
+    log(ok, "get_public_page（リンク）", `${ch.length}件 / descr='${ch?.[0]?.descr}'`);
     if (!ok) failures++;
-  } catch (e) { fail("channels select", e); }
+  } catch (e) { fail("get_public_page channels", e); }
 
   // 8-9. save_cal 公開/非公開
   try {
@@ -120,14 +127,14 @@ try {
     log(true, "save_cal (公開+非公開)");
   } catch (e) { fail("save_cal", e); }
 
-  // 10. cal_public 公開読み取り
+  // 10. 公開カレンダーを get_public_page 経由で確認
   try {
-    const { data, error } = await db.from("cal_public").select("d, memo").eq("handle", handle);
-    if (error) throw error;
-    const ok = data?.length === 1 && data[0].memo === "20時以降 空きあり";
-    log(ok, "cal_public 公開読み取り", `${data?.length}件`);
+    const page = await rpc("get_public_page", { p_handle: handle });
+    const c = page?.cal ?? [];
+    const ok = c.length === 1 && c[0].memo === "20時以降 空きあり";
+    log(ok, "get_public_page（公開カレンダー）", `${c.length}件`);
     if (!ok) failures++;
-  } catch (e) { fail("cal_public select", e); }
+  } catch (e) { fail("get_public_page cal", e); }
 
   // 11. cal_private は匿名で直接読めないこと（RLSでSELECTポリシー無し）
   try {

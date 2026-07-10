@@ -146,46 +146,30 @@ export async function getPrivateCal(
   ) ?? []) as CalMemo[];
 }
 
-// ---- 公開読み取り（RPC ではなく RLS 経由の select）----
+// ---- 公開読み取り（列挙防止のため security definer RPC 経由。直接 select は不可）----
 
-/** 公開プロフィール取得。存在しなければ null。 */
-export async function getPublicProfile(
-  db: DB,
-  handle: string,
-): Promise<Profile | null> {
-  const { data, error } = await db
-    .from("profiles")
-    .select("*")
-    .eq("handle", handle.toLowerCase())
-    .maybeSingle();
-  if (error) throw new Error(error.message);
-  return (data as Profile) ?? null;
+export interface PublicPage {
+  profile: Profile;
+  channels: Channel[];
+  cal: CalMemo[]; // 公開カレンダーのみ
 }
 
-/** 公開リンク一覧（position 昇順、live/dead 両方。表示側で status を判定）。 */
-export async function getPublicChannels(
+/**
+ * 公開ページ1件分（プロフィール＋リンク＋公開カレンダー）を取得。存在しなければ null。
+ * profiles/channels/cal_public への直接 select は許可されておらず、必ずこの
+ * ハンドル指定 RPC 経由で読む（anon キーによる全ユーザー列挙を防ぐ）。
+ */
+export async function getPublicPage(
   db: DB,
   handle: string,
-): Promise<Channel[]> {
-  const { data, error } = await db
-    .from("channels")
-    .select("*")
-    .eq("handle", handle.toLowerCase())
-    .order("position", { ascending: true });
-  if (error) throw new Error(error.message);
-  return (data as Channel[]) ?? [];
-}
-
-/** 公開カレンダー（cal_public のみ）。 */
-export async function getPublicCal(
-  db: DB,
-  handle: string,
-): Promise<CalMemo[]> {
-  const { data, error } = await db
-    .from("cal_public")
-    .select("d, memo")
-    .eq("handle", handle.toLowerCase())
-    .order("d", { ascending: true });
-  if (error) throw new Error(error.message);
-  return (data as CalMemo[]) ?? [];
+): Promise<PublicPage | null> {
+  const data = unwrap(
+    await db.rpc("get_public_page", { p_handle: handle }),
+  ) as PublicPage | null;
+  if (!data || !data.profile) return null;
+  return {
+    profile: data.profile,
+    channels: data.channels ?? [],
+    cal: data.cal ?? [],
+  };
 }
