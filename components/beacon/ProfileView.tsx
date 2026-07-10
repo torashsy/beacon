@@ -8,7 +8,9 @@ import {
   TYPES,
   typeMeta,
 } from "@/lib/beacon/constants";
+import { detectType } from "@/lib/beacon/detect";
 import { dkey } from "@/lib/beacon/format";
+import { safeUrl } from "@/lib/beacon/safe";
 import { cryptoId, type Me, type ToastFn } from "./appTypes";
 import { TypeBadge, VerifiedBadge } from "./icons";
 
@@ -223,20 +225,24 @@ function LinksPane({
   onSaveChannels: (next: Channel[]) => Promise<boolean>;
   toast: ToastFn;
 }) {
-  const [formOpen, setFormOpen] = useState(false);
+  const chans = me.channels;
+  // 空なら最初からフォームを開いておく（初回オンボーディング）
+  const [formOpen, setFormOpen] = useState(chans.length === 0);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [type, setType] = useState("x");
+  const [typeManual, setTypeManual] = useState(false); // 種類を手動で選んだか
   const [url, setUrl] = useState("");
   const [label, setLabel] = useState("");
   const [desc, setDesc] = useState("");
+  const [preview, setPreview] = useState(false); // 編集/プレビュー トグル
 
-  const chans = me.channels;
   const isHeading = type === HEADING_TYPE;
 
   function resetForm() {
     setFormOpen(false);
     setEditingId(null);
     setType("x");
+    setTypeManual(false);
     setUrl("");
     setLabel("");
     setDesc("");
@@ -245,10 +251,19 @@ function LinksPane({
   function startEdit(c: Channel) {
     setEditingId(c.id!);
     setType(c.type);
+    setTypeManual(true); // 既存編集では自動判定で上書きしない
     setUrl(c.url);
     setLabel(c.label);
     setDesc(c.descr);
     setFormOpen(true);
+  }
+
+  // URL 入力で種類を自動判定（手動選択・見出し時は上書きしない）
+  function onUrlChange(v: string) {
+    setUrl(v);
+    if (!typeManual && !isHeading && v.trim()) {
+      setType(detectType(v));
+    }
   }
 
   function move(id: string, d: -1 | 1) {
@@ -303,89 +318,156 @@ function LinksPane({
     }
   }
 
+  // プレビュー（訪問者の見え方）
+  if (preview) {
+    const shown = chans.filter(
+      (c) => c.type === HEADING_TYPE || c.status === "live",
+    );
+    return (
+      <div className="xpane">
+        <PreviewToggle preview={preview} setPreview={setPreview} />
+        {shown.length ? (
+          shown.map((c, i) =>
+            c.type === HEADING_TYPE ? (
+              <h2 key={c.id ?? i} style={{ margin: "14px 4px 8px" }}>
+                {c.label}
+              </h2>
+            ) : (
+              <a
+                key={c.id ?? i}
+                className="plink"
+                href={safeUrl(c.url)}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <TypeBadge type={c.type} />
+                <div className="pmeta">
+                  <div className="lb2">{c.label || typeMeta(c.type).lb}</div>
+                  {c.descr && <div className="ds">{c.descr}</div>}
+                </div>
+                <span className="go">→</span>
+              </a>
+            ),
+          )
+        ) : (
+          <div className="empty">有効なリンクがありません。</div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="xpane">
+      <PreviewToggle preview={preview} setPreview={setPreview} />
       <div>
         {chans.length ? (
-          chans.map((c, i) => (
-            <div
-              key={c.id}
-              className={`chan ${c.status === "dead" ? "dead" : ""}`}
-              style={editingId === c.id ? { borderColor: "var(--em)" } : undefined}
-            >
-              <div className="mv">
-                <button
-                  disabled={i === 0}
-                  onClick={() => move(c.id!, -1)}
-                  aria-label="上へ"
-                >
-                  ▲
-                </button>
-                <button
-                  disabled={i === chans.length - 1}
-                  onClick={() => move(c.id!, 1)}
-                  aria-label="下へ"
-                >
-                  ▼
-                </button>
-              </div>
-              {c.type === HEADING_TYPE ? (
-                <span
-                  className="ic-badge"
-                  style={{
-                    background: "var(--eml)",
-                    color: "var(--emd)",
-                    fontWeight: 800,
-                    fontSize: 15,
-                  }}
-                >
-                  ¶
-                </span>
-              ) : (
-                <TypeBadge type={c.type} />
-              )}
+          chans.map((c, i) => {
+            const clicks = c.type !== HEADING_TYPE ? me.clicks[c.url] : undefined;
+            return (
               <div
-                className="meta"
-                style={{ cursor: "pointer" }}
-                onClick={() => startEdit(c)}
-                title="タップして編集"
+                key={c.id}
+                className={`chan ${c.status === "dead" ? "dead" : ""}`}
+                style={
+                  editingId === c.id ? { borderColor: "var(--em)" } : undefined
+                }
               >
+                <div className="mv">
+                  <button
+                    disabled={i === 0}
+                    onClick={() => move(c.id!, -1)}
+                    aria-label="上へ"
+                  >
+                    ▲
+                  </button>
+                  <button
+                    disabled={i === chans.length - 1}
+                    onClick={() => move(c.id!, 1)}
+                    aria-label="下へ"
+                  >
+                    ▼
+                  </button>
+                </div>
                 {c.type === HEADING_TYPE ? (
-                  <>
-                    <div className="lb">{c.label}</div>
-                    <div className="u" style={{ color: "var(--faint)" }}>
-                      見出し
-                    </div>
-                  </>
+                  <span
+                    className="ic-badge"
+                    style={{
+                      background: "var(--eml)",
+                      color: "var(--emd)",
+                      fontWeight: 800,
+                      fontSize: 15,
+                    }}
+                  >
+                    ¶
+                  </span>
                 ) : (
-                  <>
-                    <div className="lb">{c.label || typeMeta(c.type).lb}</div>
-                    <div className={`u ${c.status === "dead" ? "strike" : ""}`}>
-                      {c.url}
-                    </div>
-                    {c.descr && (
-                      <div className="u" style={{ color: "var(--emd)" }}>
-                        {c.descr}
-                      </div>
-                    )}
-                  </>
+                  <TypeBadge type={c.type} />
                 )}
-              </div>
-              {c.type !== HEADING_TYPE && (
-                <button
-                  className={`tog ${c.status}`}
-                  onClick={() => toggle(c.id!)}
+                <div
+                  className="meta"
+                  style={{ cursor: "pointer" }}
+                  onClick={() => startEdit(c)}
+                  title="タップして編集"
                 >
-                  {c.status === "live" ? "有効" : "停止"}
+                  {c.type === HEADING_TYPE ? (
+                    <>
+                      <div className="lb">{c.label}</div>
+                      <div className="u" style={{ color: "var(--faint)" }}>
+                        見出し
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="lb">
+                        {c.label || typeMeta(c.type).lb}
+                        {clicks ? (
+                          <span
+                            style={{
+                              color: "var(--muted)",
+                              fontWeight: 600,
+                              marginLeft: 8,
+                              fontSize: 11,
+                            }}
+                          >
+                            👆 {clicks}
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className={`u ${c.status === "dead" ? "strike" : ""}`}>
+                        {c.url}
+                      </div>
+                      {c.descr && (
+                        <div className="u" style={{ color: "var(--emd)" }}>
+                          {c.descr}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+                {c.type !== HEADING_TYPE && (
+                  <button
+                    className={`tog ${c.status}`}
+                    onClick={() => toggle(c.id!)}
+                  >
+                    {c.status === "live" ? "有効" : "停止"}
+                  </button>
+                )}
+                <button
+                  className="del"
+                  onClick={() => del(c.id!)}
+                  aria-label="削除"
+                >
+                  ×
                 </button>
-              )}
-              <button className="del" onClick={() => del(c.id!)} aria-label="削除">
-                ×
-              </button>
-            </div>
-          ))
+              </div>
+            );
+          })
         ) : (
-          <div className="empty">リンクを追加してください。</div>
+          <div className="empty">
+            <span className="big">🔗</span>
+            最初のリンクを追加しましょう。
+            <br />
+            X や YouTube のURLを貼るだけで種類は自動で判定されます。
+          </div>
         )}
       </div>
 
@@ -406,7 +488,13 @@ function LinksPane({
             {isHeading ? "（見出し）" : ""}
           </label>
           <div className="addrow">
-            <select value={type} onChange={(e) => setType(e.target.value)}>
+            <select
+              value={type}
+              onChange={(e) => {
+                setType(e.target.value);
+                setTypeManual(true);
+              }}
+            >
               {Object.entries(TYPES).map(([k, v]) => (
                 <option key={k} value={k}>
                   {v.lb}
@@ -418,8 +506,9 @@ function LinksPane({
               <input
                 className="plain"
                 value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                placeholder="https://..."
+                onChange={(e) => onUrlChange(e.target.value)}
+                placeholder="URLを貼り付け（種類は自動判定）"
+                inputMode="url"
               />
             )}
             {isHeading && (
@@ -460,6 +549,32 @@ function LinksPane({
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+/** 編集 / プレビュー（見え方）を切り替えるセグメント。 */
+function PreviewToggle({
+  preview,
+  setPreview,
+}: {
+  preview: boolean;
+  setPreview: (v: boolean) => void;
+}) {
+  return (
+    <div className="xtabs" style={{ borderTop: "none", marginTop: 0 }}>
+      <button
+        className={`xtab ${!preview ? "on" : ""}`}
+        onClick={() => setPreview(false)}
+      >
+        編集
+      </button>
+      <button
+        className={`xtab ${preview ? "on" : ""}`}
+        onClick={() => setPreview(true)}
+      >
+        見え方
+      </button>
     </div>
   );
 }

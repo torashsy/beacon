@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import {
   createAccount,
   deleteAccount as rpcDeleteAccount,
+  getClicks,
   getPrivateCal,
   getPublicPage,
   resetPass,
@@ -132,10 +133,15 @@ export function BeaconApp() {
       // 含まれるので、非公開分だけ追加取得する。失敗時は calLoaded=false で遅延ロードへ。
       const cal: CalMap = {};
       let calLoaded = false;
+      let clicks: Record<string, number> = {};
       (page?.cal ?? []).forEach((e) => (cal[e.d] = { memo: e.memo, pub: true }));
       try {
-        const privList = await getPrivateCal(db, handle, pass);
+        const [privList, clickMap] = await Promise.all([
+          getPrivateCal(db, handle, pass),
+          getClicks(db, handle, pass).catch(() => ({})),
+        ]);
         privList.forEach((e) => (cal[e.d] = { memo: e.memo, pub: false }));
+        clicks = clickMap;
         calLoaded = true;
       } catch {
         calLoaded = false;
@@ -145,6 +151,7 @@ export function BeaconApp() {
         channels: ensureIds(page?.channels ?? []),
         cal,
         calLoaded,
+        clicks,
       };
     },
     [db],

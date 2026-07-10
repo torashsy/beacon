@@ -238,6 +238,39 @@ grant execute on function get_private_cal(text,text)                            
 grant execute on function get_public_page(text)                                       to anon;
 grant execute on function delete_account(text,text)                                   to anon;
 
+-- ---- リンククリック数（本人だけが見られる簡易アナリティクス）----
+create table if not exists link_clicks (
+  handle text references accounts(handle) on delete cascade,
+  url    text not null,
+  n      bigint default 0,
+  primary key (handle, url)
+);
+alter table link_clicks enable row level security;
+revoke select on link_clicks from anon, authenticated;
+
+create or replace function bump_click(p_handle text, p_url text)
+returns void language plpgsql security definer as $$
+begin
+  if not exists (select 1 from accounts where handle = lower(p_handle)) then
+    return;
+  end if;
+  insert into link_clicks(handle, url, n)
+    values (lower(p_handle), p_url, 1)
+    on conflict (handle, url) do update set n = link_clicks.n + 1;
+end $$;
+
+create or replace function get_clicks(p_handle text, p_pass text)
+returns table(url text, n bigint) language plpgsql security definer as $$
+begin
+  if not _check_pass(p_handle, p_pass) then raise exception 'auth'; end if;
+  return query
+    select link_clicks.url, link_clicks.n
+    from link_clicks where handle = lower(p_handle);
+end $$;
+
+grant execute on function bump_click(text, text) to anon;
+grant execute on function get_clicks(text, text) to anon;
+
 -- ---- Storage（画像用: avatars バケット）----
 -- パス規約: avatars/{handle}/av.jpg, avatars/{handle}/bn.jpg
 -- バケット作成と anon 書込ポリシーは storage スキーマ（supabase_storage_admin 所有）
