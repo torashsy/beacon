@@ -209,20 +209,12 @@ grant execute on function delete_account(text,text)                             
 
 -- ---- Storage（画像用: avatars バケット）----
 -- パス規約: avatars/{handle}/av.jpg, avatars/{handle}/bn.jpg
--- 公開バケットを作成し、anon からの insert/update を許可する（本人パスの制限は
--- アプリ側の RPC 認証に委ねる簡易版）。ダッシュボードでの手動作成でも可（SETUP.md 手順3）。
-insert into storage.buckets (id, name, public)
-  values ('avatars', 'avatars', true)
-  on conflict (id) do update set public = true;
-
-drop policy if exists avatars_anon_insert on storage.objects;
-create policy avatars_anon_insert on storage.objects
-  for insert to anon with check (bucket_id = 'avatars');
-
-drop policy if exists avatars_anon_update on storage.objects;
-create policy avatars_anon_update on storage.objects
-  for update to anon using (bucket_id = 'avatars') with check (bucket_id = 'avatars');
--- select は public バケットのため自動で読める。
+-- バケット作成と anon 書込ポリシーは storage スキーマ（supabase_storage_admin 所有）
+-- への操作で、SQL Editor から直接 insert/create policy すると環境によっては
+-- 権限エラーになる。そのためこの schema.sql には含めず、SETUP.md 手順3で
+--   1) ダッシュボードで 'avatars'(public) バケットを作成
+--   2) supabase/storage-policies.sql を SQL Editor で実行（anon の insert/update 許可）
+-- の2段で設定する（本体スキーマの実行を安全に保つため分離）。
 
 -- フォローリストはサーバーに置かない（端末ローカル保存）。
 -- 発信者を横断的に検索・一覧するAPI/画面は絶対に実装しないこと。

@@ -29,23 +29,26 @@ npm run dev
 
 ## 3. Storage バケット作成（画像用）
 
-手順2で `schema.sql` を流していれば、`avatars` バケット（public）と anon の
-INSERT/UPDATE ポリシーは**自動で作成済み**です（`schema.sql` 末尾の Storage 節）。
-Storage → `avatars` が存在し public になっていることを確認するだけでOK。
+storage スキーマは `supabase_storage_admin` 所有で、SQL Editor から直接
+バケット insert / ポリシー作成すると権限エラーになる環境がある。そこで2段で行う:
 
-ダッシュボードで手動作成する場合:
+**3-1. バケット作成（ダッシュボード）**
 
 1. 左メニュー **Storage** → **New bucket**
 2. Name: `avatars` / **Public bucket をON** → 作成
-3. パス規約: `avatars/{handle}/av.jpg`（アイコン）, `avatars/{handle}/bn.jpg`（ヘッダー）
-   - アップロードは匿名（anon）から行うため、公開バケットの
-     **INSERT/UPDATE ポリシー**を anon に許可する:
-     - `insert`: `bucket_id = 'avatars'`（roles: anon, authenticated）
-     - `update`: `bucket_id = 'avatars'`（roles: anon, authenticated）
-     - `select`: 公開バケットなので自動で読める
+   - パス規約: `avatars/{handle}/av.jpg`（アイコン）, `avatars/{handle}/bn.jpg`（ヘッダー）
 
-   > より厳密にするなら、画像アップロードも RPC 化して service_role で
-   > 書く方式に寄せる。まずは上記の簡易版で動作確認 → 後で締める。
+**3-2. anon 書込ポリシー（SQL Editor）**
+
+`supabase/storage-policies.sql` の中身を **SQL Editor** に貼って **Run**。
+これで anon の `insert`/`update` が許可される（`select` は public バケットなので自動）。
+
+> `must be owner of table objects` 等が出る場合は、ダッシュボードの
+> Storage → `avatars` → **Policies** から同等のポリシーを作成:
+> operation `INSERT` / `UPDATE`、roles `anon`、expression `bucket_id = 'avatars'`。
+>
+> より厳密にするなら、画像アップロードも RPC 化して service_role で
+> 書く方式に寄せる。まずは上記の簡易版で動作確認 → 後で締める。
 
 ## 4. 環境変数
 
