@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Beacon — あなたのSNS、ぜんぶひとつに。",
+  title: "Beacon — あなたのSNS、全部ひとつに。",
   description:
-    "X・Instagram・LINEなど増え続けるSNSの連絡先をひとつにまとめる、あなた専用のハブページ。メール不要、IDとパスコードだけ。",
+    "X・Instagram・LINEなどの連絡先とイベント予定をひとつの公開ページに。メール不要、IDとパスコードだけ。",
 };
 
 export default function RootLayout({
