@@ -15,9 +15,22 @@ X(Twitter)風のUIで、**複数リンク**と**カレンダーメモ**をひと
 | `lib/beacon/storage.ts` | 画像リサイズ + Storage アップロード | ✅ 完成 |
 | `lib/beacon/types.ts` | ドメイン型 | ✅ 完成 |
 | `lib/supabase/{client,server}.ts` | Supabase クライアント | ✅ 完成 |
-| `app/page.tsx` | 認証 / プロフィール編集 | 🟡 スタブ（要移植） |
-| `app/[handle]/page.tsx` | 公開ページ + OGP | 🟡 最小実装（要移植） |
+| `app/page.tsx` → `components/beacon/*` | 認証 / プロフィール編集 / フォロー中 / 使い方 / プレビュー | ✅ 実装済み（beacon.html 移植） |
+| `app/[handle]/page.tsx` | 公開ページ + OGP | ✅ 実装済み（`PublicProfileCard` + フォロー島） |
 | `reference/beacon.html` | 完成デザイン兼仕様書 | 📖 参照専用 |
+
+### 実装メモ（デモからの本番化）
+
+- **セッション（方式a）**: パスコードはログイン中のみメモリ保持し、書込 RPC の
+  たびに渡す。`localStorage` にはハンドルのみ控え、リロード後は再ログインで
+  パスコードを入力する（平文パスコードは端末に残さない）。
+- **復旧コード**: 作成時に一度だけ表示。サーバーはハッシュのみ保持し、端末にも
+  平文を残さないため、**次回ログイン以降は再表示できない**（デモの再確認機能は
+  廃止）。忘れた場合の再設定には作成時に控えたコードが必要。
+- **画像**: 編集画面でタップ選択したファイルを `storage.ts` 経由で `avatars`
+  バケットへアップロード（`{handle}/av.jpg`・`{handle}/bn.jpg`）。DB には URL のみ。
+- **フォロー中**: 端末 `localStorage` のブックマークのみ。公開ページ `/@{handle}` の
+  「フォローする」も同様に端末内で完結し、サーバーへは何も送らない。
 
 ## はじめかた
 
