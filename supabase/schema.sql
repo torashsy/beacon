@@ -77,12 +77,16 @@ create policy pub_channels on channels for select using (true);
 drop policy if exists pub_calpub on cal_public;
 create policy pub_calpub on cal_public for select using (true);
 -- accounts / cal_private / auth_attempts は誰も直接読めない（RPC経由のみ）
-
--- RLS の select ポリシーに加えて、テーブルレベルの SELECT 権限も anon に付与する。
--- （PostgREST 経由の匿名読み取りには GRANT が必須。無いと permission denied になる）
-grant select on profiles   to anon, authenticated;
-grant select on channels   to anon, authenticated;
-grant select on cal_public to anon, authenticated;
+--
+-- 【重要・列挙防止】profiles / channels / cal_public には anon の直接 SELECT 権限を
+-- 与えない。PostgREST 経由の直接 select を許すと anon キー（公開）で
+-- `select * from profiles` により全ユーザーを一括取得（スクレイピング）できてしまい、
+-- 「横断的な一覧・検索を提供しない」という設計原則に反する。
+-- 公開ページは必ずハンドル指定の get_public_page(handle) 経由でのみ読む。
+-- （既に grant 済みの環境向けに明示的に revoke しておく）
+revoke select on profiles   from anon, authenticated;
+revoke select on channels   from anon, authenticated;
+revoke select on cal_public from anon, authenticated;
 
 -- ---- 認証ヘルパー ----
 create or replace function _check_pass(p_handle text, p_pass text)
@@ -190,6 +194,32 @@ begin
     from cal_private where handle=lower(p_handle);
 end $$;
 
+-- ---- RPC: 公開ページ取得（ハンドル1件のみ。列挙不可）----
+-- profiles/channels/cal_public への直接 select は許可していないため、
+-- 公開ページはこの security definer 関数でハンドルを1件指定して読む。
+create or replace function get_public_page(p_handle text)
+returns jsonb language sql security definer stable as $$
+  select case
+    when not exists (select 1 from profiles where handle = lower(p_handle))
+      then null
+    else jsonb_build_object(
+      'profile',
+        (select to_jsonb(p) from profiles p where p.handle = lower(p_handle)),
+      'channels',
+        coalesce(
+          (select jsonb_agg(to_jsonb(c) order by c.position, c.id)
+             from channels c where c.handle = lower(p_handle)),
+          '[]'::jsonb),
+      'cal',
+        coalesce(
+          (select jsonb_agg(jsonb_build_object('d', cp.d, 'memo', cp.memo)
+                             order by cp.d)
+             from cal_public cp where cp.handle = lower(p_handle)),
+          '[]'::jsonb)
+    )
+  end;
+$$;
+
 -- ---- RPC: アカウント削除（退会）----
 create or replace function delete_account(p_handle text, p_pass text)
 returns void language plpgsql security definer as $$
@@ -205,6 +235,7 @@ grant execute on function update_profile(text,text,text,text,text,int,text,text)
 grant execute on function save_channels(text,text,jsonb)                              to anon;
 grant execute on function save_cal(text,text,date,text,boolean)                       to anon;
 grant execute on function get_private_cal(text,text)                                  to anon;
+grant execute on function get_public_page(text)                                       to anon;
 grant execute on function delete_account(text,text)                                   to anon;
 
 -- ---- Storage（画像用: avatars バケット）----

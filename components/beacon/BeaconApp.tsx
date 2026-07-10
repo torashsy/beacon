@@ -6,9 +6,7 @@ import {
   createAccount,
   deleteAccount as rpcDeleteAccount,
   getPrivateCal,
-  getPublicCal,
-  getPublicChannels,
-  getPublicProfile,
+  getPublicPage,
   resetPass,
   saveCal as rpcSaveCal,
   saveChannels as rpcSaveChannels,
@@ -128,30 +126,23 @@ export function BeaconApp() {
   // ---- データ読み込み ----
   const loadMe = useCallback(
     async (handle: string, pass: string): Promise<Me> => {
-      const [profile, channels] = await Promise.all([
-        getPublicProfile(db, handle),
-        getPublicChannels(db, handle),
-      ]);
+      const page = await getPublicPage(db, handle);
       // カレンダーもログイン時に読み込んでおく（プレビュー/自己フォローの
-      // スナップショットが公開メモを正しく含むように）。失敗しても致命的でないため
-      // calLoaded=false のまま返し、カレンダータブ表示時の遅延ロードにフォールバックする。
-      let cal: CalMap = {};
+      // スナップショットが公開メモを正しく含むように）。公開分は get_public_page に
+      // 含まれるので、非公開分だけ追加取得する。失敗時は calLoaded=false で遅延ロードへ。
+      const cal: CalMap = {};
       let calLoaded = false;
+      (page?.cal ?? []).forEach((e) => (cal[e.d] = { memo: e.memo, pub: true }));
       try {
-        const [pubList, privList] = await Promise.all([
-          getPublicCal(db, handle),
-          getPrivateCal(db, handle, pass),
-        ]);
-        pubList.forEach((e) => (cal[e.d] = { memo: e.memo, pub: true }));
+        const privList = await getPrivateCal(db, handle, pass);
         privList.forEach((e) => (cal[e.d] = { memo: e.memo, pub: false }));
         calLoaded = true;
       } catch {
-        cal = {};
         calLoaded = false;
       }
       return {
-        profile: profile ?? emptyProfile(handle),
-        channels: ensureIds(channels),
+        profile: page?.profile ?? emptyProfile(handle),
+        channels: ensureIds(page?.channels ?? []),
         cal,
         calLoaded,
       };
@@ -281,12 +272,12 @@ export function BeaconApp() {
     if (!session || !me || me.calLoaded || calLoading.current) return;
     calLoading.current = true;
     try {
-      const [pubList, privList] = await Promise.all([
-        getPublicCal(db, session.handle),
+      const [page, privList] = await Promise.all([
+        getPublicPage(db, session.handle),
         getPrivateCal(db, session.handle, session.pass),
       ]);
       const cal: CalMap = {};
-      pubList.forEach((e) => (cal[e.d] = { memo: e.memo, pub: true }));
+      (page?.cal ?? []).forEach((e) => (cal[e.d] = { memo: e.memo, pub: true }));
       privList.forEach((e) => (cal[e.d] = { memo: e.memo, pub: false }));
       setMe((m) => (m ? { ...m, cal, calLoaded: true } : m));
     } catch {
