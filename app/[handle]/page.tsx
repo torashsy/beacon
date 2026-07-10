@@ -1,3 +1,4 @@
+import { cache } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -6,6 +7,15 @@ import {
   getPublicChannels,
   getPublicProfile,
 } from "@/lib/beacon/rpc";
+
+/**
+ * generateMetadata と PublicPage は同一リクエスト内で二度 profile を読む。
+ * React cache でリクエスト単位にメモ化し、Supabase への往復を1回にまとめる。
+ */
+const loadProfile = cache(async (handle: string) => {
+  const db = await createClient();
+  return getPublicProfile(db, handle);
+});
 import { toSnapshot } from "@/lib/beacon/follows";
 import {
   CreateYoursFooter,
@@ -37,8 +47,7 @@ export async function generateMetadata({
   const handle = normalizeHandleParam((await params).handle);
   if (!handle) return { title: "Beacon" };
 
-  const db = await createClient();
-  const profile = await getPublicProfile(db, handle);
+  const profile = await loadProfile(handle);
   if (!profile) return { title: "Beacon" };
 
   const title = `${profile.name || handle} · Beacon`;
@@ -64,10 +73,10 @@ export default async function PublicPage({
   const handle = normalizeHandleParam((await params).handle);
   if (!handle) notFound();
 
-  const db = await createClient();
-  const profile = await getPublicProfile(db, handle);
+  const profile = await loadProfile(handle);
   if (!profile) notFound();
 
+  const db = await createClient();
   const [channels, cal] = await Promise.all([
     getPublicChannels(db, handle),
     getPublicCal(db, handle),

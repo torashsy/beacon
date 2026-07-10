@@ -20,7 +20,6 @@ import type { CalMemo, Channel } from "@/lib/beacon/types";
 import { normalizeRecoveryCode } from "@/lib/beacon/format";
 import {
   addFollow,
-  isFollowing,
   K_HANDLE,
   loadFollows,
   removeFollow,
@@ -124,16 +123,33 @@ export function BeaconApp() {
 
   // ---- データ読み込み ----
   const loadMe = useCallback(
-    async (handle: string): Promise<Me> => {
+    async (handle: string, pass: string): Promise<Me> => {
       const [profile, channels] = await Promise.all([
         getPublicProfile(db, handle),
         getPublicChannels(db, handle),
       ]);
+      // カレンダーもログイン時に読み込んでおく（プレビュー/自己フォローの
+      // スナップショットが公開メモを正しく含むように）。失敗しても致命的でないため
+      // calLoaded=false のまま返し、カレンダータブ表示時の遅延ロードにフォールバックする。
+      let cal: CalMap = {};
+      let calLoaded = false;
+      try {
+        const [pubList, privList] = await Promise.all([
+          getPublicCal(db, handle),
+          getPrivateCal(db, handle, pass),
+        ]);
+        pubList.forEach((e) => (cal[e.d] = { memo: e.memo, pub: true }));
+        privList.forEach((e) => (cal[e.d] = { memo: e.memo, pub: false }));
+        calLoaded = true;
+      } catch {
+        cal = {};
+        calLoaded = false;
+      }
       return {
         profile: profile ?? emptyProfile(handle),
         channels: ensureIds(channels),
-        cal: {},
-        calLoaded: false,
+        cal,
+        calLoaded,
       };
     },
     [db],
@@ -154,7 +170,7 @@ export function BeaconApp() {
       setSession({ handle, pass });
       setRcPlain(rc);
       persistHandle(handle);
-      setMe(await loadMe(handle));
+      setMe(await loadMe(handle, pass));
       return rc;
     },
     [db, loadMe],
@@ -166,7 +182,7 @@ export function BeaconApp() {
       if (!ok) throw new Error("auth");
       setSession({ handle, pass });
       persistHandle(handle);
-      setMe(await loadMe(handle));
+      setMe(await loadMe(handle, pass));
       setView("profile");
       setNavTab("profile");
       setEditing(false);
@@ -400,7 +416,9 @@ export function BeaconApp() {
     );
   }
 
-  const selfFollowed = session ? isFollowing(session.handle) : false;
+  const selfFollowed = session
+    ? follows.some((f) => f.handle === session.handle)
+    : false;
 
   return (
     <>
