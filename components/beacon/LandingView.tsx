@@ -1,6 +1,7 @@
 "use client";
 
 import { PublicProfileCard, type PublicCardData } from "./PublicProfileCard";
+import { LegalFooter } from "./LegalFooter";
 
 /**
  * 未ログイン時のトップ（ランディング）。
@@ -82,6 +83,7 @@ export function LandingView({
       <div className="authswitch">
         すでにIDがある → <a onClick={onLogin}>ログイン</a>
       </div>
+      <LegalFooter />
     </section>
   );
 }

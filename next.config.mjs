@@ -33,6 +33,15 @@ const nextConfig = {
           },
         ],
       },
+      {
+        // 公開プロフィールは「検索されない」が核の約束のため、metadata の
+        // noindex に加えヘッダーでも二重に索引拒否する。
+        // /[handle] は単一セグメントなので繰り返しマッチャーは不要（"@" の
+        // 直後に "*" 付き繰り返しパラメータを置くと path-to-regexp が
+        // prefix/suffix を解決できずビルドエラーになるため単純な named param にする）。
+        source: "/@:handle",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+      },
     ];
   },
 };

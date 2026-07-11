@@ -55,13 +55,16 @@ export async function resetPass(
   recoveryCode: string,
   newPass: string,
 ): Promise<void> {
-  unwrap(
+  // reset_pass は boolean を返す（誤りカウンタの更新を確実にコミットさせるため、
+  // 誤りを例外にせず false で返す設計。詳細は launch-hardening-migration.sql）。
+  const ok = unwrap(
     await db.rpc("reset_pass", {
       p_handle: handle,
       p_rc: recoveryCode,
       p_new: newPass,
     }),
-  );
+  ) as boolean;
+  if (!ok) throw new Error("bad recovery code");
 }
 
 /** 復旧コードを再発行し、新しい平文コードを返す（要パスコード）。古い復旧コードは無効になる。 */
