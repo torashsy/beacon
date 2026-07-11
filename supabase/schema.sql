@@ -104,11 +104,40 @@ revoke select on profiles   from anon, authenticated;
 revoke select on channels   from anon, authenticated;
 revoke select on cal_public from anon, authenticated;
 
+-- ---- セッション（ログイン状態の保持）----
+-- ログイン成功時にサーバーが失効可能なトークン（'bst_' + 64桁hex）を発行し、
+-- 以後はそれで認証する（X/Instagram等と同じ方式）。パスコードは端末に保存しない。
+-- サーバーには sha256 ハッシュのみ保存。期限は30日スライド。
+create table if not exists sessions (
+  token_hash text primary key,
+  handle     text not null references accounts(handle) on delete cascade,
+  created_at timestamptz default now(),
+  expires_at timestamptz not null
+);
+create index if not exists sessions_handle_idx on sessions(handle);
+alter table sessions enable row level security;
+revoke all on sessions from anon, authenticated;
+
 -- ---- 認証ヘルパー ----
+-- p_pass はパスコードまたはセッショントークンの両方を受ける。
+-- トークン形式（'bst_'+64桁hex）に完全一致する文字列だけをトークンとして扱い、
+-- 'bst_' で始まるだけの文字列（本物のパスコードかもしれない）はパスコード検証へ。
 create or replace function _check_pass(p_handle text, p_pass text)
 returns boolean language plpgsql security definer as $$
 declare a record;
 begin
+  if p_pass ~ '^bst_[0-9a-f]{64}$' then
+    update sessions set expires_at = now() + interval '30 days'
+      where token_hash = encode(digest(p_pass, 'sha256'), 'hex')
+        and handle = lower(p_handle)
+        and expires_at > now();
+    -- トークン形式に完全一致する文字列はトークンとして最終判定する（不一致でも
+    -- パスコード検証へ落とさない）。落とすと期限切れトークンでの自動ログイン失敗が
+    -- ログイン失敗カウンタに積まれ、複数タブ起動などでロックを誤爆させてしまう。
+    -- 256bit空間の総当たりにカウンタは無意味なので、ここで数えない設計で問題ない。
+    return found;
+  end if;
+
   select * into a from auth_attempts where handle=lower(p_handle);
   if a.locked_til is not null and a.locked_til > now() then
     raise exception 'locked';
@@ -210,7 +239,39 @@ begin
     where handle=lower(p_handle);
   update accounts set pass_hash = crypt(p_new, gen_salt('bf')), updated_at=now()
     where handle=lower(p_handle);
+  -- パスコード再設定時は全セッションを失効させる（盗まれた端末の締め出し）
+  delete from sessions where handle=lower(p_handle);
   return true;
+end $$;
+
+-- ---- RPC: セッション発行/失効 ----
+create or replace function create_session(p_handle text, p_pass text)
+returns text language plpgsql security definer as $$
+declare tok text;
+begin
+  if not _check_pass(p_handle, p_pass) then raise exception 'auth'; end if;
+  delete from sessions where expires_at < now();  -- 期限切れの掃除（ついで）
+  tok := 'bst_' || encode(gen_random_bytes(32), 'hex');
+  insert into sessions(token_hash, handle, expires_at)
+    values (encode(digest(tok, 'sha256'), 'hex'), lower(p_handle),
+            now() + interval '30 days');
+  -- 1アカウントのセッションは新しい順に10個まで（トークンの無限蓄積を防ぐ）
+  delete from sessions
+    where handle = lower(p_handle)
+      and token_hash not in (
+        select token_hash from sessions
+        where handle = lower(p_handle)
+        order by created_at desc limit 10);
+  return tok;
+end $$;
+
+-- セッション失効（ログアウト）。トークン自体が本人性の証明なので追加認証は不要。
+create or replace function delete_session(p_handle text, p_token text)
+returns void language plpgsql security definer as $$
+begin
+  delete from sessions
+    where handle = lower(p_handle)
+      and token_hash = encode(digest(p_token, 'sha256'), 'hex');
 end $$;
 
 -- ---- RPC: プロフィール更新 ----
@@ -379,6 +440,8 @@ grant execute on function reissue_recovery(text,text)                           
 grant execute on function get_my_follows(text,text)                                   to anon;
 grant execute on function save_my_follows(text,text,jsonb)                            to anon;
 grant execute on function delete_account(text,text)                                   to anon;
+grant execute on function create_session(text,text)                                   to anon;
+grant execute on function delete_session(text,text)                                   to anon;
 
 -- ---- リンククリック数（本人だけが見られる簡易アナリティクス）----
 create table if not exists link_clicks (
