@@ -269,6 +269,7 @@ create or replace function save_cal(p_handle text, p_pass text,
 returns void language plpgsql security definer as $$
 begin
   if not _check_pass(p_handle,p_pass) then raise exception 'auth'; end if;
+  if length(coalesce(p_memo,'')) > 500 then raise exception 'memo too long'; end if;
   delete from cal_public  where handle=lower(p_handle) and d=p_date;
   delete from cal_private where handle=lower(p_handle) and d=p_date;
   if p_memo <> '' then
@@ -383,10 +384,20 @@ create table if not exists link_clicks (
 alter table link_clicks enable row level security;
 revoke select on link_clicks from anon, authenticated;
 
+-- bump_click は匿名・無制限に呼べる（公開ページ訪問者が踏むたび発火）。
+-- url がその handle の実在する channels.url と一致する場合のみカウントする。
+-- そうしないと、誰でも任意のURL文字列を送り続けて link_clicks の行数を
+-- 無制限に増やしたり（handle,url が主キーなので url を変えるだけで増殖する）、
+-- 偽のクリックを大量計上してクリック解析を偽装できてしまう。この制約により
+-- 行数は「そのユーザーのリンク件数以下」（save_channels の50件上限と合わせ
+-- て有限）に収まる。
 create or replace function bump_click(p_handle text, p_url text)
 returns void language plpgsql security definer as $$
 begin
-  if not exists (select 1 from accounts where handle = lower(p_handle)) then
+  if length(coalesce(p_url,'')) > 2000 then return; end if;
+  if not exists (
+    select 1 from channels where handle = lower(p_handle) and url = p_url
+  ) then
     return;
   end if;
   insert into link_clicks(handle, url, n)
