@@ -423,13 +423,19 @@ export function BeaconApp() {
     [db],
   );
 
-  // フォローの顔ぶれ（handle集合）が変わったら再チェック
+  // 起動時とフォローの顔ぶれ変更時に再チェック（他人がサーバー側で変えた分を検知）
   const followKey = follows.map((f) => f.handle).join(",");
   useEffect(() => {
     if (!followKey) return;
     void checkFollows(follows);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [followKey, checkFollows]);
+
+  // フォロー中タブを開くたびに最新を取り直す（相手の変更を掴むため）
+  useEffect(() => {
+    if (navTab === "follows" && follows.length) void checkFollows(follows);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navTab]);
 
   const followSelf = useCallback(() => {
     if (!me || !session) return;
