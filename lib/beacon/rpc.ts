@@ -79,7 +79,9 @@ export async function updateProfile(
   db: DB,
   handle: string,
   pass: string,
-  p: Pick<Profile, "name" | "bio" | "emoji" | "theme" | "av_url" | "bn_url">,
+  p: Pick<Profile, "name" | "bio" | "emoji" | "theme" | "av_url" | "bn_url"> & {
+    status?: string;
+  },
 ): Promise<void> {
   unwrap(
     await db.rpc("update_profile", {
@@ -91,6 +93,7 @@ export async function updateProfile(
       p_theme: p.theme,
       p_av: p.av_url,
       p_bn: p.bn_url,
+      p_status: p.status ?? null,
     }),
   );
 }

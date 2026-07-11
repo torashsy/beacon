@@ -23,6 +23,7 @@ export interface EditResult {
   bio: string;
   emoji: string;
   theme: number;
+  status: string;
   av: ImageEdit;
   bn: ImageEdit;
 }
@@ -43,6 +44,7 @@ export function ProfileEdit({
   const [bio, setBio] = useState(profile.bio);
   const [emoji, setEmoji] = useState(profile.emoji || EMOJIS[0]);
   const [theme, setTheme] = useState(profile.theme ?? 0);
+  const [status, setStatus] = useState(profile.status ?? "");
   const [av, setAv] = useState<ImageEdit>({ mode: "keep" });
   const [bn, setBn] = useState<ImageEdit>({ mode: "keep" });
   const [busy, setBusy] = useState(false);
@@ -85,7 +87,15 @@ export function ProfileEdit({
   async function save() {
     setBusy(true);
     try {
-      await onSave({ name: name.trim(), bio: bio.trim(), emoji, theme, av, bn });
+      await onSave({
+        name: name.trim(),
+        bio: bio.trim(),
+        emoji,
+        theme,
+        status: status.trim(),
+        av,
+        bn,
+      });
     } finally {
       setBusy(false);
     }
@@ -184,6 +194,15 @@ export function ProfileEdit({
               placeholder="自己紹介を追加"
             />
             <div className="ecount">{bio.length} / 200</div>
+          </div>
+          <div className="efield">
+            <div className="el">今のひとこと（近況）</div>
+            <input
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              maxLength={60}
+              placeholder="例: 今はInstagramが動いてます / DM開放中"
+            />
           </div>
           <label className="f">画像を使わない場合のアイコン</label>
           <div className="emojis">

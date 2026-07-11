@@ -16,7 +16,7 @@ export interface PublicCardData {
   handle: string;
   profile: Pick<
     Profile,
-    "name" | "bio" | "emoji" | "theme" | "av_url" | "bn_url"
+    "name" | "bio" | "emoji" | "theme" | "av_url" | "bn_url" | "status"
   >;
   channels: Channel[]; // live/dead 両方。ここで振り分ける
   pubcal: CalMemo[]; // 公開メモのみ
@@ -70,6 +70,22 @@ export function PublicProfileCard({
           <VerifiedBadge />
         </div>
         <div className="xid">@{handle}</div>
+        {profile.status && (
+          <div
+            style={{
+              marginTop: 10,
+              background: "var(--eml)",
+              border: "1px solid rgba(16,185,129,.3)",
+              borderRadius: 12,
+              padding: "8px 12px",
+              fontSize: 13,
+              fontWeight: 600,
+              color: "var(--emd)",
+            }}
+          >
+            💬 {profile.status}
+          </div>
+        )}
         {profile.bio && <div className="xbio">{profile.bio}</div>}
         <div className="xmeta">
           <span className="live" />
