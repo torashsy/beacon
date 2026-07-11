@@ -4,7 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
   createAccount,
+  createSession,
   deleteAccount as rpcDeleteAccount,
+  deleteSession,
   getClicks,
   getMyFollows,
   getPrivateCal,
@@ -24,9 +26,13 @@ import { addHandle, loadHandles, removeHandle } from "@/lib/beacon/accounts";
 import {
   clearTrustedDevice,
   getTrustedSession,
-  isTrustSupported,
-  trustDevice,
 } from "@/lib/beacon/deviceTrust";
+import {
+  clearStoredSession,
+  isSessionToken,
+  loadStoredSession,
+  storeSession,
+} from "@/lib/beacon/session";
 import {
   addFollow,
   diffFollow,
@@ -60,10 +66,13 @@ import {
  * Beacon クライアントアプリ本体。beacon.html の SPA を Next.js のクライアント
  * コンポーネントとして再構成したもの。
  *
- * セッション方式（合意済み: 方式a）:
- *   - パスコードは session state（メモリ）だけに持ち、localStorage には保存しない。
- *   - localStorage には handle のみ控え、リロード後は「ログイン」で再入力させる。
- *   - すべての書込RPCに毎回 session.pass を渡してサーバー検証する。
+ * セッション方式（セッショントークン）:
+ *   - ログイン成功時にサーバーが失効可能なトークンを発行し（create_session）、
+ *     既定でそれを localStorage に保持する（X/Instagram等と同じ「ログインしっぱなし」）。
+ *   - パスコードそのものは端末に保存しない。session.pass にはトークンが入り、
+ *     すべての書込RPCにそのまま渡してサーバー検証する（_check_pass が両方受ける）。
+ *   - 「ログイン状態を保持する」をオフにした場合はトークンを発行せず、
+ *     パスコードをメモリだけに持つ（リロードで再入力。旧方式aと同じ）。
  */
 
 type NavTab = "profile" | "follows" | "howto";
@@ -128,8 +137,9 @@ export function BeaconApp() {
 
   // 起動: フォロー一覧を読み込み、控えた handle があればログインのプリフィルに使う。
   // ログインは要求せず、ナビ（フォロー中/使い方）は最初から使える。
-  // 「この端末を信頼する」が有効な場合は、ここで自動ログインを試みる（失敗時は
-  // 信頼情報を捨てて通常のログイン画面にフォールバックする）。
+  // 保存済みセッショントークンがあれば自動ログインする（失効していれば捨てて
+  // 通常のログイン画面にフォールバック）。旧「この端末を信頼する」の保存が
+  // 残っていた場合は一度だけトークン方式へ移行し、旧保存は必ず破棄する。
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -147,12 +157,22 @@ export function BeaconApp() {
         setAuthInitialPane("login");
       }
 
-      const trusted = await getTrustedSession();
-      if (trusted && !cancelled) {
+      const saved = loadStoredSession();
+      if (saved && !cancelled) {
         try {
-          await doLogin(trusted.handle, trusted.pass, true);
+          await doLogin(saved.handle, saved.token, { silent: true });
         } catch {
-          clearTrustedDevice(); // 失効・削除済みアカウント等
+          clearStoredSession(); // 失効・削除済みアカウント等
+        }
+      } else {
+        const trusted = await getTrustedSession();
+        if (trusted && !cancelled) {
+          try {
+            await doLogin(trusted.handle, trusted.pass, { silent: true });
+          } catch {
+            /* 失効・削除済みアカウント等。移行せず捨てるだけ */
+          }
+          clearTrustedDevice(); // 成否によらず旧方式の保存は破棄（新方式へ片道移行）
         }
       }
       if (!cancelled) setBooting(false);
@@ -263,40 +283,62 @@ export function BeaconApp() {
   );
 
   // ---- 認証アクション ----
+  /**
+   * 認証成功後の秘密情報を確定する。remember 時はサーバーにセッショントークンを
+   * 発行させて端末に保持し、以後の全RPCにはパスコードでなくトークンを渡す。
+   * トークン発行に失敗してもログイン自体は成立させる（メモリのみ・旧方式a相当）。
+   */
+  const establishSession = useCallback(
+    async (handle: string, secret: string, remember: boolean): Promise<string> => {
+      if (isSessionToken(secret)) {
+        storeSession(handle, secret); // 自動ログイン時: 同じトークンを使い続ける
+        return secret;
+      }
+      if (!remember) return secret;
+      try {
+        const token = await createSession(db, handle, secret);
+        storeSession(handle, token);
+        return token;
+      } catch {
+        return secret;
+      }
+    },
+    [db],
+  );
+
   const doCreate = useCallback(
-    async (handle: string, pass: string): Promise<string> => {
+    async (handle: string, pass: string, remember = true): Promise<string> => {
       const rc = await createAccount(db, handle, pass);
-      setSession({ handle, pass });
+      const secret = await establishSession(handle, pass, remember);
+      setSession({ handle, pass: secret });
       setRcPlain(rc);
       persistHandle(handle);
-      setMe(await loadMe(handle, pass));
+      setMe(await loadMe(handle, secret));
       return rc;
     },
-    [db, loadMe],
+    [db, loadMe, establishSession],
   );
 
   const doLogin = useCallback(
-    async (handle: string, pass: string, silent = false): Promise<void> => {
+    async (
+      handle: string,
+      pass: string,
+      opts: { silent?: boolean; remember?: boolean } = {},
+    ): Promise<void> => {
+      const { silent = false, remember = true } = opts;
       const ok = await verifyLogin(db, handle, pass);
       if (!ok) throw new Error("auth");
-      setSession({ handle, pass });
+      const secret = await establishSession(handle, pass, remember);
+      setSession({ handle, pass: secret });
       persistHandle(handle);
-      setMe(await loadMe(handle, pass));
-      void syncFollowsFromServer(handle, pass); // 端末をまたいだフォロー一覧の統合
+      setMe(await loadMe(handle, secret));
+      void syncFollowsFromServer(handle, secret); // 端末をまたいだフォロー一覧の統合
       setOverlay("none");
       setNavTab("profile");
       setEditing(false);
       if (!silent) toast("ログインしました");
     },
-    [db, loadMe, toast, syncFollowsFromServer],
-  );
-
-  /** 「この端末を信頼する」チェック時に、認証成功後の handle/pass を暗号保存する。 */
-  const onTrustDevice = useCallback(
-    async (handle: string, pass: string): Promise<void> => {
-      await trustDevice(handle, pass);
-    },
-    [],
+    [db, loadMe, toast, syncFollowsFromServer, establishSession],
   );
 
   const doReset = useCallback(
@@ -315,12 +357,17 @@ export function BeaconApp() {
 
   const logout = useCallback(() => {
     const last = session?.handle ?? "";
+    // サーバー側のセッションも失効させる（ベストエフォート）
+    if (session && isSessionToken(session.pass)) {
+      void deleteSession(db, session.handle, session.pass).catch(() => {});
+    }
     setSession(null);
     setMe(null);
     setRcPlain(null);
     setEditing(false);
     setPreview(null);
-    clearTrustedDevice(); // 明示ログアウト時は「この端末を信頼する」も解除
+    clearStoredSession();
+    clearTrustedDevice(); // 旧方式の保存が残っていれば併せて解除
     try {
       window.localStorage.removeItem(K_HANDLE);
     } catch {
@@ -509,7 +556,8 @@ export function BeaconApp() {
       } catch {
         /* noop */
       }
-      clearTrustedDevice(); // 退会したアカウントの信頼情報は残さない
+      clearStoredSession(); // セッションはDB側でcascade削除済み。端末側も破棄
+      clearTrustedDevice(); // 旧方式の保存が残っていれば併せて破棄
       setKnownHandles(removeHandle(session.handle));
       setSession(null);
       setMe(null);
@@ -690,8 +738,6 @@ export function BeaconApp() {
             onReset={doReset}
             onEnter={enterAfterCreate}
             onBack={() => setOverlay("none")}
-            onTrustDevice={onTrustDevice}
-            trustSupported={isTrustSupported()}
             knownHandles={knownHandles}
             toast={toast}
           />

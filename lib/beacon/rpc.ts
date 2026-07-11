@@ -10,6 +10,8 @@ import {
  * supabase/schema.sql の RPC 群を型付きで呼ぶ薄いラッパー。
  * 設計原則（schema.sql 冒頭コメント）:
  *   - パスコード検証はすべてサーバー側 RPC。書込 RPC は毎回 p_pass を要求する。
+ *     p_pass にはパスコードの代わりにセッショントークン（create_session が発行、
+ *     'bst_' 始まり）も渡せる（_check_pass が両方受ける）。
  *   - 横断検索・一覧・レコメンドAPIは絶対に作らない（異性紹介事業の回避）。
  *
  * エラーは Postgres の raise exception がそのまま code/message で返る。
@@ -46,6 +48,29 @@ export async function verifyLogin(
   return unwrap(
     await db.rpc("verify_login", { p_handle: handle, p_pass: pass }),
   ) as boolean;
+}
+
+/**
+ * セッショントークンを発行（要認証）。以後の全RPCに pass の代わりに渡せる。
+ * 期限は30日スライド。パスコード再設定で全セッションが失効する。
+ */
+export async function createSession(
+  db: DB,
+  handle: string,
+  pass: string,
+): Promise<string> {
+  return unwrap(
+    await db.rpc("create_session", { p_handle: handle, p_pass: pass }),
+  ) as string;
+}
+
+/** セッショントークンを失効させる（ログアウト時）。 */
+export async function deleteSession(
+  db: DB,
+  handle: string,
+  token: string,
+): Promise<void> {
+  unwrap(await db.rpc("delete_session", { p_handle: handle, p_token: token }));
 }
 
 /** 復旧コードでパスコード再設定。 */

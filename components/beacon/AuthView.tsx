@@ -25,25 +25,23 @@ export function AuthView({
   onReset,
   onEnter,
   onBack,
-  onTrustDevice,
-  trustSupported,
   knownHandles = [],
   toast,
 }: {
   initialHandle: string;
   initialPane: "create" | "login";
-  /** 成功時は復旧コード（平文）を返す。 */
-  onCreate: (handle: string, pass: string) => Promise<string>;
-  onLogin: (handle: string, pass: string) => Promise<void>;
+  /** 成功時は復旧コード（平文）を返す。remember でログイン状態を保持する。 */
+  onCreate: (handle: string, pass: string, remember: boolean) => Promise<string>;
+  onLogin: (
+    handle: string,
+    pass: string,
+    opts: { remember: boolean },
+  ) => Promise<void>;
   onReset: (handle: string, code: string, newPass: string) => Promise<void>;
   /** 復旧コードを控えたあとアプリへ入る。 */
   onEnter: () => void;
   /** ランディングへ戻る（作成/ログイン画面のみ表示）。 */
   onBack?: () => void;
-  /** 「この端末を信頼する」が選ばれた時にパスコードを端末に暗号保存する。 */
-  onTrustDevice: (handle: string, pass: string) => Promise<void>;
-  /** Web Crypto が使えない環境ではチェックボックス自体を出さない。 */
-  trustSupported: boolean;
   /** この端末で使ったID（複数プロフィールの切替チップ）。 */
   knownHandles?: string[];
   toast: ToastFn;
@@ -68,7 +66,9 @@ export function AuthView({
         ? { t: "6文字以上にしてください", cls: "no" }
         : { t: "OK", cls: "ok" };
   const canCreate = cClean.length >= 3 && cPass.length >= 6 && !cBusy;
-  const [cTrust, setCTrust] = useState(false);
+  // ログイン状態の保持（サーバー発行のセッショントークンを端末に保存）。
+  // X/Instagram等と同じ体験を既定にするためデフォルトON。共有PC向けにオフにできる。
+  const [cTrust, setCTrust] = useState(true);
 
   const [rc, setRc] = useState("");
   const [rcSaved, setRcSaved] = useState(false);
@@ -78,9 +78,7 @@ export function AuthView({
     if (!canCreate) return;
     setCBusy(true);
     try {
-      const passAtSubmit = cPass;
-      const code = await onCreate(cClean, passAtSubmit);
-      if (cTrust) await onTrustDevice(cClean, passAtSubmit);
+      const code = await onCreate(cClean, cPass, cTrust);
       setRc(code);
       setCPass("");
       setPane("recovery");
@@ -96,7 +94,7 @@ export function AuthView({
   const [lPass, setLPass] = useState("");
   const [lHint, setLHint] = useState("");
   const [lBusy, setLBusy] = useState(false);
-  const [lTrust, setLTrust] = useState(false);
+  const [lTrust, setLTrust] = useState(true);
   async function submitLogin() {
     const h = cleanHandle(lId);
     if (!h || !lPass) {
@@ -106,9 +104,7 @@ export function AuthView({
     setLBusy(true);
     setLHint("");
     try {
-      const passAtSubmit = lPass;
-      await onLogin(h, passAtSubmit);
-      if (lTrust) await onTrustDevice(h, passAtSubmit);
+      await onLogin(h, lPass, { remember: lTrust });
       setLPass("");
     } catch (e) {
       setLHint(authErrorMessage(e));
@@ -185,18 +181,16 @@ export function AuthView({
               onKeyDown={(e) => e.key === "Enter" && submitCreate()}
             />
             <div className={`hint ${passHint.cls}`}>{passHint.t}</div>
-            {trustSupported && (
-              <label className="chk">
-                <input
-                  type="checkbox"
-                  checked={cTrust}
-                  onChange={(e) => setCTrust(e.target.checked)}
-                />
-                <span>
-                  この端末を信頼する（次回から自動ログイン。共有PCでは使わないでください）
-                </span>
-              </label>
-            )}
+            <label className="chk">
+              <input
+                type="checkbox"
+                checked={cTrust}
+                onChange={(e) => setCTrust(e.target.checked)}
+              />
+              <span>
+                ログイン状態を保持する（共有PCではオフにしてください）
+              </span>
+            </label>
             <button
               className="btn sig"
               disabled={!canCreate}
@@ -301,18 +295,16 @@ export function AuthView({
               onKeyDown={(e) => e.key === "Enter" && submitLogin()}
             />
             <div className="hint no">{lHint}</div>
-            {trustSupported && (
-              <label className="chk">
-                <input
-                  type="checkbox"
-                  checked={lTrust}
-                  onChange={(e) => setLTrust(e.target.checked)}
-                />
-                <span>
-                  この端末を信頼する（次回から自動ログイン。共有PCでは使わないでください）
-                </span>
-              </label>
-            )}
+            <label className="chk">
+              <input
+                type="checkbox"
+                checked={lTrust}
+                onChange={(e) => setLTrust(e.target.checked)}
+              />
+              <span>
+                ログイン状態を保持する（共有PCではオフにしてください）
+              </span>
+            </label>
             <button className="btn sig" disabled={lBusy} onClick={submitLogin}>
               {lBusy ? "確認中…" : "ログイン"}
             </button>
