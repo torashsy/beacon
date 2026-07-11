@@ -17,9 +17,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 const BUCKET = "avatars";
 
-export type ImageKind = "av" | "bn";
+export type ImageKind = "av" | "bn" | "thumb";
 
-const MAX_EDGE: Record<ImageKind, number> = { av: 256, bn: 800 };
+const MAX_EDGE: Record<ImageKind, number> = { av: 256, bn: 800, thumb: 200 };
 
 /** File を受け取り、長辺を上限までリサイズして JPEG Blob を返す。 */
 export async function resizeToJpeg(file: File, kind: ImageKind): Promise<Blob> {

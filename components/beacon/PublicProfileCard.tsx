@@ -3,7 +3,7 @@ import type { CalMemo, Channel, Profile } from "@/lib/beacon/types";
 import { grad, HEADING_TYPE, typeMeta } from "@/lib/beacon/constants";
 import { fmtMd } from "@/lib/beacon/format";
 import { safeUrl } from "@/lib/beacon/safe";
-import { TypeBadge, VerifiedBadge } from "./icons";
+import { LinkThumb, VerifiedBadge } from "./icons";
 import { TrackedLink } from "./TrackedLink";
 
 /**
@@ -105,7 +105,7 @@ export function PublicProfileCard({
                 rawUrl={c.url}
                 trackHandle={trackHandle}
               >
-                <TypeBadge type={c.type} />
+                <LinkThumb type={c.type} img={c.img_url} />
                 <div className="pmeta">
                   <div className="lb2">{c.label || typeMeta(c.type).lb}</div>
                   {c.descr && <div className="ds">{c.descr}</div>}

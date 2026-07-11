@@ -36,7 +36,8 @@ create table if not exists channels (
   label    text default '',
   descr    text default '',
   status   text default 'live' check (status in ('live','dead')),
-  position int  default 0
+  position int  default 0,
+  img_url  text default ''                -- リンク個別サムネイル（Storage の公開URL）
 );
 
 -- 公開カレンダー（pub=true のメモのみこのテーブルに置く。非公開メモは別テーブル）
@@ -162,10 +163,11 @@ returns void language plpgsql security definer as $$
 begin
   if not _check_pass(p_handle,p_pass) then raise exception 'auth'; end if;
   delete from channels where handle=lower(p_handle);
-  insert into channels(handle,type,url,label,descr,status,position)
+  insert into channels(handle,type,url,label,descr,status,position,img_url)
   select lower(p_handle), c->>'type', c->>'url',
          coalesce(c->>'label',''), coalesce(c->>'desc',''),
-         coalesce(c->>'status','live'), (row_number() over ())::int
+         coalesce(c->>'status','live'), (row_number() over ())::int,
+         coalesce(c->>'img','')
   from jsonb_array_elements(p_channels) c;
   update accounts set updated_at=now() where handle=lower(p_handle);
 end $$;

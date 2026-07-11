@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Channel } from "@/lib/beacon/types";
 import {
   grad,
@@ -13,7 +13,7 @@ import { dkey } from "@/lib/beacon/format";
 import { safeUrl } from "@/lib/beacon/safe";
 import { generateShareCard } from "@/lib/beacon/shareCard";
 import { cryptoId, type Me, type ToastFn } from "./appTypes";
-import { TypeBadge, VerifiedBadge } from "./icons";
+import { LinkThumb, VerifiedBadge } from "./icons";
 
 /**
  * プロフィール表示 + 編集タブ（リンク / カレンダー）。beacon.html の prof-view を移植し、
@@ -30,6 +30,7 @@ export function ProfileView({
   onSaveChannels,
   onSaveCal,
   onLoadCal,
+  onUploadThumb,
   toast,
 }: {
   me: Me;
@@ -40,6 +41,7 @@ export function ProfileView({
   onSaveChannels: (next: Channel[]) => Promise<boolean>;
   onSaveCal: (date: string, memo: string, pub: boolean) => Promise<boolean>;
   onLoadCal: () => void;
+  onUploadThumb: (file: File) => Promise<string>;
   toast: ToastFn;
 }) {
   const [tab, setTab] = useState<"links" | "cal">("links");
@@ -201,7 +203,12 @@ export function ProfileView({
         </div>
 
         {tab === "links" ? (
-          <LinksPane me={me} onSaveChannels={onSaveChannels} toast={toast} />
+          <LinksPane
+            me={me}
+            onSaveChannels={onSaveChannels}
+            onUploadThumb={onUploadThumb}
+            toast={toast}
+          />
         ) : (
           <CalendarPane me={me} onSaveCal={onSaveCal} toast={toast} />
         )}
@@ -258,10 +265,12 @@ export function ProfileView({
 function LinksPane({
   me,
   onSaveChannels,
+  onUploadThumb,
   toast,
 }: {
   me: Me;
   onSaveChannels: (next: Channel[]) => Promise<boolean>;
+  onUploadThumb: (file: File) => Promise<string>;
   toast: ToastFn;
 }) {
   const chans = me.channels;
@@ -273,7 +282,10 @@ function LinksPane({
   const [url, setUrl] = useState("");
   const [label, setLabel] = useState("");
   const [desc, setDesc] = useState("");
+  const [img, setImg] = useState(""); // 個別サムネイルURL
+  const [imgBusy, setImgBusy] = useState(false);
   const [preview, setPreview] = useState(false); // 編集/プレビュー トグル
+  const thumbInput = useRef<HTMLInputElement>(null);
 
   const isHeading = type === HEADING_TYPE;
 
@@ -285,6 +297,7 @@ function LinksPane({
     setUrl("");
     setLabel("");
     setDesc("");
+    setImg("");
   }
 
   function startEdit(c: Channel) {
@@ -294,7 +307,22 @@ function LinksPane({
     setUrl(c.url);
     setLabel(c.label);
     setDesc(c.descr);
+    setImg(c.img_url ?? "");
     setFormOpen(true);
+  }
+
+  async function pickThumb(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setImgBusy(true);
+    try {
+      setImg(await onUploadThumb(file));
+    } catch {
+      toast("画像をアップロードできませんでした");
+    } finally {
+      setImgBusy(false);
+    }
   }
 
   // URL 入力で種類を自動判定（手動選択・見出し時は上書きしない）
@@ -347,6 +375,7 @@ function LinksPane({
       url: isHeading ? "" : u,
       label: lb,
       descr: isHeading ? "" : desc.trim(),
+      img_url: isHeading ? "" : img,
     };
     const next: Channel[] = editingId
       ? chans.map((c) => (c.id === editingId ? { ...c, ...fields } : c))
@@ -379,7 +408,7 @@ function LinksPane({
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <TypeBadge type={c.type} />
+                <LinkThumb type={c.type} img={c.img_url} />
                 <div className="pmeta">
                   <div className="lb2">{c.label || typeMeta(c.type).lb}</div>
                   {c.descr && <div className="ds">{c.descr}</div>}
@@ -439,7 +468,7 @@ function LinksPane({
                     ¶
                   </span>
                 ) : (
-                  <TypeBadge type={c.type} />
+                  <LinkThumb type={c.type} img={c.img_url} />
                 )}
                 <div
                   className="meta"
@@ -578,6 +607,36 @@ function LinksPane({
                 placeholder="例: DMはこちらが早いです"
                 maxLength={40}
               />
+              <label className="f">サムネイル画像（任意）</label>
+              <input
+                ref={thumbInput}
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={pickThumb}
+              />
+              <div
+                style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 4 }}
+              >
+                <LinkThumb type={type} img={img} />
+                <button
+                  type="button"
+                  className="pill line"
+                  disabled={imgBusy}
+                  onClick={() => thumbInput.current?.click()}
+                >
+                  {imgBusy ? "アップロード中…" : img ? "画像を変更" : "画像を選ぶ"}
+                </button>
+                {img && (
+                  <button
+                    type="button"
+                    className="pill line"
+                    onClick={() => setImg("")}
+                  >
+                    削除
+                  </button>
+                )}
+              </div>
             </>
           )}
           <button className="btn sig" onClick={submit}>
