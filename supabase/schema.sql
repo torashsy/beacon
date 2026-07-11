@@ -151,6 +151,16 @@ begin
   end if;
 
   if length(p_pass) < 6 then raise exception 'pass too short'; end if;
+  -- ハンドルの形式・長さはクライアント(cleanHandle)が整形するが、RPCを直接
+  -- 呼べば無検証で任意の文字列を通せてしまうため、サーバー側でも検証する。
+  if lower(p_handle) !~ '^[a-z0-9_]{3,20}$' then raise exception 'invalid handle'; end if;
+  if lower(p_handle) = any(array[
+    'admin','administrator','official','beacon','support','help','staff',
+    'moderator','mod','root','api','system','null','undefined','terms',
+    'privacy','robots','test','www','mail'
+  ]) then
+    raise exception 'taken';
+  end if;
   if exists(select 1 from accounts where handle=lower(p_handle)) then
     raise exception 'taken';
   end if;
@@ -210,6 +220,14 @@ create or replace function update_profile(p_handle text, p_pass text,
 returns void language plpgsql security definer as $$
 begin
   if not _check_pass(p_handle,p_pass) then raise exception 'auth'; end if;
+  -- クライアントの maxLength は UI 制限にすぎず、RPCを直接呼べば無制限に
+  -- なるため、DB/表示の肥大化を防ぐ寛容な上限をサーバー側にも設ける。
+  if length(coalesce(p_name,''))   > 100  then raise exception 'name too long'; end if;
+  if length(coalesce(p_bio,''))    > 1000 then raise exception 'bio too long'; end if;
+  if length(coalesce(p_status,'')) > 200  then raise exception 'status too long'; end if;
+  if length(coalesce(p_av,'')) > 2000 or length(coalesce(p_bn,'')) > 2000 then
+    raise exception 'image url too long';
+  end if;
   update profiles set name=p_name, bio=p_bio, emoji=p_emoji, theme=p_theme,
     av_url=p_av, bn_url=p_bn,
     status = coalesce(p_status, status),
@@ -224,6 +242,17 @@ create or replace function save_channels(p_handle text, p_pass text, p_channels 
 returns void language plpgsql security definer as $$
 begin
   if not _check_pass(p_handle,p_pass) then raise exception 'auth'; end if;
+  if jsonb_typeof(p_channels) <> 'array' then raise exception 'invalid channels'; end if;
+  if jsonb_array_length(p_channels) > 50 then raise exception 'too many channels'; end if;
+  if exists (
+    select 1 from jsonb_array_elements(p_channels) c
+    where length(coalesce(c->>'url',''))   > 2000
+       or length(coalesce(c->>'label','')) > 100
+       or length(coalesce(c->>'desc',''))  > 300
+       or length(coalesce(c->>'img',''))   > 2000
+  ) then
+    raise exception 'field too long';
+  end if;
   delete from channels where handle=lower(p_handle);
   insert into channels(handle,type,url,label,descr,status,position,img_url)
   select lower(p_handle), c->>'type', c->>'url',
