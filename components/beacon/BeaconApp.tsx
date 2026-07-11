@@ -6,9 +6,12 @@ import {
   createAccount,
   deleteAccount as rpcDeleteAccount,
   getClicks,
+  getMyFollows,
   getPrivateCal,
   getPublicPage,
+  reissueRecovery,
   resetPass,
+  saveMyFollows,
   saveCal as rpcSaveCal,
   saveChannels as rpcSaveChannels,
   updateProfile,
@@ -18,6 +21,12 @@ import { uploadImage } from "@/lib/beacon/storage";
 import type { CalMemo, Channel } from "@/lib/beacon/types";
 import { normalizeRecoveryCode } from "@/lib/beacon/format";
 import { addHandle, loadHandles, removeHandle } from "@/lib/beacon/accounts";
+import {
+  clearTrustedDevice,
+  getTrustedSession,
+  isTrustSupported,
+  trustDevice,
+} from "@/lib/beacon/deviceTrust";
 import {
   addFollow,
   diffFollow,
@@ -35,9 +44,6 @@ import {
   type Me,
   type Session,
 } from "./appTypes";
-
-type NavTab = "profile" | "follows" | "howto";
-type Overlay = "none" | "auth" | "public";
 import { AuthView } from "./AuthView";
 import { LandingView } from "./LandingView";
 import { ProfileView } from "./ProfileView";
@@ -59,6 +65,9 @@ import {
  *   - localStorage には handle のみ控え、リロード後は「ログイン」で再入力させる。
  *   - すべての書込RPCに毎回 session.pass を渡してサーバー検証する。
  */
+
+type NavTab = "profile" | "follows" | "howto";
+type Overlay = "none" | "auth" | "public";
 
 function publicMemos(cal: CalMap): CalMemo[] {
   return Object.entries(cal)
@@ -99,6 +108,11 @@ export function BeaconApp() {
   // この端末で使ったID一覧（複数プロフィールの切替チップ用）
   const [knownHandles, setKnownHandles] = useState<string[]>([]);
 
+  // 保存状態（「保存したか分からない」不安を解消するための常時表示インジケータ）
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">(
+    "idle",
+  );
+
   // トースト
   const [toastMsg, setToastMsg] = useState("");
   const [toastOn, setToastOn] = useState(false);
@@ -114,21 +128,40 @@ export function BeaconApp() {
 
   // 起動: フォロー一覧を読み込み、控えた handle があればログインのプリフィルに使う。
   // ログインは要求せず、ナビ（フォロー中/使い方）は最初から使える。
+  // 「この端末を信頼する」が有効な場合は、ここで自動ログインを試みる（失敗時は
+  // 信頼情報を捨てて通常のログイン画面にフォールバックする）。
   useEffect(() => {
-    const loaded = loadFollows();
-    setFollows(loaded);
-    setKnownHandles(loadHandles());
-    let stored = "";
-    try {
-      stored = window.localStorage.getItem(K_HANDLE) ?? "";
-    } catch {
-      /* noop */
-    }
-    if (stored) {
-      setAuthInitialHandle(stored);
-      setAuthInitialPane("login");
-    }
-    setBooting(false);
+    let cancelled = false;
+    (async () => {
+      const loaded = loadFollows();
+      setFollows(loaded);
+      setKnownHandles(loadHandles());
+      let stored = "";
+      try {
+        stored = window.localStorage.getItem(K_HANDLE) ?? "";
+      } catch {
+        /* noop */
+      }
+      if (stored) {
+        setAuthInitialHandle(stored);
+        setAuthInitialPane("login");
+      }
+
+      const trusted = await getTrustedSession();
+      if (trusted && !cancelled) {
+        try {
+          await doLogin(trusted.handle, trusted.pass, true);
+        } catch {
+          clearTrustedDevice(); // 失効・削除済みアカウント等
+        }
+      }
+      if (!cancelled) setBooting(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // 初回マウント時のみ実行（doLogin は同一レンダー内で以降に定義される）
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ---- データ読み込み ----
@@ -173,6 +206,62 @@ export function BeaconApp() {
     setKnownHandles(addHandle(handle)); // 切替チップ用に控える
   }
 
+  // フォロー中一覧はサーバーにも保存する（本人のみ読める私的ブックマーク。
+  // 横断一覧APIにはしない）。端末を変えても一覧が残るようにする対策。
+  // doLogin の依存配列より前で参照するため、doCreate/doLogin より前に定義する。
+  const pushFollowsToServer = useCallback(
+    (list: FollowSnapshot[]) => {
+      if (!session) return;
+      void saveMyFollows(
+        db,
+        session.handle,
+        session.pass,
+        list.map((f) => f.handle),
+      ).catch(() => {
+        /* ベストエフォート。失敗しても端末のローカル一覧はそのまま使える */
+      });
+    },
+    [db, session],
+  );
+
+  /** ログイン直後にサーバーの一覧を取り込み、端末側だけの分もサーバーへ反映する。 */
+  const syncFollowsFromServer = useCallback(
+    async (handle: string, pass: string) => {
+      try {
+        const targets = await getMyFollows(db, handle, pass);
+        const local = loadFollows();
+        const localHandles = new Set(local.map((f) => f.handle));
+        const missing = targets.filter((t) => !localHandles.has(t));
+        let merged = local;
+        if (missing.length) {
+          const fetched = await Promise.all(
+            missing.map(async (h) => {
+              try {
+                const page = await getPublicPage(db, h);
+                return page
+                  ? toSnapshot(page.profile, page.channels, page.cal)
+                  : null;
+              } catch {
+                return null;
+              }
+            }),
+          );
+          for (const snap of fetched) if (snap) merged = addFollow(snap);
+          setFollows(merged);
+        }
+        void saveMyFollows(
+          db,
+          handle,
+          pass,
+          merged.map((f) => f.handle),
+        ).catch(() => {});
+      } catch {
+        /* サーバー同期に失敗しても端末のローカル一覧はそのまま使える */
+      }
+    },
+    [db],
+  );
+
   // ---- 認証アクション ----
   const doCreate = useCallback(
     async (handle: string, pass: string): Promise<string> => {
@@ -187,18 +276,27 @@ export function BeaconApp() {
   );
 
   const doLogin = useCallback(
-    async (handle: string, pass: string): Promise<void> => {
+    async (handle: string, pass: string, silent = false): Promise<void> => {
       const ok = await verifyLogin(db, handle, pass);
       if (!ok) throw new Error("auth");
       setSession({ handle, pass });
       persistHandle(handle);
       setMe(await loadMe(handle, pass));
+      void syncFollowsFromServer(handle, pass); // 端末をまたいだフォロー一覧の統合
       setOverlay("none");
       setNavTab("profile");
       setEditing(false);
-      toast("ログインしました");
+      if (!silent) toast("ログインしました");
     },
-    [db, loadMe, toast],
+    [db, loadMe, toast, syncFollowsFromServer],
+  );
+
+  /** 「この端末を信頼する」チェック時に、認証成功後の handle/pass を暗号保存する。 */
+  const onTrustDevice = useCallback(
+    async (handle: string, pass: string): Promise<void> => {
+      await trustDevice(handle, pass);
+    },
+    [],
   );
 
   const doReset = useCallback(
@@ -222,6 +320,7 @@ export function BeaconApp() {
     setRcPlain(null);
     setEditing(false);
     setPreview(null);
+    clearTrustedDevice(); // 明示ログアウト時は「この端末を信頼する」も解除
     try {
       window.localStorage.removeItem(K_HANDLE);
     } catch {
@@ -240,12 +339,19 @@ export function BeaconApp() {
   }, []);
 
   // ---- 書込ヘルパー ----
+  // 「保存したか分からない」不安への対策: 全ての書込を通し、状態を常時インジケータに反映する。
+  const saveStatusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const runWrite = useCallback(
     async (fn: () => Promise<unknown>): Promise<boolean> => {
+      setSaveStatus("saving");
       try {
         await fn();
+        setSaveStatus("saved");
+        if (saveStatusTimer.current) clearTimeout(saveStatusTimer.current);
+        saveStatusTimer.current = setTimeout(() => setSaveStatus("idle"), 3000);
         return true;
       } catch (e) {
+        setSaveStatus("error");
         toast(writeErrorMessage(e));
         if (String((e as { message?: string })?.message ?? e).includes("auth")) {
           logout();
@@ -313,6 +419,7 @@ export function BeaconApp() {
     async (edit: EditResult): Promise<void> => {
       if (!session || !me) return;
       const prof = me.profile;
+      setSaveStatus("saving");
       try {
         let av_url = prof.av_url;
         let bn_url = prof.bn_url;
@@ -340,8 +447,12 @@ export function BeaconApp() {
         await updateProfile(db, session.handle, session.pass, nextProfile);
         setMe((m) => (m ? { ...m, profile: nextProfile } : m));
         setEditing(false);
+        setSaveStatus("saved");
+        if (saveStatusTimer.current) clearTimeout(saveStatusTimer.current);
+        saveStatusTimer.current = setTimeout(() => setSaveStatus("idle"), 3000);
         toast("保存しました");
       } catch (e) {
+        setSaveStatus("error");
         toast(writeErrorMessage(e));
         if (
           String((e as { message?: string })?.message ?? e).includes("auth")
@@ -373,6 +484,14 @@ export function BeaconApp() {
     }
   }, [rcPlain, toast]);
 
+  /** 復旧コードの再発行（要パスコード）。古いコードは無効になり新しいものだけ使える。 */
+  const reissueRc = useCallback(async (): Promise<string> => {
+    if (!session) throw new Error("no session");
+    const rc = await reissueRecovery(db, session.handle, session.pass);
+    setRcPlain(rc); // 今後 showRc でも直近発行分を確認できるようにする
+    return rc;
+  }, [db, session]);
+
   const doDeleteAccount = useCallback(async () => {
     if (!session) return;
     if (
@@ -390,6 +509,7 @@ export function BeaconApp() {
       } catch {
         /* noop */
       }
+      clearTrustedDevice(); // 退会したアカウントの信頼情報は残さない
       setKnownHandles(removeHandle(session.handle));
       setSession(null);
       setMe(null);
@@ -462,24 +582,32 @@ export function BeaconApp() {
       toSnapshot(me.profile, me.channels, publicMemos(me.cal)),
     );
     setFollows(next);
+    pushFollowsToServer(next);
     toast("フォローしました");
-  }, [me, session, toast]);
+  }, [me, session, toast, pushFollowsToServer]);
 
   const onUnfollow = useCallback(
     (handle: string) => {
-      setFollows(removeFollow(handle));
+      const next = removeFollow(handle);
+      setFollows(next);
+      pushFollowsToServer(next);
       toast("解除しました");
     },
-    [toast],
+    [toast, pushFollowsToServer],
   );
 
-  const onUpdateSnapshot = useCallback((snap: FollowSnapshot) => {
-    setFollows(addFollow(snap));
-    setFollowStates((s) => ({
-      ...s,
-      [snap.handle]: { state: "same", addedLive: 0 },
-    }));
-  }, []);
+  const onUpdateSnapshot = useCallback(
+    (snap: FollowSnapshot) => {
+      const next = addFollow(snap);
+      setFollows(next);
+      pushFollowsToServer(next);
+      setFollowStates((s) => ({
+        ...s,
+        [snap.handle]: { state: "same", addedLive: 0 },
+      }));
+    },
+    [pushFollowsToServer],
+  );
 
   function goNav(v: NavTab) {
     setNavTab(v);
@@ -519,6 +647,26 @@ export function BeaconApp() {
           <div className="logo">
             Beacon<span className="dot">.</span>
           </div>
+          {session && overlay === "none" && saveStatus !== "idle" && (
+            <span
+              style={{
+                marginLeft: "auto",
+                marginRight: 10,
+                fontSize: 11,
+                fontWeight: 700,
+                color:
+                  saveStatus === "error"
+                    ? "var(--alert)"
+                    : saveStatus === "saving"
+                      ? "var(--muted)"
+                      : "var(--emd)",
+              }}
+            >
+              {saveStatus === "saving" && "保存中…"}
+              {saveStatus === "saved" && "保存済み ✓"}
+              {saveStatus === "error" && "保存できませんでした"}
+            </span>
+          )}
           {session && overlay === "none" && (
             <>
               <div className="tag" onClick={() => openAuth("login")}>
@@ -542,6 +690,8 @@ export function BeaconApp() {
             onReset={doReset}
             onEnter={enterAfterCreate}
             onBack={() => setOverlay("none")}
+            onTrustDevice={onTrustDevice}
+            trustSupported={isTrustSupported()}
             knownHandles={knownHandles}
             toast={toast}
           />
@@ -592,6 +742,7 @@ export function BeaconApp() {
                   onEdit={() => setEditing(true)}
                   onPreview={openPreview}
                   onShowRc={showRc}
+                  onReissueRc={reissueRc}
                   onSaveChannels={persistChannels}
                   onSaveCal={persistCal}
                   onLoadCal={loadCal}
