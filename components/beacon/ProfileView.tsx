@@ -11,6 +11,7 @@ import {
 import { detectType } from "@/lib/beacon/detect";
 import { dkey } from "@/lib/beacon/format";
 import { safeUrl } from "@/lib/beacon/safe";
+import { generateShareCard } from "@/lib/beacon/shareCard";
 import { cryptoId, type Me, type ToastFn } from "./appTypes";
 import { TypeBadge, VerifiedBadge } from "./icons";
 
@@ -82,6 +83,37 @@ export function ProfileView({
     }
   }
 
+  async function shareCard() {
+    try {
+      const blob = await generateShareCard({
+        name: me.profile.name,
+        handle,
+        emoji: me.profile.emoji,
+        theme: me.profile.theme,
+        avUrl: me.profile.av_url,
+        url: pageUrl(),
+        channels: me.channels,
+      });
+      const file = new File([blob], `beacon-${handle}.png`, { type: "image/png" });
+      // 対応端末はOS共有シートで画像を、非対応はダウンロード
+      const navAny = navigator as Navigator & {
+        canShare?: (d: { files: File[] }) => boolean;
+      };
+      if (navAny.canShare?.({ files: [file] }) && navigator.share) {
+        await navigator.share({ files: [file], title: `@${handle} · Beacon` });
+      } else {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = file.name;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+        toast("画像を保存しました");
+      }
+    } catch {
+      toast("画像を作成できませんでした");
+    }
+  }
+
   const canShare =
     typeof navigator !== "undefined" && typeof navigator.share === "function";
 
@@ -145,6 +177,13 @@ export function ProfileView({
               QRコード
             </button>
           </div>
+          <button
+            className="pill line"
+            style={{ width: "100%", marginTop: 8 }}
+            onClick={shareCard}
+          >
+            🖼 画像で共有（SNSに貼る）
+          </button>
           <div className="xtabs">
             <button
               className={`xtab ${tab === "links" ? "on" : ""}`}
