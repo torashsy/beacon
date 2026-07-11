@@ -9,6 +9,7 @@ import {
   PublicProfileCard,
 } from "@/components/beacon/PublicProfileCard";
 import { FollowButton } from "@/components/beacon/FollowButton";
+import { LegalFooter } from "@/components/beacon/LegalFooter";
 
 /**
  * 公開ページ /@{handle}。誰でも閲覧可能だが、列挙防止のため必ずハンドル指定の
@@ -34,16 +35,22 @@ function normalizeHandleParam(raw: string): string | null {
   return /^[a-z0-9_]{1,30}$/.test(h) ? h : null;
 }
 
+// 公開ページは「検索されない・URLを知る人だけが見られる」が核の約束のため、
+// 検索エンジンには索引付けさせない（noindex）。robots.txt では disallow せず
+// クロール自体は許可することで、クローラーがこの noindex を確実に読める
+// ようにする（app/robots.ts のコメント参照）。
+const NOINDEX = { index: false, follow: false } as const;
+
 export async function generateMetadata({
   params,
 }: {
   params: Promise<Params>;
 }): Promise<Metadata> {
   const handle = normalizeHandleParam((await params).handle);
-  if (!handle) return { title: "Beacon" };
+  if (!handle) return { title: "Beacon", robots: NOINDEX };
 
   const page = await loadPage(handle);
-  if (!page) return { title: "Beacon" };
+  if (!page) return { title: "Beacon", robots: NOINDEX };
   const { profile } = page;
 
   const title = `${profile.name || handle} · Beacon`;
@@ -51,6 +58,7 @@ export async function generateMetadata({
   return {
     title,
     description,
+    robots: NOINDEX,
     // OGP画像は opengraph-image.tsx が動的生成（ブランドカード）
     openGraph: { title, description, type: "profile" },
     twitter: { card: "summary_large_image", title, description },
@@ -89,6 +97,7 @@ export default async function PublicPage({
         trackHandle={handle}
       />
       <CreateYoursFooter href="/" />
+      <LegalFooter />
     </main>
   );
 }

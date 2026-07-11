@@ -57,11 +57,22 @@ create table if not exists cal_private (
   primary key (handle, d)
 );
 
--- ログイン試行制限（総当たり対策）
+-- ログイン試行制限（総当たり対策）。rc_* は復旧コード再設定の総当たり対策
+-- （ログイン試行とは別カウンタ。詳細は reset_pass のコメント参照）。
 create table if not exists auth_attempts (
-  handle      text primary key,
-  fail_count  int default 0,
-  locked_til  timestamptz
+  handle        text primary key,
+  fail_count    int default 0,
+  locked_til    timestamptz,
+  rc_fail_count int default 0,
+  rc_locked_til timestamptz
+);
+
+-- アカウント作成のレート制限（同一IPから1日あたり）
+create table if not exists signup_attempts (
+  ip  text not null,
+  day date not null default current_date,
+  n   int  default 0,
+  primary key (ip, day)
 );
 
 -- ---- RLS ----
@@ -70,7 +81,9 @@ alter table profiles      enable row level security;
 alter table channels      enable row level security;
 alter table cal_public    enable row level security;
 alter table cal_private   enable row level security;
-alter table auth_attempts enable row level security;
+alter table auth_attempts   enable row level security;
+alter table signup_attempts enable row level security;
+revoke select on signup_attempts from anon, authenticated;
 
 -- 公開読み取り: profiles / channels / cal_public のみ
 drop policy if exists pub_profiles on profiles;
@@ -113,11 +126,30 @@ begin
   return false;
 end $$;
 
--- ---- RPC: アカウント作成 ----
+-- ---- RPC: アカウント作成（同一IPから1日20件を超える作成は拒否）----
 create or replace function create_account(p_handle text, p_pass text)
 returns text language plpgsql security definer as $$
-declare rc text;
+declare
+  rc text;
+  client_ip text := 'unknown';
+  attempts int;
 begin
+  begin
+    client_ip := trim(split_part(
+      coalesce(current_setting('request.headers', true)::json->>'x-forwarded-for', ''),
+      ',', 1));
+    if client_ip = '' then client_ip := 'unknown'; end if;
+  exception when others then
+    client_ip := 'unknown';
+  end;
+
+  insert into signup_attempts(ip, n) values (client_ip, 1)
+    on conflict (ip, day) do update set n = signup_attempts.n + 1
+    returning n into attempts;
+  if attempts > 20 then
+    raise exception 'too many accounts created from this network today';
+  end if;
+
   if length(p_pass) < 6 then raise exception 'pass too short'; end if;
   if exists(select 1 from accounts where handle=lower(p_handle)) then
     raise exception 'taken';
@@ -136,16 +168,39 @@ returns boolean language sql security definer as $$
 $$;
 
 -- ---- RPC: パスコード再設定（復旧コード）----
+-- boolean を返す設計（void + raise exception にしない）に注意: PL/pgSQL の
+-- raise exception は関数呼び出し全体のトランザクションを丸ごとロールバックする。
+-- 「誤り回数カウンタを更新してから raise」だと、その raise 自体でカウンタ更新も
+-- 一緒に巻き戻り、何回失敗してもロックされない。_check_pass が誤りを例外にせず
+-- false を返す設計になっているのと同じ理由で、ここも false を返してカウンタ更新を
+-- 確実にコミットさせる（呼び出し側 rpc.ts が false を例外化する）。
 create or replace function reset_pass(p_handle text, p_rc text, p_new text)
-returns void language plpgsql security definer as $$
+returns boolean language plpgsql security definer as $$
+declare a record;
 begin
   if length(p_new) < 6 then raise exception 'pass too short'; end if;
+
+  select * into a from auth_attempts where handle=lower(p_handle);
+  if a.rc_locked_til is not null and a.rc_locked_til > now() then
+    raise exception 'locked';
+  end if;
+
   if not exists(select 1 from accounts where handle=lower(p_handle)
                 and rc_hash = crypt(upper(p_rc), rc_hash)) then
-    raise exception 'bad recovery code';
+    insert into auth_attempts(handle, rc_fail_count) values (lower(p_handle), 1)
+      on conflict (handle) do update set
+        rc_fail_count = auth_attempts.rc_fail_count + 1,
+        rc_locked_til = case when auth_attempts.rc_fail_count + 1 >= 5
+                             then now() + interval '15 minutes'
+                             else auth_attempts.rc_locked_til end;
+    return false;
   end if;
+
+  update auth_attempts set rc_fail_count = 0, rc_locked_til = null
+    where handle=lower(p_handle);
   update accounts set pass_hash = crypt(p_new, gen_salt('bf')), updated_at=now()
     where handle=lower(p_handle);
+  return true;
 end $$;
 
 -- ---- RPC: プロフィール更新 ----
@@ -323,13 +378,24 @@ grant execute on function bump_click(text, text) to anon;
 grant execute on function get_clicks(text, text) to anon;
 
 -- ---- Storage（画像用: avatars バケット）----
--- パス規約: avatars/{handle}/av.jpg, avatars/{handle}/bn.jpg
+-- パス規約: avatars/{handle}/{av|bn|thumb}-{timestamp}.jpg
 -- バケット作成と anon 書込ポリシーは storage スキーマ（supabase_storage_admin 所有）
 -- への操作で、SQL Editor から直接 insert/create policy すると環境によっては
 -- 権限エラーになる。そのためこの schema.sql には含めず、SETUP.md 手順3で
 --   1) ダッシュボードで 'avatars'(public) バケットを作成
---   2) supabase/storage-policies.sql を SQL Editor で実行（anon の insert/update 許可）
+--   2) supabase/storage-policies.sql を SQL Editor で実行
+--      （anon の insert を「実在するハンドルのフォルダのみ」に限定 + バケットの
+--       サイズ/MIME制限。濫用防止のため anon の update ポリシーは付与しない）
 -- の2段で設定する（本体スキーマの実行を安全に保つため分離）。
+
+-- avatars_anon_insert ポリシー（storage-policies.sql）が参照する判定関数。
+-- storage.objects の RLS からは accounts テーブルを直接参照できない（anon には
+-- select 権限が無い）ため、security definer で判定する。
+create or replace function handle_exists(p_handle text)
+returns boolean language sql security definer stable as $$
+  select exists(select 1 from accounts where handle = lower(p_handle));
+$$;
+grant execute on function handle_exists(text) to anon;
 
 -- フォローリストはサーバーに置かない（端末ローカル保存）。
 -- 発信者を横断的に検索・一覧するAPI/画面は絶対に実装しないこと。
