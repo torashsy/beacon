@@ -25,7 +25,9 @@ create table if not exists profiles (
   emoji    text default '🙂',
   theme    int  default 0,
   av_url   text default '',              -- Storage の公開URL
-  bn_url   text default ''
+  bn_url   text default '',
+  status   text default '',              -- ひとこと近況
+  status_at timestamptz                  -- 近況の更新時刻
 );
 
 create table if not exists channels (
@@ -148,12 +150,17 @@ end $$;
 
 -- ---- RPC: プロフィール更新 ----
 create or replace function update_profile(p_handle text, p_pass text,
-  p_name text, p_bio text, p_emoji text, p_theme int, p_av text, p_bn text)
+  p_name text, p_bio text, p_emoji text, p_theme int, p_av text, p_bn text,
+  p_status text default null)
 returns void language plpgsql security definer as $$
 begin
   if not _check_pass(p_handle,p_pass) then raise exception 'auth'; end if;
   update profiles set name=p_name, bio=p_bio, emoji=p_emoji, theme=p_theme,
-    av_url=p_av, bn_url=p_bn where handle=lower(p_handle);
+    av_url=p_av, bn_url=p_bn,
+    status = coalesce(p_status, status),
+    status_at = case when p_status is not null and p_status <> coalesce(status,'')
+                     then now() else status_at end
+    where handle=lower(p_handle);
   update accounts set updated_at=now() where handle=lower(p_handle);
 end $$;
 
@@ -233,7 +240,7 @@ end $$;
 grant execute on function create_account(text,text)                                   to anon;
 grant execute on function verify_login(text,text)                                     to anon;
 grant execute on function reset_pass(text,text,text)                                  to anon;
-grant execute on function update_profile(text,text,text,text,text,int,text,text)      to anon;
+grant execute on function update_profile(text,text,text,text,text,int,text,text,text) to anon;
 grant execute on function save_channels(text,text,jsonb)                              to anon;
 grant execute on function save_cal(text,text,date,text,boolean)                       to anon;
 grant execute on function get_private_cal(text,text)                                  to anon;

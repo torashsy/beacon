@@ -329,6 +329,11 @@ export function BeaconApp() {
           bio: edit.bio,
           emoji: edit.emoji,
           theme: edit.theme,
+          status: edit.status,
+          status_at:
+            edit.status !== (prof.status ?? "")
+              ? new Date().toISOString()
+              : prof.status_at,
           av_url,
           bn_url,
         };

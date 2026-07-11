@@ -23,6 +23,8 @@ export interface Profile {
   theme: number;
   av_url: string;
   bn_url: string;
+  status?: string; // ひとこと近況（任意）
+  status_at?: string | null; // 近況の更新時刻
 }
 
 /** カレンダーメモ 1 件 */
