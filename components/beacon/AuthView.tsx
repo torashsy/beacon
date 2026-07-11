@@ -25,6 +25,7 @@ export function AuthView({
   onReset,
   onEnter,
   onBack,
+  knownHandles = [],
   toast,
 }: {
   initialHandle: string;
@@ -37,6 +38,8 @@ export function AuthView({
   onEnter: () => void;
   /** ランディングへ戻る（作成/ログイン画面のみ表示）。 */
   onBack?: () => void;
+  /** この端末で使ったID（複数プロフィールの切替チップ）。 */
+  knownHandles?: string[];
   toast: ToastFn;
 }) {
   const [pane, setPane] = useState<Pane>(initialPane);
@@ -217,6 +220,24 @@ export function AuthView({
           <h1>ログイン</h1>
           <div className="lead">別の端末で作ったIDにも、これで入れます。</div>
           <div className="card">
+            {knownHandles.length > 0 && (
+              <>
+                <label className="f">この端末で使ったID</label>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
+                  {knownHandles.map((h) => (
+                    <button
+                      key={h}
+                      type="button"
+                      className={h === cleanHandle(lId) ? "pill solid" : "pill line"}
+                      style={{ padding: "6px 14px", fontSize: 12 }}
+                      onClick={() => setLId(h)}
+                    >
+                      @{h}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
             <label className="f">ID</label>
             <div className="idfield">
               <span className="at">@</span>
