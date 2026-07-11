@@ -64,6 +64,45 @@ export async function resetPass(
   );
 }
 
+/** 復旧コードを再発行し、新しい平文コードを返す（要パスコード）。古い復旧コードは無効になる。 */
+export async function reissueRecovery(
+  db: DB,
+  handle: string,
+  pass: string,
+): Promise<string> {
+  return unwrap(
+    await db.rpc("reissue_recovery", { p_handle: handle, p_pass: pass }),
+  ) as string;
+}
+
+/** 自分のフォロー先ハンドル一覧をサーバーから取得（要パスコード）。 */
+export async function getMyFollows(
+  db: DB,
+  handle: string,
+  pass: string,
+): Promise<string[]> {
+  const rows = (unwrap(
+    await db.rpc("get_my_follows", { p_handle: handle, p_pass: pass }),
+  ) ?? []) as { target: string }[];
+  return rows.map((r) => r.target);
+}
+
+/** 自分のフォロー先ハンドル一覧をサーバーへ保存（差し替え・要パスコード）。 */
+export async function saveMyFollows(
+  db: DB,
+  handle: string,
+  pass: string,
+  targets: string[],
+): Promise<void> {
+  unwrap(
+    await db.rpc("save_my_follows", {
+      p_handle: handle,
+      p_pass: pass,
+      p_targets: targets,
+    }),
+  );
+}
+
 /** 退会（アカウント削除）。 */
 export async function deleteAccount(
   db: DB,

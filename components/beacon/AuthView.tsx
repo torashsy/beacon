@@ -25,6 +25,8 @@ export function AuthView({
   onReset,
   onEnter,
   onBack,
+  onTrustDevice,
+  trustSupported,
   knownHandles = [],
   toast,
 }: {
@@ -38,6 +40,10 @@ export function AuthView({
   onEnter: () => void;
   /** ランディングへ戻る（作成/ログイン画面のみ表示）。 */
   onBack?: () => void;
+  /** 「この端末を信頼する」が選ばれた時にパスコードを端末に暗号保存する。 */
+  onTrustDevice: (handle: string, pass: string) => Promise<void>;
+  /** Web Crypto が使えない環境ではチェックボックス自体を出さない。 */
+  trustSupported: boolean;
   /** この端末で使ったID（複数プロフィールの切替チップ）。 */
   knownHandles?: string[];
   toast: ToastFn;
@@ -62,14 +68,19 @@ export function AuthView({
         ? { t: "6文字以上にしてください", cls: "no" }
         : { t: "OK", cls: "ok" };
   const canCreate = cClean.length >= 3 && cPass.length >= 6 && !cBusy;
+  const [cTrust, setCTrust] = useState(false);
 
   const [rc, setRc] = useState("");
+  const [rcSaved, setRcSaved] = useState(false);
+  const [rcCopied, setRcCopied] = useState(false);
 
   async function submitCreate() {
     if (!canCreate) return;
     setCBusy(true);
     try {
-      const code = await onCreate(cClean, cPass);
+      const passAtSubmit = cPass;
+      const code = await onCreate(cClean, passAtSubmit);
+      if (cTrust) await onTrustDevice(cClean, passAtSubmit);
       setRc(code);
       setCPass("");
       setPane("recovery");
@@ -85,6 +96,7 @@ export function AuthView({
   const [lPass, setLPass] = useState("");
   const [lHint, setLHint] = useState("");
   const [lBusy, setLBusy] = useState(false);
+  const [lTrust, setLTrust] = useState(false);
   async function submitLogin() {
     const h = cleanHandle(lId);
     if (!h || !lPass) {
@@ -94,7 +106,9 @@ export function AuthView({
     setLBusy(true);
     setLHint("");
     try {
-      await onLogin(h, lPass);
+      const passAtSubmit = lPass;
+      await onLogin(h, passAtSubmit);
+      if (lTrust) await onTrustDevice(h, passAtSubmit);
       setLPass("");
     } catch (e) {
       setLHint(authErrorMessage(e));
@@ -171,6 +185,18 @@ export function AuthView({
               onKeyDown={(e) => e.key === "Enter" && submitCreate()}
             />
             <div className={`hint ${passHint.cls}`}>{passHint.t}</div>
+            {trustSupported && (
+              <label className="chk">
+                <input
+                  type="checkbox"
+                  checked={cTrust}
+                  onChange={(e) => setCTrust(e.target.checked)}
+                />
+                <span>
+                  この端末を信頼する（次回から自動ログイン。共有PCでは使わないでください）
+                </span>
+              </label>
+            )}
             <button
               className="btn sig"
               disabled={!canCreate}
@@ -189,8 +215,8 @@ export function AuthView({
         <div>
           <h1>復旧コード</h1>
           <div className="lead">
-            パスコードを忘れた時に使うコードです。今この場で必ず控えてください。
-            （安全のため、このコードは二度と表示できません）
+            パスコードを忘れた時、これがあれば復旧できます。
+            今この場で必ず控えてください（スクショ・メモ・パスワード管理アプリなど）。
           </div>
           <div className="card">
             <div className="rcode">{rc}</div>
@@ -198,14 +224,30 @@ export function AuthView({
               className="btn ghost"
               onClick={() => {
                 navigator.clipboard?.writeText(rc);
+                setRcCopied(true);
                 toast("コピーしました");
               }}
             >
-              コピー
+              {rcCopied ? "コピーしました ✓" : "コピー"}
             </button>
-            <button className="btn sig" onClick={onEnter}>
-              控えました。はじめる
+            <label className="chk" style={{ marginTop: 14 }}>
+              <input
+                type="checkbox"
+                checked={rcSaved}
+                onChange={(e) => setRcSaved(e.target.checked)}
+              />
+              <span>控えました。無くすとログインできなくなることを理解しました。</span>
+            </label>
+            <button
+              className="btn sig"
+              disabled={!rcSaved}
+              onClick={onEnter}
+            >
+              はじめる
             </button>
+          </div>
+          <div className="note">
+            復旧コードは後からプロフィールの「復旧コードを再発行」でも作り直せます。
           </div>
         </div>
       )}
@@ -259,6 +301,18 @@ export function AuthView({
               onKeyDown={(e) => e.key === "Enter" && submitLogin()}
             />
             <div className="hint no">{lHint}</div>
+            {trustSupported && (
+              <label className="chk">
+                <input
+                  type="checkbox"
+                  checked={lTrust}
+                  onChange={(e) => setLTrust(e.target.checked)}
+                />
+                <span>
+                  この端末を信頼する（次回から自動ログイン。共有PCでは使わないでください）
+                </span>
+              </label>
+            )}
             <button className="btn sig" disabled={lBusy} onClick={submitLogin}>
               {lBusy ? "確認中…" : "ログイン"}
             </button>

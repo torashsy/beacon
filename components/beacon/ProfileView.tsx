@@ -11,6 +11,7 @@ import {
 import { detectType } from "@/lib/beacon/detect";
 import { dkey } from "@/lib/beacon/format";
 import { safeUrl } from "@/lib/beacon/safe";
+import { isValidLinkUrl } from "@/lib/beacon/validate";
 import { generateShareCard } from "@/lib/beacon/shareCard";
 import { cryptoId, type Me, type ToastFn } from "./appTypes";
 import { LinkThumb, VerifiedBadge } from "./icons";
@@ -27,6 +28,7 @@ export function ProfileView({
   onEdit,
   onPreview,
   onShowRc,
+  onReissueRc,
   onSaveChannels,
   onSaveCal,
   onLoadCal,
@@ -38,6 +40,7 @@ export function ProfileView({
   onEdit: () => void;
   onPreview: () => void;
   onShowRc: () => void;
+  onReissueRc: () => Promise<string>;
   onSaveChannels: (next: Channel[]) => Promise<boolean>;
   onSaveCal: (date: string, memo: string, pub: boolean) => Promise<boolean>;
   onLoadCal: () => void;
@@ -46,6 +49,9 @@ export function ProfileView({
 }) {
   const [tab, setTab] = useState<"links" | "cal">("links");
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [reissuedRc, setReissuedRc] = useState<string | null>(null);
+  const [reissueBusy, setReissueBusy] = useState(false);
+  const [reissueSaved, setReissueSaved] = useState(false);
 
   useEffect(() => {
     if (tab === "cal" && !me.calLoaded) onLoadCal();
@@ -67,6 +73,24 @@ export function ProfileView({
       await navigator.share({ title: `@${handle} · Beacon`, url: pageUrl() });
     } catch {
       /* キャンセルは無視 */
+    }
+  }
+
+  async function doReissueRc() {
+    if (
+      !window.confirm(
+        "新しい復旧コードを発行します。古い復旧コードは使えなくなります。よろしいですか？",
+      )
+    )
+      return;
+    setReissueBusy(true);
+    try {
+      setReissuedRc(await onReissueRc());
+      setReissueSaved(false);
+    } catch {
+      toast("復旧コードを発行できませんでした");
+    } finally {
+      setReissueBusy(false);
     }
   }
 
@@ -238,6 +262,65 @@ export function ProfileView({
       <button className="btn ghost" style={{ marginTop: 10 }} onClick={onShowRc}>
         復旧コードを確認する
       </button>
+      <button
+        className="btn ghost"
+        style={{ marginTop: 8 }}
+        disabled={reissueBusy}
+        onClick={doReissueRc}
+      >
+        {reissueBusy ? "発行中…" : "新しい復旧コードを発行する"}
+      </button>
+
+      {reissuedRc && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(23,36,43,.55)",
+            zIndex: 60,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 24,
+          }}
+        >
+          <div
+            className="card"
+            style={{ width: "100%", maxWidth: 360 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 style={{ margin: "0 0 10px" }}>新しい復旧コード</h2>
+            <div className="lead" style={{ margin: "0 0 12px" }}>
+              古い復旧コードは無効になりました。今この場で必ず控えてください。
+            </div>
+            <div className="rcode">{reissuedRc}</div>
+            <button
+              className="btn ghost"
+              onClick={() => {
+                navigator.clipboard?.writeText(reissuedRc);
+                toast("コピーしました");
+              }}
+            >
+              コピー
+            </button>
+            <label className="chk" style={{ marginTop: 14 }}>
+              <input
+                type="checkbox"
+                checked={reissueSaved}
+                onChange={(e) => setReissueSaved(e.target.checked)}
+              />
+              <span>控えました。</span>
+            </label>
+            <button
+              className="btn sig"
+              disabled={!reissueSaved}
+              onClick={() => setReissuedRc(null)}
+            >
+              閉じる
+            </button>
+          </div>
+        </div>
+      )}
 
       {qrDataUrl && (
         <div
@@ -385,6 +468,10 @@ function LinksPane({
     }
     if (!isHeading && !u) {
       toast("URLを入れてください");
+      return;
+    }
+    if (!isHeading && !isValidLinkUrl(u)) {
+      toast("正しいURLを入力してください（例: https://x.com/...）");
       return;
     }
     const fields = {
