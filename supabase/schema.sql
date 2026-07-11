@@ -343,13 +343,19 @@ begin
     where handle=lower(p_handle);
 end $$;
 
+-- target は「フォロー先のハンドル」なので、ハンドルと同じ形式に一致する
+-- 要素のみ受け付ける（件数・要素長を有限に保つ）。形式に合わない要素は
+-- raise せず黙って捨てる（クライアントの fire-and-forget 同期を壊さない）。
 create or replace function save_my_follows(p_handle text, p_pass text, p_targets jsonb)
 returns void language plpgsql security definer as $$
 begin
   if not _check_pass(p_handle,p_pass) then raise exception 'auth'; end if;
+  if jsonb_typeof(p_targets) <> 'array' then raise exception 'invalid targets'; end if;
+  if jsonb_array_length(p_targets) > 500 then raise exception 'too many follows'; end if;
   delete from follows_server where handle=lower(p_handle);
   insert into follows_server(handle, target)
     select lower(p_handle), lower(value) from jsonb_array_elements_text(p_targets)
+    where lower(value) ~ '^[a-z0-9_]{3,20}$'
     on conflict do nothing;
 end $$;
 
