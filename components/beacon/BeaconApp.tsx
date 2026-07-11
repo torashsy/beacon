@@ -343,6 +343,14 @@ export function BeaconApp() {
     [db, session, me, toast, logout],
   );
 
+  const uploadThumb = useCallback(
+    async (file: File): Promise<string> => {
+      if (!session) throw new Error("no session");
+      return uploadImage(db, session.handle, "thumb", file);
+    },
+    [db, session],
+  );
+
   const showRc = useCallback(() => {
     if (rcPlain) {
       window.alert(
@@ -570,6 +578,7 @@ export function BeaconApp() {
                   onSaveChannels={persistChannels}
                   onSaveCal={persistCal}
                   onLoadCal={loadCal}
+                  onUploadThumb={uploadThumb}
                   toast={toast}
                 />
                 <button

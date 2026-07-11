@@ -16,6 +16,23 @@ export function TypeBadge({ type }: { type: string }) {
   );
 }
 
+/** リンクのサムネイル（img_url があれば画像、無ければ種別バッジ）。 */
+export function LinkThumb({ type, img }: { type: string; img?: string }) {
+  if (img) {
+    return (
+      <span className="ic-badge" style={{ padding: 0, overflow: "hidden" }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={img}
+          alt=""
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+        />
+      </span>
+    );
+  }
+  return <TypeBadge type={type} />;
+}
+
 /** 認証済みバッジ（緑丸チェック）。 */
 export function VerifiedBadge() {
   return (

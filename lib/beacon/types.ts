@@ -11,6 +11,7 @@ export interface Channel {
   descr: string; // 説明（schema では descr、RPC の JSON キーは "desc"）
   status: ChannelStatus;
   position?: number;
+  img_url?: string; // 個別サムネイル（Storage 公開URL。RPC の JSON キーは "img"）
 }
 
 /** profiles テーブル 1 行 */
@@ -41,6 +42,7 @@ export interface ChannelPayload {
   label: string;
   desc: string;
   status: ChannelStatus;
+  img: string;
 }
 
 export function toChannelPayload(c: Channel): ChannelPayload {
@@ -50,5 +52,6 @@ export function toChannelPayload(c: Channel): ChannelPayload {
     label: c.label,
     desc: c.descr,
     status: c.status,
+    img: c.img_url ?? "",
   };
 }
