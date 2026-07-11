@@ -65,8 +65,8 @@ export default async function Image({
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          background: `linear-gradient(135deg, ${g0}, ${g1})`,
-          fontFamily: "sans-serif",
+          backgroundColor: g0,
+          backgroundImage: `linear-gradient(135deg, ${g0}, ${g1})`,
         }}
       >
         <div
@@ -74,14 +74,14 @@ export default async function Image({
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            background: "#ffffff",
+            backgroundColor: "#ffffff",
             borderRadius: 40,
             padding: "56px 80px",
             boxShadow: "0 20px 60px rgba(23,72,58,.18)",
           }}
         >
           <div style={{ fontSize: 64, fontWeight: 800, color: "#17242B" }}>
-            @{handle ?? "beacon"}
+            {`@${handle ?? "beacon"}`}
           </div>
           {platforms.length > 0 && (
             <div
@@ -100,12 +100,12 @@ export default async function Image({
               fontSize: 26,
               color: "#6E8580",
               marginTop: 28,
-              background: "#F4FAF8",
+              backgroundColor: "#F4FAF8",
               padding: "12px 28px",
               borderRadius: 999,
             }}
           >
-            beacon-beige-gamma.vercel.app/@{handle ?? ""}
+            {`beacon-beige-gamma.vercel.app/@${handle ?? ""}`}
           </div>
         </div>
         <div
