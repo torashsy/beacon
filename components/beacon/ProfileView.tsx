@@ -937,6 +937,7 @@ function CalendarPane({
         value={memo}
         onChange={(e) => setMemo(e.target.value)}
         placeholder="例: ライブ出演 19:00〜 / 20時以降 空きあり"
+        maxLength={500}
       />
       <label className="chk">
         <input
