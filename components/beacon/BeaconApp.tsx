@@ -17,6 +17,7 @@ import {
 import { uploadImage } from "@/lib/beacon/storage";
 import type { CalMemo, Channel } from "@/lib/beacon/types";
 import { normalizeRecoveryCode } from "@/lib/beacon/format";
+import { addHandle, loadHandles, removeHandle } from "@/lib/beacon/accounts";
 import {
   addFollow,
   diffFollow,
@@ -95,6 +96,8 @@ export function BeaconApp() {
   const [authInitialPane, setAuthInitialPane] = useState<"create" | "login">(
     "create",
   );
+  // この端末で使ったID一覧（複数プロフィールの切替チップ用）
+  const [knownHandles, setKnownHandles] = useState<string[]>([]);
 
   // トースト
   const [toastMsg, setToastMsg] = useState("");
@@ -114,6 +117,7 @@ export function BeaconApp() {
   useEffect(() => {
     const loaded = loadFollows();
     setFollows(loaded);
+    setKnownHandles(loadHandles());
     let stored = "";
     try {
       stored = window.localStorage.getItem(K_HANDLE) ?? "";
@@ -166,6 +170,7 @@ export function BeaconApp() {
     } catch {
       /* noop */
     }
+    setKnownHandles(addHandle(handle)); // 切替チップ用に控える
   }
 
   // ---- 認証アクション ----
@@ -380,6 +385,7 @@ export function BeaconApp() {
       } catch {
         /* noop */
       }
+      setKnownHandles(removeHandle(session.handle));
       setSession(null);
       setMe(null);
       setRcPlain(null);
@@ -509,9 +515,14 @@ export function BeaconApp() {
             Beacon<span className="dot">.</span>
           </div>
           {session && overlay === "none" && (
-            <div className="tag" onClick={logout}>
-              ログアウト
-            </div>
+            <>
+              <div className="tag" onClick={() => openAuth("login")}>
+                切替
+              </div>
+              <div className="tag" style={{ marginLeft: 8 }} onClick={logout}>
+                ログアウト
+              </div>
+            </>
           )}
         </div>
 
@@ -526,6 +537,7 @@ export function BeaconApp() {
             onReset={doReset}
             onEnter={enterAfterCreate}
             onBack={() => setOverlay("none")}
+            knownHandles={knownHandles}
             toast={toast}
           />
         )}
