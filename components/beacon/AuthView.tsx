@@ -174,7 +174,7 @@ export function AuthView({
               <input
                 value={cId}
                 onChange={(e) => setCId(cleanHandle(e.target.value))}
-                placeholder="beacon_user"
+                placeholder="my_ideal"
                 maxLength={20}
                 autoComplete="off"
               />
@@ -286,7 +286,7 @@ export function AuthView({
               <input
                 value={lId}
                 onChange={(e) => setLId(cleanHandle(e.target.value))}
-                placeholder="beacon_user"
+                placeholder="my_ideal"
                 maxLength={20}
                 autoComplete="off"
               />
@@ -335,7 +335,7 @@ export function AuthView({
               <input
                 value={rId}
                 onChange={(e) => setRId(cleanHandle(e.target.value))}
-                placeholder="beacon_user"
+                placeholder="my_ideal"
                 maxLength={20}
                 autoComplete="off"
               />

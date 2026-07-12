@@ -60,7 +60,7 @@ export function ProfileView({
   async function share() {
     if (typeof navigator.share === "function") {
       try {
-        await navigator.share({ title: `@${handle} · Beacon`, url: pageUrl() });
+        await navigator.share({ title: `@${handle} · my-IDeal`, url: pageUrl() });
       } catch {
         /* キャンセルは無視 */
       }
@@ -161,7 +161,7 @@ export function ProfileView({
           {me.profile.bio && <div className="xbio">{me.profile.bio}</div>}
           <div className="xmeta">
             <span className="live" />
-            <span>Beacon で公開中</span>
+            <span>my-IDeal で公開中</span>
           </div>
           <button
             className="pill solid"
@@ -209,7 +209,7 @@ export function ProfileView({
 
       <div className="note">
         「支援」には、ほしいものリストやFantiaなど外部の支援ページのURLを貼れます。
-        Beaconはお金のやり取りを仲介しません。
+        my-IDealはお金のやり取りを仲介しません。
       </div>
       <button
         className="btn ghost"

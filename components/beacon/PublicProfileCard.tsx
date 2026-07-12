@@ -38,7 +38,7 @@ function Avatar({ url, emoji, handle }: { url: string; emoji: string; handle: st
 export function PublicProfileCard({
   data,
   actions,
-  metaLabel = "Beacon で公開中",
+  metaLabel = "my-IDeal で公開中",
   trackHandle,
 }: {
   data: PublicCardData;
@@ -154,7 +154,7 @@ export function PublicProfileCard({
 export function CreateYoursFooter({ href = "/" }: { href?: string }) {
   return (
     <a className="vfoot" href={href}>
-      <div className="k">Beacon — 凍結されても変わらないID</div>
+      <div className="k">my-IDeal — 凍結されても変わらないID</div>
       <div className="m">
         あなたも<span className="s">無料で作る →</span>
       </div>

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-const TEMP_EMAIL = "contact@beacon.example";
+const TEMP_EMAIL = "contact@my-ideal.example";
 
 export default function ContactPage() {
   const [category, setCategory] = useState("inquiry");
@@ -47,7 +47,7 @@ export default function ContactPage() {
   return (
     <main className="wrap" style={{ paddingTop: 24, paddingBottom: 60 }}>
       <div className="top">
-        <Link className="logo" href="/">Beacon<span className="dot">.</span></Link>
+        <Link className="logo" href="/">my-IDeal<span className="dot">.</span></Link>
       </div>
       <h1>お問い合わせ・通報</h1>
       <div className="lead">返信が必要な場合のみメールアドレスを入力してください。</div>

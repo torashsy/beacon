@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "プライバシーポリシー · Beacon",
+  title: "プライバシーポリシー · my-IDeal",
   robots: { index: false, follow: false },
 };
 
@@ -11,7 +11,7 @@ export default function PrivacyPage() {
     <main className="wrap" style={{ paddingTop: 24, paddingBottom: 60 }}>
       <div className="top">
         <Link className="logo" href="/">
-          Beacon<span className="dot">.</span>
+          my-IDeal<span className="dot">.</span>
         </Link>
       </div>
       <h1>プライバシーポリシー</h1>
@@ -79,7 +79,7 @@ export default function PrivacyPage() {
         </p>
 
         <h2 style={{ margin: "20px 0 8px" }}>7. お問い合わせ</h2>
-        <p><Link href="/contact">お問い合わせ・通報フォーム</Link>からご連絡ください。仮メールアドレスは contact@beacon.example です。</p>
+        <p><Link href="/contact">お問い合わせ・通報フォーム</Link>からご連絡ください。仮メールアドレスは contact@my-ideal.example です。</p>
 
         <h2 style={{ margin: "20px 0 8px" }}>8. 改定</h2>
         <p>

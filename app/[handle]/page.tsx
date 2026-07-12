@@ -47,14 +47,14 @@ export async function generateMetadata({
   params: Promise<Params>;
 }): Promise<Metadata> {
   const handle = normalizeHandleParam((await params).handle);
-  if (!handle) return { title: "Beacon", robots: NOINDEX };
+  if (!handle) return { title: "my-IDeal", robots: NOINDEX };
 
   const page = await loadPage(handle);
-  if (!page) return { title: "Beacon", robots: NOINDEX };
+  if (!page) return { title: "my-IDeal", robots: NOINDEX };
   const { profile } = page;
 
-  const title = `${profile.name || handle} · Beacon`;
-  const description = profile.bio || "Beacon のプロフィール";
+  const title = `${profile.name || handle} · my-IDeal`;
+  const description = profile.bio || "my-IDeal のプロフィール";
   return {
     title,
     description,
@@ -84,7 +84,7 @@ export default async function PublicPage({
     <main className="wrap" style={{ paddingTop: 8, paddingBottom: 40 }}>
       <div className="top">
         <div className="logo">
-          Beacon<span className="dot">.</span>
+          my-IDeal<span className="dot">.</span>
         </div>
       </div>
       <PublicProfileCard

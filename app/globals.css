@@ -1,22 +1,22 @@
 /*
- * Beacon デザイントークン + コンポーネントスタイル。
+ * my-IDeal デザイントークン + コンポーネントスタイル。
  * reference/beacon.html の <style> ブロックをそのまま移植し、各コンポーネントが
  * className でこれらを参照する（Next の標準構成に合わせグローバル1枚に集約）。
  */
 :root {
-  --text: #17242b;
-  --muted: #6e8580;
-  --faint: #adc1bb;
-  --em: #10b981;
-  --emd: #0b9a6d;
-  --eml: #e7f8f1;
-  --em2: #2ac98c;
+  --text: #16324a;
+  --muted: #607d8b;
+  --faint: #a9c4d3;
+  --em: #38bdf8;
+  --emd: #0284c7;
+  --eml: #e0f2fe;
+  --em2: #7dd3fc;
   --alert: #e0576b;
   --surface: #fff;
-  --border: #e4eeea;
-  --ink: #f4faf8;
+  --border: #dbeef7;
+  --ink: #f0f9ff;
   --radius: 18px;
-  --shadow: 0 6px 20px rgba(23, 72, 58, 0.08);
+  --shadow: 0 6px 20px rgba(2, 132, 199, 0.1);
 }
 * {
   box-sizing: border-box;
@@ -24,7 +24,7 @@
   padding: 0;
 }
 body {
-  background: #f7fbfa;
+  background: #f6fbfe;
   color: var(--text);
   font-family: "Noto Sans JP", "Inter", system-ui, sans-serif;
   line-height: 1.6;
@@ -97,7 +97,7 @@ h1 {
 .banner {
   height: 118px;
   position: relative;
-  background: linear-gradient(135deg, #bff0dd, #d8f5ec);
+  background: linear-gradient(135deg, #bae6fd, #e0f2fe);
 }
 .banner img {
   width: 100%;
@@ -113,7 +113,7 @@ h1 {
   width: 78px;
   height: 78px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #5fd6bc, #2aa98c);
+  background: linear-gradient(135deg, #7dd3fc, #0284c7);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -121,7 +121,7 @@ h1 {
   font-size: 34px;
   border: 4px solid #fff;
   margin-top: -39px;
-  box-shadow: 0 3px 10px rgba(23, 72, 58, 0.15);
+  box-shadow: 0 3px 10px rgba(2, 132, 199, 0.18);
   overflow: hidden;
   position: relative;
 }
@@ -151,7 +151,7 @@ h1 {
 .pill.solid {
   background: var(--em);
   color: #fff;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+  box-shadow: 0 4px 12px rgba(56, 189, 248, 0.35);
 }
 .pill.solid:hover:not(:disabled) {
   background: var(--emd);
@@ -161,7 +161,7 @@ h1 {
   background: var(--eml);
   color: var(--emd);
   box-shadow: none;
-  border: 1.5px solid rgba(16, 185, 129, 0.4);
+  border: 1.5px solid rgba(56, 189, 248, 0.4);
   cursor: default;
 }
 .pill.line {
@@ -375,7 +375,7 @@ textarea {
 .btn.sig {
   background: var(--em);
   color: #fff;
-  box-shadow: 0 5px 14px rgba(16, 185, 129, 0.35);
+  box-shadow: 0 5px 14px rgba(56, 189, 248, 0.35);
 }
 .btn.sig:hover:not(:disabled) {
   background: var(--emd);
@@ -485,7 +485,7 @@ textarea {
 }
 .chan .tog.live {
   color: var(--emd);
-  border-color: rgba(16, 185, 129, 0.45);
+  border-color: rgba(56, 189, 248, 0.45);
   background: var(--eml);
 }
 .chan .tog.dead {
@@ -745,7 +745,7 @@ textarea {
 .ebanner {
   height: 118px;
   position: relative;
-  background: linear-gradient(135deg, #bff0dd, #d8f5ec);
+  background: linear-gradient(135deg, #bae6fd, #e0f2fe);
   cursor: pointer;
 }
 .ebanner img {
@@ -1027,7 +1027,7 @@ textarea {
   z-index: 50;
   max-width: 90%;
   text-align: center;
-  box-shadow: 0 8px 20px rgba(23, 72, 58, 0.3);
+  box-shadow: 0 8px 20px rgba(2, 132, 199, 0.28);
 }
 .toast.show {
   opacity: 1;

@@ -10,7 +10,7 @@ import { LegalFooter } from "./LegalFooter";
  */
 
 const DEMO: PublicCardData = {
-  handle: "beacon_sample",
+  handle: "my_ideal_sample",
   profile: {
     name: "みほん",
     bio: "連絡先はここにまとめています🌸",

@@ -650,7 +650,7 @@ export function BeaconApp() {
       <div className="wrap">
         <div className="top">
           <div className="logo">
-            Beacon<span className="dot">.</span>
+            my-IDeal<span className="dot">.</span>
           </div>
         </div>
       </div>
@@ -675,7 +675,7 @@ export function BeaconApp() {
       <div className="wrap">
         <div className="top">
           <div className="logo">
-            Beacon<span className="dot">.</span>
+            my-IDeal<span className="dot">.</span>
           </div>
           {session && overlay === "none" && saveStatus !== "idle" && (
             <span
