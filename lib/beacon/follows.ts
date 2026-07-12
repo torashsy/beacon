@@ -7,7 +7,8 @@ import { HEADING_TYPE } from "./constants";
  * 本人専用RPCでサーバー同期する。横断一覧・検索APIは作らない。
  */
 
-const K_FOLLOWS = "beacon:myfollows:v1";
+const K_LEGACY_FOLLOWS = "beacon:myfollows:v1";
+const K_FOLLOWS_PREFIX = "myideal:follows:v2:";
 /** ログイン中ハンドルの控え（方式a: パスコードは保存せずハンドルのみ）。 */
 export const K_HANDLE = "beacon:handle:v1";
 
@@ -48,40 +49,61 @@ export function toSnapshot(
   };
 }
 
-export function loadFollows(): FollowSnapshot[] {
+function ownerKey(owner?: string | null): string {
+  return K_FOLLOWS_PREFIX + (owner?.toLowerCase() || "guest");
+}
+
+export function loadFollows(owner?: string | null): FollowSnapshot[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = window.localStorage.getItem(K_FOLLOWS);
+    const key = ownerKey(owner);
+    let raw = window.localStorage.getItem(key);
+    // 旧単一キャッシュは特定アカウントへ混ぜず、ゲスト領域へ一度だけ移す。
+    if (!owner && !raw) {
+      raw = window.localStorage.getItem(K_LEGACY_FOLLOWS);
+      if (raw) {
+        window.localStorage.setItem(key, raw);
+        window.localStorage.removeItem(K_LEGACY_FOLLOWS);
+      }
+    }
     return raw ? (JSON.parse(raw) as FollowSnapshot[]) : [];
   } catch {
     return [];
   }
 }
 
-function persist(list: FollowSnapshot[]): void {
+export function replaceFollows(
+  owner: string | null | undefined,
+  list: FollowSnapshot[],
+): FollowSnapshot[] {
   try {
-    window.localStorage.setItem(K_FOLLOWS, JSON.stringify(list));
+    window.localStorage.setItem(ownerKey(owner), JSON.stringify(list));
   } catch {
     /* ストレージ不可でも致命的でないため無視 */
   }
+  return list;
 }
 
-export function isFollowing(handle: string): boolean {
-  return loadFollows().some((f) => f.handle === handle.toLowerCase());
+export function isFollowing(handle: string, owner?: string | null): boolean {
+  return loadFollows(owner).some((f) => f.handle === handle.toLowerCase());
 }
 
 /** 追加（既にいれば先頭へ更新）。更新後の一覧を返す。 */
-export function addFollow(snap: FollowSnapshot): FollowSnapshot[] {
-  const list = loadFollows().filter((f) => f.handle !== snap.handle);
+export function addFollow(
+  snap: FollowSnapshot,
+  owner?: string | null,
+): FollowSnapshot[] {
+  const list = loadFollows(owner).filter((f) => f.handle !== snap.handle);
   list.unshift(snap);
-  persist(list);
-  return list;
+  return replaceFollows(owner, list);
 }
 
-export function removeFollow(handle: string): FollowSnapshot[] {
-  const list = loadFollows().filter((f) => f.handle !== handle.toLowerCase());
-  persist(list);
-  return list;
+export function removeFollow(
+  handle: string,
+  owner?: string | null,
+): FollowSnapshot[] {
+  const list = loadFollows(owner).filter((f) => f.handle !== handle.toLowerCase());
+  return replaceFollows(owner, list);
 }
 
 // ---- 変化検知（フォロー時のスナップショット vs 現在の公開ページ）----

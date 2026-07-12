@@ -40,6 +40,7 @@ import {
   type FollowStatus,
   K_HANDLE,
   loadFollows,
+  replaceFollows,
   removeFollow,
   toSnapshot,
 } from "@/lib/beacon/follows";
@@ -142,7 +143,7 @@ export function BeaconApp() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const loaded = loadFollows();
+      const loaded = loadFollows(null);
       setFollows(loaded);
       setKnownHandles(loadHandles());
       let stored = "";
@@ -243,37 +244,30 @@ export function BeaconApp() {
     [db, session],
   );
 
-  /** ログイン直後にサーバーの一覧を取り込み、端末側だけの分もサーバーへ反映する。 */
+  /** ログイン直後にサーバーのID一覧を正本として取り込み、アカウント別キャッシュを作る。 */
   const syncFollowsFromServer = useCallback(
     async (handle: string, pass: string) => {
       try {
         const targets = await getMyFollows(db, handle, pass);
-        const local = loadFollows();
-        const localHandles = new Set(local.map((f) => f.handle));
-        const missing = targets.filter((t) => !localHandles.has(t));
-        let merged = local;
-        if (missing.length) {
-          const fetched = await Promise.all(
-            missing.map(async (h) => {
-              try {
-                const page = await getPublicPage(db, h);
-                return page
-                  ? toSnapshot(page.profile, page.channels, page.cal)
-                  : null;
-              } catch {
-                return null;
-              }
-            }),
-          );
-          for (const snap of fetched) if (snap) merged = addFollow(snap);
-          setFollows(merged);
-        }
-        void saveMyFollows(
-          db,
-          handle,
-          pass,
-          merged.map((f) => f.handle),
-        ).catch(() => {});
+        const local = loadFollows(handle);
+        const cached = new Map(local.map((item) => [item.handle, item]));
+        const resolved = await Promise.all(
+          targets.map(async (target) => {
+            try {
+              const page = await getPublicPage(db, target);
+              return page
+                ? toSnapshot(page.profile, page.channels, page.cal)
+                : null;
+            } catch {
+              return cached.get(target) ?? null;
+            }
+          }),
+        );
+        const accountFollows = resolved.filter(
+          (item): item is FollowSnapshot => item !== null,
+        );
+        replaceFollows(handle, accountFollows);
+        setFollows(accountFollows);
       } catch {
         /* サーバー同期に失敗しても端末のローカル一覧はそのまま使える */
       }
@@ -310,6 +304,7 @@ export function BeaconApp() {
       const rc = await createAccount(db, handle, pass);
       const secret = await establishSession(handle, pass, remember);
       setSession({ handle, pass: secret });
+      setFollows(loadFollows(handle));
       persistHandle(handle);
       setMe(await loadMe(handle, secret));
       return rc;
@@ -328,6 +323,7 @@ export function BeaconApp() {
       if (!ok) throw new Error("auth");
       const secret = await establishSession(handle, pass, remember);
       setSession({ handle, pass: secret });
+      setFollows(loadFollows(handle));
       persistHandle(handle);
       setMe(await loadMe(handle, secret));
       void syncFollowsFromServer(handle, secret); // 端末をまたいだフォロー一覧の統合
@@ -361,6 +357,7 @@ export function BeaconApp() {
     }
     setSession(null);
     setMe(null);
+    setFollows(loadFollows(null));
     setEditing(false);
     setPreview(null);
     clearStoredSession();
@@ -610,6 +607,7 @@ export function BeaconApp() {
     if (!me || !session) return;
     const next = addFollow(
       toSnapshot(me.profile, me.channels, publicMemos(me.cal)),
+      session.handle,
     );
     setFollows(next);
     pushFollowsToServer(next);
@@ -618,17 +616,17 @@ export function BeaconApp() {
 
   const onUnfollow = useCallback(
     (handle: string) => {
-      const next = removeFollow(handle);
+      const next = removeFollow(handle, session?.handle ?? null);
       setFollows(next);
       pushFollowsToServer(next);
       toast("解除しました");
     },
-    [toast, pushFollowsToServer],
+    [session, toast, pushFollowsToServer],
   );
 
   const onUpdateSnapshot = useCallback(
     (snap: FollowSnapshot) => {
-      const next = addFollow(snap);
+      const next = addFollow(snap, session?.handle ?? null);
       setFollows(next);
       pushFollowsToServer(next);
       setFollowStates((s) => ({
@@ -636,7 +634,7 @@ export function BeaconApp() {
         [snap.handle]: { state: "same", addedLive: 0 },
       }));
     },
-    [pushFollowsToServer],
+    [session, pushFollowsToServer],
   );
 
   function goNav(v: NavTab) {
