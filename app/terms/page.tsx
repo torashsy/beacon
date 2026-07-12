@@ -78,7 +78,7 @@ export default function TermsPage() {
         </p>
 
         <h2 style={{ margin: "20px 0 8px" }}>8. お問い合わせ・通報</h2>
-        <p>不適切なコンテンツの通報、その他お問い合わせ窓口は現在準備中です。</p>
+        <p>不適切なコンテンツの通報、その他のお問い合わせは<Link href="/contact">お問い合わせ・通報フォーム</Link>から受け付けます。</p>
       </div>
     </main>
   );

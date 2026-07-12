@@ -16,6 +16,10 @@ export function LegalFooter() {
       <Link href="/privacy" style={{ color: "var(--muted)" }}>
         プライバシーポリシー
       </Link>
+      <span> · </span>
+      <Link href="/contact" style={{ color: "var(--muted)" }}>
+        お問い合わせ
+      </Link>
     </div>
   );
 }

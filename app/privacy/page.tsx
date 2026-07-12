@@ -30,6 +30,7 @@ export default function PrivacyPage() {
           </li>
           <li>本人だけが利用するフォロー中ID一覧（端末間同期のためサーバーにも保存します）</li>
           <li>ログイン状態を保持するためのセッショントークン（サーバーにはハッシュのみ保存します）</li>
+          <li>お問い合わせ時に送信する種別・返信先メールアドレス・本文・対象URL・送信元IPアドレス</li>
           <li>
             アクセスログ・IPアドレス等 — ホスティング事業者（Vercel）およびデータベース事業者
             （Supabase）が標準的に取得するもの。不正利用防止（アカウント作成のレート制限等）にも利用します
@@ -78,7 +79,7 @@ export default function PrivacyPage() {
         </p>
 
         <h2 style={{ margin: "20px 0 8px" }}>7. お問い合わせ</h2>
-        <p>本ポリシーに関するお問い合わせ窓口は現在準備中です。</p>
+        <p><Link href="/contact">お問い合わせ・通報フォーム</Link>からご連絡ください。仮メールアドレスは contact@beacon.example です。</p>
 
         <h2 style={{ margin: "20px 0 8px" }}>8. 改定</h2>
         <p>

@@ -9,6 +9,8 @@
 
 create extension if not exists pgcrypto;
 
+-- 問い合わせフォームは `contact-form-migration.sql` も参照。
+
 -- ---- アカウント ----
 create table if not exists accounts (
   handle      text primary key,

@@ -15,6 +15,7 @@
 - `remove-legacy-update-profile.sql`
 - `authenticated-storage-migration.sql`
 - `auth-hardening-migration.sql`
+- `contact-form-migration.sql`
 - `create-avatar-upload` Edge Function
 
 検証は `node scripts/conn-test.mjs` を実行する。テスト用アカウントは最後に削除される。
