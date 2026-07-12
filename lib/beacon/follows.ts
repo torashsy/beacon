@@ -15,6 +15,9 @@ export const K_HANDLE = "beacon:handle:v1";
 export interface FollowSnapshot {
   handle: string;
   name: string;
+  bio?: string;
+  status?: string;
+  status_at?: string | null;
   emoji: string;
   theme: number;
   av_url: string;
@@ -33,6 +36,9 @@ export function toSnapshot(
   return {
     handle: profile.handle,
     name: profile.name,
+    bio: profile.bio,
+    status: profile.status ?? "",
+    status_at: profile.status_at ?? null,
     emoji: profile.emoji,
     theme: profile.theme,
     av_url: profile.av_url,
@@ -131,6 +137,27 @@ function liveUrlSet(
   );
 }
 
+function snapshotSignature(snapshot: FollowSnapshot): string {
+  return JSON.stringify({
+    name: snapshot.name,
+    bio: snapshot.bio ?? "",
+    status: snapshot.status ?? "",
+    status_at: snapshot.status_at ?? null,
+    emoji: snapshot.emoji,
+    theme: snapshot.theme,
+    av_url: snapshot.av_url,
+    bn_url: snapshot.bn_url,
+    channels: snapshot.channels.map((channel) => ({
+      type: channel.type,
+      url: channel.url,
+      label: channel.label,
+      descr: channel.descr,
+      status: channel.status,
+    })),
+    pubcal: snapshot.pubcal.map((memo) => ({ d: memo.d, memo: memo.memo })),
+  });
+}
+
 /** スナップショットと現在ページを比較して差分状態を返す。page=null は削除ずみ。 */
 export function diffFollow(
   snap: FollowSnapshot,
@@ -140,11 +167,9 @@ export function diffFollow(
   const snapLive = liveUrlSet(snap.channels);
   const curLive = liveUrlSet(page.channels);
   const added = [...curLive].filter((u) => !snapLive.has(u));
-  const removed = [...snapLive].filter((u) => !curLive.has(u));
-  const nameChanged = (page.profile.name || "") !== (snap.name || "");
   const fresh = toSnapshot(page.profile, page.channels, page.cal);
   if (added.length) return { state: "new", addedLive: added.length, fresh };
-  if (removed.length || nameChanged)
+  if (snapshotSignature(snap) !== snapshotSignature(fresh))
     return { state: "changed", addedLive: 0, fresh };
   return { state: "same", addedLive: 0, fresh };
 }

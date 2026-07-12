@@ -90,6 +90,7 @@ export default async function PublicPage({
       <PublicProfileCard
         data={{
           handle,
+          followerCount: page.follower_count,
           profile,
           channels,
           pubcal: cal,

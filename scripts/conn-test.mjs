@@ -102,6 +102,20 @@ try {
     if (!blocked) failures++;
   } catch { log(true, "列挙防止: profiles 直接 select 不可"); }
 
+  // フォローID一覧は本人だけ、公開側には合計人数だけを返す
+  try {
+    await rpc("save_my_follows", {
+      p_handle: handle,
+      p_pass: pass,
+      p_targets: [handle],
+    });
+    const mine = await rpc("get_my_follows", { p_handle: handle, p_pass: pass });
+    const count = await rpc("get_follower_count", { p_handle: handle });
+    const ok = mine?.[0]?.target === handle && Number(count) === 1;
+    log(ok, "follows private / follower count public", `count=${count}`);
+    if (!ok) failures++;
+  } catch (e) { fail("follower count", e); }
+
   // 6. save_channels
   try {
     await rpc("save_channels", {

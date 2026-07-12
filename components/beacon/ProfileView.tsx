@@ -142,6 +142,9 @@ export function ProfileView({
             <VerifiedBadge />
           </div>
           <div className="xid">@{handle}</div>
+          <div className="followerCount">
+            <strong>{me.followerCount.toLocaleString("ja-JP")}</strong> フォロワー
+          </div>
           {me.profile.status && (
             <div
               style={{

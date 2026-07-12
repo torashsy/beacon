@@ -14,6 +14,7 @@ import { TrackedLink } from "./TrackedLink";
 
 export interface PublicCardData {
   handle: string;
+  followerCount?: number;
   profile: Pick<
     Profile,
     "name" | "bio" | "emoji" | "theme" | "av_url" | "bn_url" | "status"
@@ -68,6 +69,11 @@ export function PublicProfileCard({
           <VerifiedBadge />
         </div>
         <div className="xid">@{handle}</div>
+        {typeof data.followerCount === "number" && (
+          <div className="followerCount">
+            <strong>{data.followerCount.toLocaleString("ja-JP")}</strong> フォロワー
+          </div>
+        )}
         {profile.status && (
           <div
             style={{

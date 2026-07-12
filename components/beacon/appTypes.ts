@@ -14,6 +14,7 @@ export type CalMap = Record<string, { memo: string; pub: boolean }>;
 /** ログイン中ユーザーの編集対象データ。 */
 export interface Me {
   profile: Profile;
+  followerCount: number;
   channels: Channel[]; // 各要素は React key 用に id を必ず持たせる
   cal: CalMap;
   calLoaded: boolean;

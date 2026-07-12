@@ -311,6 +311,15 @@ textarea {
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
 }
+.followerCount {
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.followerCount strong {
+  color: var(--text);
+  font-size: 13px;
+}
 input:focus,
 select:focus,
 textarea:focus {

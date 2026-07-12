@@ -222,6 +222,7 @@ export function BeaconApp() {
       }
       return {
         profile: page?.profile ?? emptyProfile(handle),
+        followerCount: page?.follower_count ?? 0,
         channels: ensureIds(page?.channels ?? []),
         cal,
         calLoaded,
@@ -570,6 +571,7 @@ export function BeaconApp() {
     setPreview({
       handle: session.handle,
       profile: me.profile,
+      followerCount: me.followerCount,
       channels: me.channels,
       pubcal: publicMemos(me.cal),
     });
@@ -586,21 +588,49 @@ export function BeaconApp() {
           if (!next[f.handle]) next[f.handle] = { state: "loading", addedLive: 0 };
         return next;
       });
-      await Promise.all(
+      const entries = await Promise.all(
         list.map(async (snap) => {
           try {
             const page = await getPublicPage(db, snap.handle);
-            setFollowStates((s) => ({ ...s, [snap.handle]: diffFollow(snap, page) }));
+            return [snap.handle, diffFollow(snap, page)] as const;
           } catch {
-            setFollowStates((s) => ({
-              ...s,
-              [snap.handle]: { state: "same", addedLive: 0 },
-            }));
+            return [
+              snap.handle,
+              { state: "same", addedLive: 0 } as FollowStatus,
+            ] as const;
           }
         }),
       );
+      setFollowStates(Object.fromEntries(entries));
+
+      const changed = entries.filter(([, status]) =>
+        ["new", "changed", "deleted"].includes(status.state),
+      );
+      const owner = session?.handle ?? "guest";
+      const storageKey = `myideal:follow-notifications:v1:${owner}`;
+      const fingerprint = JSON.stringify(
+        changed.map(([handle, status]) => ({
+          handle,
+          state: status.state,
+          added: status.addedLive,
+          name: status.fresh?.name,
+          channels: status.fresh?.channels,
+          pubcal: status.fresh?.pubcal,
+        })),
+      );
+      try {
+        const previous = window.localStorage.getItem(storageKey) ?? "";
+        if (changed.length && fingerprint !== previous) {
+          toast(`フォロー中に${changed.length}件の更新があります`);
+          window.localStorage.setItem(storageKey, fingerprint);
+        } else if (!changed.length) {
+          window.localStorage.removeItem(storageKey);
+        }
+      } catch {
+        if (changed.length) toast(`フォロー中に${changed.length}件の更新があります`);
+      }
     },
-    [db],
+    [db, session, toast],
   );
 
   // 起動時とフォローの顔ぶれ変更時に再チェック（他人がサーバー側で変えた分を検知）
