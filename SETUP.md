@@ -27,6 +27,8 @@ npm run dev
 3. `Success. No rows returned` が出ればOK
    - RPC（`create_account` / `verify_login` など）とテーブル、RLS が作られる
 
+既存環境の更新手順と適用履歴は `supabase/README.md` を参照する。
+
 ## 3. Storage バケット作成（画像用）
 
 storage スキーマは `supabase_storage_admin` 所有で、SQL Editor から直接

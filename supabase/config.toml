@@ -1,0 +1,4 @@
+project_id = "kciftkinnwkjmlouzmwu"
+
+[functions.create-avatar-upload]
+verify_jwt = false
