@@ -122,6 +122,14 @@ export function BeaconApp() {
   const [followStates, setFollowStates] = useState<
     Record<string, FollowStatus>
   >({});
+  const followUpdates = useMemo(
+    () =>
+      follows.filter((follow) => {
+        const state = followStates[follow.handle]?.state;
+        return state === "new" || state === "changed" || state === "deleted";
+      }).length,
+    [follows, followStates],
+  );
   const [preview, setPreview] = useState<PublicCardData | null>(null);
 
   const [authInitialHandle, setAuthInitialHandle] = useState("");
@@ -148,6 +156,17 @@ export function BeaconApp() {
   }, []);
 
   const calLoading = useRef(false);
+
+  useEffect(() => {
+    const badgeNavigator = navigator as Navigator & {
+      setAppBadge?: (count?: number) => Promise<void>;
+      clearAppBadge?: () => Promise<void>;
+    };
+    const request = followUpdates
+      ? badgeNavigator.setAppBadge?.(followUpdates)
+      : badgeNavigator.clearAppBadge?.();
+    void request?.catch(() => {});
+  }, [followUpdates]);
 
   // 起動: フォロー一覧を読み込み、控えた handle があればログインのプリフィルに使う。
   // ログインは要求せず、ナビ（フォロー中/使い方）は最初から使える。
@@ -702,11 +721,6 @@ export function BeaconApp() {
   const selfFollowed = session
     ? follows.some((f) => f.handle === session.handle)
     : false;
-
-  const followUpdates = follows.filter((f) => {
-    const st = followStates[f.handle]?.state;
-    return st === "new" || st === "changed" || st === "deleted";
-  }).length;
 
   // ナビ（下部タブ）を出すのは通常モードのみ。認証フォーム・プレビュー・
   // プロフィール編集の全画面時は隠す。

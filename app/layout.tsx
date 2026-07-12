@@ -1,14 +1,29 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import { PwaRegister } from "@/components/PwaRegister";
 import "./globals.css";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
+  applicationName: "my-IDeal",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "my-IDeal",
+  },
   title: "my-IDeal — あなたのSNS、全部ひとつに。",
   description:
     "X・Instagram・LINEなどの連絡先とイベント予定をひとつの公開ページに。メール不要、IDとパスコードだけ。",
   alternates: { canonical: "/" },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#0284c7",
 };
 
 export default function RootLayout({
@@ -30,7 +45,10 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <PwaRegister />
+      </body>
     </html>
   );
 }
