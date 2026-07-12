@@ -163,21 +163,44 @@ try {
     if (ok !== true) failures++;
   } catch (e) { fail("reset_pass", e); }
 
-  // 14. Storage: avatars バケット + anon insert ポリシー
+  // 14. Storage: 匿名INSERTは拒否され、認証済みEdge Function経由だけ成功する
   try {
     const buf = Buffer.from(
       "/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAAA//EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAT8Qf//Z",
       "base64",
     );
-    // storage.ts と同じ方式: ユニークパスへ純粋な INSERT（upsert なし＝anon INSERTポリシーのみで足りる）
-    const path = `${handle}/av-${Date.now()}.jpg`;
-    const up = await db.storage.from("avatars").upload(path, buf, { contentType: "image/jpeg" });
-    if (up.error) throw up.error;
-    const { data: pub } = db.storage.from("avatars").getPublicUrl(path);
-    log(!!pub.publicUrl, "Storage avatars upload (anon INSERT)", pub.publicUrl);
+    const anonymousPath = `${handle}/anonymous-${Date.now()}.jpg`;
+    const anonymous = await db.storage
+      .from("avatars")
+      .upload(anonymousPath, buf, { contentType: "image/jpeg" });
+    const blocked = !!anonymous.error;
+    log(blocked, "Storage anonymous INSERT blocked", anonymous.error?.message ?? "unexpected success");
+    if (!blocked) failures++;
+
+    const sessionToken = await rpc("create_session", {
+      p_handle: handle,
+      p_pass: "newpass1",
+    });
+    const response = await fetch(`${url}/functions/v1/create-avatar-upload`, {
+      method: "POST",
+      headers: {
+        apikey: key,
+        authorization: `Bearer ${key}`,
+        "content-type": "application/json",
+        origin: "http://localhost:3000",
+      },
+      body: JSON.stringify({ handle, secret: sessionToken, kind: "av" }),
+    });
+    const grant = await response.json();
+    if (!response.ok) throw new Error(grant.error ?? `function ${response.status}`);
+    const signed = await db.storage
+      .from("avatars")
+      .uploadToSignedUrl(grant.path, grant.token, buf, { contentType: "image/jpeg" });
+    if (signed.error) throw signed.error;
+    const { data: pub } = db.storage.from("avatars").getPublicUrl(grant.path);
+    log(!!pub.publicUrl, "Storage signed upload (authenticated)", pub.publicUrl);
   } catch (e) {
-    // バケット未作成/ポリシー未設定はここで検出
-    log(false, "Storage avatars upload (anon)", String(e?.message ?? e) + "  ← SETUP手順3を確認");
+    log(false, "Storage authenticated upload", String(e?.message ?? e) + "  ← SETUP手順3を確認");
     failures++;
   }
 
