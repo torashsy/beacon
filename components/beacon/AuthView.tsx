@@ -159,9 +159,9 @@ export function AuthView({
       {pane === "create" && (
         <div>
           {onBack && (
-            <a className="backlink" onClick={onBack}>
+            <button type="button" className="backlink" onClick={onBack}>
               ← 戻る
-            </a>
+            </button>
           )}
           <h1>IDを作成</h1>
           <div className="lead">
@@ -209,7 +209,7 @@ export function AuthView({
             </button>
           </div>
           <div className="authswitch">
-            すでにIDがある → <a onClick={() => setPane("login")}>ログイン</a>
+            すでにIDがある → <button type="button" className="textlink" onClick={() => setPane("login")}>ログイン</button>
           </div>
         </div>
       )}
@@ -255,9 +255,9 @@ export function AuthView({
       {pane === "login" && (
         <div>
           {onBack && (
-            <a className="backlink" onClick={onBack}>
+            <button type="button" className="backlink" onClick={onBack}>
               ← 戻る
-            </a>
+            </button>
           )}
           <h1>ログイン</h1>
           <div className="lead">別の端末で作ったIDにも、これで入れます。</div>
@@ -316,8 +316,8 @@ export function AuthView({
             </button>
           </div>
           <div className="authswitch">
-            IDを作る → <a onClick={() => setPane("create")}>新規作成</a>　/
-            <a onClick={() => setPane("recover")}>パスコードを忘れた</a>
+            IDを作る → <button type="button" className="textlink" onClick={() => setPane("create")}>新規作成</button>　/
+            <button type="button" className="textlink" onClick={() => setPane("recover")}>パスコードを忘れた</button>
           </div>
         </div>
       )}
@@ -362,7 +362,7 @@ export function AuthView({
             </button>
           </div>
           <div className="authswitch">
-            <a onClick={() => setPane("login")}>ログインに戻る</a>
+            <button type="button" className="textlink" onClick={() => setPane("login")}>ログインに戻る</button>
           </div>
         </div>
       )}

@@ -699,12 +699,12 @@ export function BeaconApp() {
           )}
           {session && overlay === "none" && (
             <>
-              <div className="tag" onClick={() => openAuth("login")}>
+              <button type="button" className="tag" onClick={() => openAuth("login")}>
                 切替
-              </div>
-              <div className="tag" style={{ marginLeft: 8 }} onClick={logout}>
+              </button>
+              <button type="button" className="tag" style={{ marginLeft: 8 }} onClick={logout}>
                 ログアウト
-              </div>
+              </button>
             </>
           )}
         </div>
@@ -728,9 +728,9 @@ export function BeaconApp() {
         {/* 全画面: 公開プレビュー */}
         {overlay === "public" && preview && (
           <section className="view">
-            <a className="backlink" onClick={() => setOverlay("none")}>
+            <button type="button" className="backlink" onClick={() => setOverlay("none")}>
               ← 戻る
-            </a>
+            </button>
             <PublicProfileCard
               data={preview}
               actions={
@@ -808,16 +808,18 @@ export function BeaconApp() {
       </div>
 
       {showNav && (
-        <div className="nav">
+        <nav className="nav" aria-label="メインナビゲーション">
           <button
             className={`ni ${navTab === "profile" ? "on" : ""}`}
             onClick={() => goNav("profile")}
+            aria-current={navTab === "profile" ? "page" : undefined}
           >
             <span className="i">👤</span>プロフィール
           </button>
           <button
             className={`ni ${navTab === "follows" ? "on" : ""}`}
             onClick={() => goNav("follows")}
+            aria-current={navTab === "follows" ? "page" : undefined}
             style={{ position: "relative" }}
           >
             <span className="i">📋</span>フォロー中
@@ -848,13 +850,14 @@ export function BeaconApp() {
           <button
             className={`ni ${navTab === "howto" ? "on" : ""}`}
             onClick={() => goNav("howto")}
+            aria-current={navTab === "howto" ? "page" : undefined}
           >
             <span className="i">❓</span>使い方
           </button>
-        </div>
+        </nav>
       )}
 
-      <div className={`toast ${toastOn ? "show" : ""}`}>{toastMsg}</div>
+      <div className={`toast ${toastOn ? "show" : ""}`} role="status" aria-live="polite">{toastMsg}</div>
     </>
   );
 }

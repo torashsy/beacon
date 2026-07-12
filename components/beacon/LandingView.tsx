@@ -81,7 +81,7 @@ export function LandingView({
         無料でIDを作る
       </button>
       <div className="authswitch">
-        すでにIDがある → <a onClick={onLogin}>ログイン</a>
+        すでにIDがある → <button type="button" className="textlink" onClick={onLogin}>ログイン</button>
       </div>
       <LegalFooter />
     </section>
