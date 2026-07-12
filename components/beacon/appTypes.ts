@@ -29,7 +29,8 @@ export function authErrorMessage(e: unknown): string {
   if (m.includes("taken")) return "このIDは使われています";
   if (m.includes("locked")) return "試行回数が多すぎます。約15分後にお試しください";
   if (m.includes("bad recovery")) return "IDまたは復旧コードが違います";
-  if (m.includes("pass too short")) return "パスコードは6文字以上にしてください";
+  if (m.includes("pass too short")) return "パスコードは10文字以上にしてください";
+  if (m.includes("pass too long")) return "パスコードは72バイト以内にしてください";
   if (m.includes("auth")) return "IDまたはパスコードが違います";
   return "通信に失敗しました。しばらくして再度お試しください";
 }

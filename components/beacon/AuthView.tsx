@@ -62,10 +62,16 @@ export function AuthView({
   const passHint =
     !cPass
       ? { t: "", cls: "" }
-      : cPass.length < 6
-        ? { t: "6文字以上にしてください", cls: "no" }
+      : cPass.length < 10
+        ? { t: "10文字以上にしてください", cls: "no" }
+        : new TextEncoder().encode(cPass).length > 72
+          ? { t: "72バイト以内にしてください", cls: "no" }
         : { t: "OK", cls: "ok" };
-  const canCreate = cClean.length >= 3 && cPass.length >= 6 && !cBusy;
+  const canCreate =
+    cClean.length >= 3 &&
+    cPass.length >= 10 &&
+    new TextEncoder().encode(cPass).length <= 72 &&
+    !cBusy;
   // ログイン状態の保持（サーバー発行のセッショントークンを端末に保存）。
   // X/Instagram等と同じ体験を既定にするためデフォルトON。共有PC向けにオフにできる。
   const [cTrust, setCTrust] = useState(true);
@@ -124,8 +130,12 @@ export function AuthView({
       setRHint("IDと復旧コードを入力してください");
       return;
     }
-    if (rNew.length < 6) {
-      setRHint("新しいパスコードは6文字以上にしてください");
+    if (rNew.length < 10) {
+      setRHint("新しいパスコードは10文字以上にしてください");
+      return;
+    }
+    if (new TextEncoder().encode(rNew).length > 72) {
+      setRHint("新しいパスコードは72バイト以内にしてください");
       return;
     }
     setRBusy(true);
@@ -170,7 +180,7 @@ export function AuthView({
               />
             </div>
             <div className={`hint ${idHint.cls}`}>{idHint.t}</div>
-            <label className="f">パスコード（6文字以上）</label>
+            <label className="f">パスコード（10文字以上）</label>
             <input
               value={cPass}
               onChange={(e) => setCPass(e.target.value)}
@@ -337,7 +347,7 @@ export function AuthView({
               placeholder="作成時に表示された12桁コード"
               autoComplete="off"
             />
-            <label className="f">新しいパスコード（6文字以上）</label>
+            <label className="f">新しいパスコード（10文字以上）</label>
             <input
               value={rNew}
               onChange={(e) => setRNew(e.target.value)}

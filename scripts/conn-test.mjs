@@ -30,7 +30,7 @@ const log = (ok, label, extra = "") =>
   console.log(`${ok ? "✅" : "❌"} ${label}${extra ? " — " + extra : ""}`);
 
 const handle = "conntest_" + Math.random().toString(36).slice(2, 8);
-const pass = "abcdef";
+const pass = "correct-horse-1";
 const today = new Date().toISOString().slice(0, 10);
 const d2 = "2026-08-15";
 let rc = "";
@@ -157,8 +157,8 @@ try {
 
   // 13. reset_pass（復旧コードで再設定）
   try {
-    await rpc("reset_pass", { p_handle: handle, p_rc: rc, p_new: "newpass1" });
-    const ok = await rpc("verify_login", { p_handle: handle, p_pass: "newpass1" });
+    await rpc("reset_pass", { p_handle: handle, p_rc: rc, p_new: "new-correct-horse-2" });
+    const ok = await rpc("verify_login", { p_handle: handle, p_pass: "new-correct-horse-2" });
     log(ok === true, "reset_pass → 新パスでログイン", `→ ${ok}`);
     if (ok !== true) failures++;
   } catch (e) { fail("reset_pass", e); }
@@ -179,7 +179,7 @@ try {
 
     const sessionToken = await rpc("create_session", {
       p_handle: handle,
-      p_pass: "newpass1",
+      p_pass: "new-correct-horse-2",
     });
     const response = await fetch(`${url}/functions/v1/create-avatar-upload`, {
       method: "POST",
@@ -206,7 +206,7 @@ try {
 
   // 15. delete_account（後片付け）
   try {
-    await rpc("delete_account", { p_handle: handle, p_pass: "newpass1" });
+    await rpc("delete_account", { p_handle: handle, p_pass: "new-correct-horse-2" });
     const { data } = await db.from("profiles").select("handle").eq("handle", handle).maybeSingle();
     const ok = !data;
     log(ok, "delete_account（退会・後片付け）", ok ? "プロフィール消滅を確認" : "まだ残っている");

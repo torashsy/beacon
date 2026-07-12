@@ -67,6 +67,15 @@ create table if not exists auth_attempts (
   rc_locked_til timestamptz
 );
 
+-- ログイン失敗はハンドル単位でなく接続元IPとの組み合わせで制限する。
+create table if not exists login_attempts (
+  handle text not null,
+  ip text not null,
+  fail_count int default 0,
+  locked_til timestamptz,
+  primary key (handle, ip)
+);
+
 -- アカウント作成のレート制限（同一IPから1日あたり）
 create table if not exists signup_attempts (
   ip  text not null,
@@ -82,8 +91,10 @@ alter table channels      enable row level security;
 alter table cal_public    enable row level security;
 alter table cal_private   enable row level security;
 alter table auth_attempts   enable row level security;
+alter table login_attempts  enable row level security;
 alter table signup_attempts enable row level security;
 revoke select on signup_attempts from anon, authenticated;
+revoke all on login_attempts from anon, authenticated;
 
 -- 公開読み取り: profiles / channels / cal_public のみ
 drop policy if exists pub_profiles on profiles;
@@ -124,7 +135,9 @@ revoke all on sessions from anon, authenticated;
 -- 'bst_' で始まるだけの文字列（本物のパスコードかもしれない）はパスコード検証へ。
 create or replace function _check_pass(p_handle text, p_pass text)
 returns boolean language plpgsql security definer as $$
-declare a record;
+declare
+  a record;
+  client_ip text := 'unknown';
 begin
   if p_pass ~ '^bst_[0-9a-f]{64}$' then
     update sessions set expires_at = now() + interval '30 days'
@@ -138,20 +151,32 @@ begin
     return found;
   end if;
 
-  select * into a from auth_attempts where handle=lower(p_handle);
+  begin
+    client_ip := trim(split_part(
+      coalesce(current_setting('request.headers', true)::json->>'x-forwarded-for', ''),
+      ',', 1));
+    if client_ip = '' then client_ip := 'unknown'; end if;
+  exception when others then
+    client_ip := 'unknown';
+  end;
+
+  select * into a from login_attempts
+    where handle=lower(p_handle) and ip=client_ip;
   if a.locked_til is not null and a.locked_til > now() then
     raise exception 'locked';
   end if;
   if exists(select 1 from accounts where handle=lower(p_handle)
             and pass_hash = crypt(p_pass, pass_hash)) then
-    delete from auth_attempts where handle=lower(p_handle);
+    delete from login_attempts where handle=lower(p_handle) and ip=client_ip;
     return true;
   end if;
-  insert into auth_attempts(handle,fail_count) values (lower(p_handle),1)
-    on conflict (handle) do update set
-      fail_count = auth_attempts.fail_count + 1,
-      locked_til = case when auth_attempts.fail_count + 1 >= 5
-                        then now() + interval '15 minutes' else null end;
+  if client_ip <> 'unknown' then
+    insert into login_attempts(handle,ip,fail_count) values (lower(p_handle),client_ip,1)
+      on conflict (handle,ip) do update set
+        fail_count = login_attempts.fail_count + 1,
+        locked_til = case when login_attempts.fail_count + 1 >= 5
+                          then now() + interval '15 minutes' else null end;
+  end if;
   return false;
 end $$;
 
@@ -179,7 +204,8 @@ begin
     raise exception 'too many accounts created from this network today';
   end if;
 
-  if length(p_pass) < 6 then raise exception 'pass too short'; end if;
+  if length(p_pass) < 10 then raise exception 'pass too short'; end if;
+  if octet_length(p_pass) > 72 then raise exception 'pass too long'; end if;
   -- ハンドルの形式・長さはクライアント(cleanHandle)が整形するが、RPCを直接
   -- 呼べば無検証で任意の文字列を通せてしまうため、サーバー側でも検証する。
   if lower(p_handle) !~ '^[a-z0-9_]{3,20}$' then raise exception 'invalid handle'; end if;
@@ -217,7 +243,8 @@ create or replace function reset_pass(p_handle text, p_rc text, p_new text)
 returns boolean language plpgsql security definer as $$
 declare a record;
 begin
-  if length(p_new) < 6 then raise exception 'pass too short'; end if;
+  if length(p_new) < 10 then raise exception 'pass too short'; end if;
+  if octet_length(p_new) > 72 then raise exception 'pass too long'; end if;
 
   select * into a from auth_attempts where handle=lower(p_handle);
   if a.rc_locked_til is not null and a.rc_locked_til > now() then
