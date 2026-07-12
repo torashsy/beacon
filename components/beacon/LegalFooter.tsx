@@ -9,13 +9,14 @@ export function LegalFooter() {
         color: "var(--faint)",
       }}
     >
-      <a href="/terms" style={{ color: "var(--muted)" }}>
+      <Link href="/terms" style={{ color: "var(--muted)" }}>
         利用規約
-      </a>
+      </Link>
       <span style={{ margin: "0 8px" }}>·</span>
-      <a href="/privacy" style={{ color: "var(--muted)" }}>
+      <Link href="/privacy" style={{ color: "var(--muted)" }}>
         プライバシーポリシー
-      </a>
+      </Link>
     </div>
   );
 }
+import Link from "next/link";

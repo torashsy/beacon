@@ -374,7 +374,7 @@ export function BeaconApp() {
     setAuthInitialPane("login");
     setOverlay("none");
     setNavTab("profile"); // ログアウト後はランディング（プロフィールタブ）へ
-  }, [session]);
+  }, [db, session]);
 
   /** 認証フォームを開く（ランディングのボタンから）。 */
   const openAuth = useCallback((pane: "create" | "login") => {

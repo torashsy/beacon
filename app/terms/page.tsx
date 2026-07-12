@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "利用規約 · Beacon",
@@ -9,9 +10,9 @@ export default function TermsPage() {
   return (
     <main className="wrap" style={{ paddingTop: 24, paddingBottom: 60 }}>
       <div className="top">
-        <a className="logo" href="/">
+        <Link className="logo" href="/">
           Beacon<span className="dot">.</span>
-        </a>
+        </Link>
       </div>
       <h1>利用規約</h1>
       <div className="lead">最終更新日: 2026年7月</div>
