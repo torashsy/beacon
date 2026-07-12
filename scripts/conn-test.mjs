@@ -80,7 +80,8 @@ try {
     await rpc("update_profile", {
       p_handle: handle, p_pass: pass,
       p_name: "接続テスト", p_bio: "bio テスト", p_emoji: "🌊",
-      p_theme: 2, p_av: "", p_bn: "", p_status: null,
+      // p_status を省略し、旧8引数版が残ってRPC解決が曖昧になっていないことも確認する。
+      p_theme: 2, p_av: "", p_bn: "",
     });
     log(true, "update_profile");
   } catch (e) { fail("update_profile", e); }
