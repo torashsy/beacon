@@ -38,13 +38,11 @@ function Avatar({ url, emoji, handle }: { url: string; emoji: string; handle: st
 export function PublicProfileCard({
   data,
   actions,
-  metaLabel = "my-IDeal で公開中",
   trackHandle,
 }: {
   data: PublicCardData;
   /** フォローボタン等、カード右上のアクション。 */
   actions?: ReactNode;
-  metaLabel?: string;
   /** 指定時はリンククリックを集計する（公開ページのみ。プレビューでは渡さない）。 */
   trackHandle?: string;
 }) {
@@ -75,7 +73,7 @@ export function PublicProfileCard({
             style={{
               marginTop: 10,
               background: "var(--eml)",
-              border: "1px solid rgba(16,185,129,.3)",
+              border: "1px solid rgba(56,189,248,.3)",
               borderRadius: 12,
               padding: "8px 12px",
               fontSize: 13,
@@ -83,14 +81,10 @@ export function PublicProfileCard({
               color: "var(--emd)",
             }}
           >
-            💬 {profile.status}
+            {profile.status}
           </div>
         )}
         {profile.bio && <div className="xbio">{profile.bio}</div>}
-        <div className="xmeta">
-          <span className="live" />
-          <span>{metaLabel}</span>
-        </div>
       </div>
 
       <div className="xpane" style={{ paddingTop: 4, paddingBottom: 0 }}>

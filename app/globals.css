@@ -15,8 +15,8 @@
   --surface: #fff;
   --border: #dbeef7;
   --ink: #f0f9ff;
-  --radius: 18px;
-  --shadow: 0 6px 20px rgba(2, 132, 199, 0.1);
+  --radius: 14px;
+  --shadow: 0 1px 3px rgba(15, 54, 78, 0.08);
 }
 * {
   box-sizing: border-box;
@@ -95,7 +95,7 @@ h1 {
 .xcard {
   background: #fff;
   border: 1px solid var(--border);
-  border-radius: 20px;
+  border-radius: 16px;
   overflow: hidden;
   box-shadow: var(--shadow);
 }
@@ -389,7 +389,7 @@ textarea {
 .btn.sig {
   background: var(--em);
   color: #fff;
-  box-shadow: 0 5px 14px rgba(56, 189, 248, 0.35);
+  box-shadow: none;
 }
 .btn.sig:hover:not(:disabled) {
   background: var(--emd);
@@ -1001,6 +1001,18 @@ textarea {
   z-index: 40;
   box-shadow: 0 -8px 28px rgba(2, 132, 199, 0.08);
 }
+.searchIcon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  transform: translateY(-50%);
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
 .nav .ni {
   flex: 1;
   text-align: center;
@@ -1082,6 +1094,24 @@ textarea {
   border: 0;
   background: transparent;
   font-family: inherit;
+}
+.navIcon {
+  width: 21px;
+  height: 21px;
+  display: block;
+  margin: 0 auto 3px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.previewLabel {
+  margin-top: 12px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
 }
 .textlink {
   display: inline;

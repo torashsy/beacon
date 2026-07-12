@@ -45,21 +45,23 @@ export function FollowsView({
   return (
     <section className="view">
       <h1>フォロー中</h1>
-      <div className="lead">相手の垢が変わっても、今の連絡先が分かります。</div>
       {!loggedIn && (
         <div className="note" style={{ marginBottom: 12 }}>
-          この一覧はこの端末だけに保存されています。
-          <a
+          ゲストのフォローはこの端末に保存されます。{' '}
+          <button
+            type="button"
+            className="textlink"
             onClick={onLoginPrompt}
-            style={{ color: "var(--emd)", fontWeight: 700, cursor: "pointer" }}
           >
             ログイン
-          </a>
-          すると自分のページも編集できます。
+          </button>
         </div>
       )}
       <div className="search">
-        <span className="ic">🔍</span>
+        <svg className="searchIcon" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="11" cy="11" r="6" />
+          <path d="m16 16 4 4" />
+        </svg>
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
@@ -77,10 +79,8 @@ export function FollowsView({
         <div>
           {!follows.length ? (
             <div className="empty">
-              <span className="big">📋</span>
               まだフォローしていません。
-              <br />
-              相手のページで「フォローする」を押すと、ここに追加されます。
+              <br />相手のページから追加できます。
             </div>
           ) : !shown.length ? (
             <div className="empty">該当する人がいません。</div>
@@ -117,7 +117,7 @@ export function FollowsView({
                     <button
                       className="unf"
                       style={{
-                        borderColor: "rgba(16,185,129,.45)",
+                        borderColor: "rgba(56,189,248,.45)",
                         color: "var(--emd)",
                         background: "var(--eml)",
                       }}
@@ -171,7 +171,7 @@ function FollowBadge({ st }: { st: FollowStatus }) {
         style={{
           ...base,
           color: "var(--emd)",
-          border: "1.5px solid rgba(16,185,129,.45)",
+          border: "1.5px solid rgba(56,189,248,.45)",
           padding: "1px 8px",
         }}
       >

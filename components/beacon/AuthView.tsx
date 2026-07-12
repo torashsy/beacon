@@ -164,9 +164,6 @@ export function AuthView({
             </button>
           )}
           <h1>IDを作成</h1>
-          <div className="lead">
-            メールアドレスは不要です。IDとパスコードだけで作れます。
-          </div>
           <div className="card">
             <label className="f">ID</label>
             <div className="idfield">
@@ -217,10 +214,7 @@ export function AuthView({
       {pane === "recovery" && (
         <div>
           <h1>アカウントを作成しました</h1>
-          <div className="lead">
-            この「復旧コード」を控えておくと、パスコードを忘れても復旧できます。
-            あとでプロフィール画面からいつでも確認・再発行できるので、今すぐでなくても大丈夫です。
-          </div>
+          <div className="lead">復旧コードを安全な場所に保存してください。</div>
           <div className="card">
             <div className="rcode">{rc}</div>
             <button
@@ -238,16 +232,8 @@ export function AuthView({
               style={{ marginTop: 14 }}
               onClick={onEnter}
             >
-              控えた・はじめる
+              はじめる
             </button>
-            <button className="btn ghost" onClick={onEnter}>
-              あとで設定する
-            </button>
-          </div>
-          <div className="note">
-            ※ メールアドレスを登録しないため、パスコードと復旧コードの両方を
-            忘れるとログインできなくなります。復旧コードはプロフィールの
-            「復旧コードを再発行」からいつでも作り直せます。
           </div>
         </div>
       )}
@@ -260,7 +246,6 @@ export function AuthView({
             </button>
           )}
           <h1>ログイン</h1>
-          <div className="lead">別の端末で作ったIDにも、これで入れます。</div>
           <div className="card">
             {knownHandles.length > 0 && (
               <>
@@ -325,9 +310,6 @@ export function AuthView({
       {pane === "recover" && (
         <div>
           <h1>パスコードの再設定</h1>
-          <div className="lead">
-            作成時に控えた復旧コードで再設定できます。
-          </div>
           <div className="card">
             <label className="f">ID</label>
             <div className="idfield">

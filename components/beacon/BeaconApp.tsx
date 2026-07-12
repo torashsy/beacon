@@ -79,6 +79,20 @@ import {
 type NavTab = "profile" | "follows" | "howto";
 type Overlay = "none" | "auth" | "public";
 
+function NavIcon({ name }: { name: NavTab }) {
+  const path =
+    name === "profile"
+      ? "M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z"
+      : name === "follows"
+        ? "M6 4h12a2 2 0 0 1 2 2v14l-8-4-8 4V6a2 2 0 0 1 2-2Z"
+        : "M9.1 9a3 3 0 1 1 4.3 2.7c-.9.5-1.4 1.1-1.4 2.3M12 18h.01";
+  return (
+    <svg className="navIcon" viewBox="0 0 24 24" aria-hidden="true">
+      <path d={path} />
+    </svg>
+  );
+}
+
 function publicMemos(cal: CalMap): CalMemo[] {
   return Object.entries(cal)
     .filter(([, v]) => v.pub && v.memo)
@@ -741,10 +755,7 @@ export function BeaconApp() {
                 </button>
               }
             />
-            <div className="note" style={{ marginTop: 14 }}>
-              これはあなたの公開ページ（/@{preview.handle}）のプレビューです。
-              相手にはこの見た目で表示されます。
-            </div>
+            <div className="previewLabel">公開ページのプレビュー</div>
             <div style={{ marginTop: 14 }}>
               <CreateYoursFooter href={`/@${preview.handle}`} />
             </div>
@@ -812,7 +823,7 @@ export function BeaconApp() {
             onClick={() => goNav("profile")}
             aria-current={navTab === "profile" ? "page" : undefined}
           >
-            <span className="i">👤</span>プロフィール
+            <NavIcon name="profile" />プロフィール
           </button>
           <button
             className={`ni ${navTab === "follows" ? "on" : ""}`}
@@ -820,7 +831,7 @@ export function BeaconApp() {
             aria-current={navTab === "follows" ? "page" : undefined}
             style={{ position: "relative" }}
           >
-            <span className="i">📋</span>フォロー中
+            <NavIcon name="follows" />フォロー中
             {followUpdates > 0 && (
               <span
                 aria-label={`${followUpdates}件の更新`}
@@ -850,7 +861,7 @@ export function BeaconApp() {
             onClick={() => goNav("howto")}
             aria-current={navTab === "howto" ? "page" : undefined}
           >
-            <span className="i">❓</span>使い方
+            <NavIcon name="howto" />使い方
           </button>
         </nav>
       )}

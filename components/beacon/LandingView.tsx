@@ -3,11 +3,7 @@
 import { PublicProfileCard, type PublicCardData } from "./PublicProfileCard";
 import { LegalFooter } from "./LegalFooter";
 
-/**
- * 未ログイン時のトップ（ランディング）。
- * 方針（ユーザー合意済み）: シンプル最優先。キャッチ1本＋サンプル1枚＋要点3つだけ。
- * 機能の網羅紹介はしない（触れば分かるものは語らない）。
- */
+/** 未ログイン時のトップ。操作と完成イメージだけを見せる。 */
 
 const DEMO: PublicCardData = {
   handle: "my_ideal_sample",
@@ -33,16 +29,6 @@ const DEMO: PublicCardData = {
   pubcal: [{ d: "2026-07-12", memo: "ライブ出演 19:00〜 @渋谷" }],
 };
 
-const POINTS: [string, string, string][] = [
-  ["📌", "配るURLはひとつ", "連絡先をまとめて、プロフィールにはこのURLだけ。"],
-  ["📅", "予定も告知できる", "ライブ・イベント・空き日をカレンダーで。"],
-  [
-    "🕶",
-    "メール不要・検索されない",
-    "IDとパスコードだけ。見られるのはURLを知っている人だけ。",
-  ],
-];
-
 export function LandingView({
   onCreate,
   onLogin,
@@ -60,28 +46,9 @@ export function LandingView({
         ログイン
       </button>
 
-      <h2>こんな公開ページが30秒で作れます</h2>
+      <h2>見本</h2>
       <div style={{ pointerEvents: "none", userSelect: "none" }} aria-hidden>
         <PublicProfileCard data={DEMO} />
-      </div>
-
-      {POINTS.map(([icon, t, d]) => (
-        <div className="step" key={t} style={{ marginTop: 12 }}>
-          <div className="no" style={{ background: "var(--eml)" }}>
-            {icon}
-          </div>
-          <div className="stx">
-            <div className="t">{t}</div>
-            <div className="d">{d}</div>
-          </div>
-        </div>
-      ))}
-
-      <button className="btn sig" onClick={onCreate} style={{ marginTop: 18 }}>
-        無料でIDを作る
-      </button>
-      <div className="authswitch">
-        すでにIDがある → <button type="button" className="textlink" onClick={onLogin}>ログイン</button>
       </div>
       <LegalFooter />
     </section>
