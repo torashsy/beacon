@@ -495,18 +495,37 @@ grant execute on function get_clicks(text, text) to anon;
 -- 権限エラーになる。そのためこの schema.sql には含めず、SETUP.md 手順3で
 --   1) ダッシュボードで 'avatars'(public) バケットを作成
 --   2) supabase/storage-policies.sql を SQL Editor で実行
---      （anon の insert を「実在するハンドルのフォルダのみ」に限定 + バケットの
---       サイズ/MIME制限。濫用防止のため anon の update ポリシーは付与しない）
+--      （ブラウザの匿名insert/updateを禁止 + バケットのサイズ/MIME制限）
 -- の2段で設定する（本体スキーマの実行を安全に保つため分離）。
 
--- avatars_anon_insert ポリシー（storage-policies.sql）が参照する判定関数。
--- storage.objects の RLS からは accounts テーブルを直接参照できない（anon には
--- select 権限が無い）ため、security definer で判定する。
-create or replace function handle_exists(p_handle text)
-returns boolean language sql security definer stable as $$
-  select exists(select 1 from accounts where handle = lower(p_handle));
-$$;
-grant execute on function handle_exists(text) to anon;
+create table if not exists avatar_upload_attempts (
+  handle text not null references accounts(handle) on delete cascade,
+  window_start timestamptz not null,
+  n integer not null default 0,
+  primary key (handle, window_start)
+);
+alter table avatar_upload_attempts enable row level security;
+revoke all on avatar_upload_attempts from anon, authenticated;
+
+-- Edge Functionだけが呼ぶ認証・毎時上限チェック。署名付きURLの発行前に実行する。
+create or replace function authorize_avatar_upload(p_handle text, p_pass text)
+returns boolean language plpgsql security definer as $$
+declare
+  current_window timestamptz := date_trunc('hour', now());
+  attempts integer;
+begin
+  if not _check_pass(p_handle, p_pass) then return false; end if;
+  insert into avatar_upload_attempts(handle, window_start, n)
+    values (lower(p_handle), current_window, 1)
+    on conflict (handle, window_start) do update
+      set n = avatar_upload_attempts.n + 1
+    returning n into attempts;
+  if attempts > 30 then raise exception 'upload rate limit'; end if;
+  delete from avatar_upload_attempts where window_start < now() - interval '2 days';
+  return true;
+end $$;
+revoke all on function authorize_avatar_upload(text, text) from public, anon, authenticated;
+grant execute on function authorize_avatar_upload(text, text) to service_role;
 
 -- ---- 退会後にStorageへ残る画像（アバター/バナー）の定期削除 ----
 -- 詳細・設計方針は supabase/storage-cleanup-migration.sql 参照。

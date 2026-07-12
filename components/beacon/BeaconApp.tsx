@@ -468,10 +468,10 @@ export function BeaconApp() {
         let av_url = prof.av_url;
         let bn_url = prof.bn_url;
         if (edit.av.mode === "new" && edit.av.file)
-          av_url = await uploadImage(db, session.handle, "av", edit.av.file);
+          av_url = await uploadImage(db, session.handle, session.pass, "av", edit.av.file);
         else if (edit.av.mode === "remove") av_url = "";
         if (edit.bn.mode === "new" && edit.bn.file)
-          bn_url = await uploadImage(db, session.handle, "bn", edit.bn.file);
+          bn_url = await uploadImage(db, session.handle, session.pass, "bn", edit.bn.file);
         else if (edit.bn.mode === "remove") bn_url = "";
 
         const nextProfile = {
@@ -511,7 +511,7 @@ export function BeaconApp() {
   const uploadThumb = useCallback(
     async (file: File): Promise<string> => {
       if (!session) throw new Error("no session");
-      return uploadImage(db, session.handle, "thumb", file);
+      return uploadImage(db, session.handle, session.pass, "thumb", file);
     },
     [db, session],
   );
