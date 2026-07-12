@@ -3,9 +3,8 @@ import type { PublicPage } from "./rpc";
 import { HEADING_TYPE } from "./constants";
 
 /**
- * フォロー中一覧は「端末ローカル(localStorage)」だけに置く。
- * サーバーには保存しない（beacon.html と同じ挙動 / 横断一覧APIを作らない法的制約）。
- * 各エントリは公開ページを開いた時点のスナップショット。
+ * 表示用スナップショットは端末localStorageに置き、ログイン中はハンドルだけを
+ * 本人専用RPCでサーバー同期する。横断一覧・検索APIは作らない。
  */
 
 const K_FOLLOWS = "beacon:myfollows:v1";

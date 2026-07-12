@@ -7,7 +7,7 @@ import { HEADING_TYPE } from "@/lib/beacon/constants";
 import type { FollowSnapshot, FollowStatus } from "@/lib/beacon/follows";
 
 /**
- * フォロー中一覧（表示専用）。データは端末ローカル(localStorage)のみ。
+ * フォロー中一覧（表示専用）。表示用データは端末ローカル、ID一覧はログイン時にサーバー同期する。
  * 変化検知（各相手の最新取得と差分）は BeaconApp 側で行い、ここは states を
  * 受け取ってバッジ表示するだけ（ナビの更新ドットと計算を共有するため）。
  * サーバーへの横断検索・一覧はしない。

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "プライバシーポリシー · Beacon",
@@ -9,9 +10,9 @@ export default function PrivacyPage() {
   return (
     <main className="wrap" style={{ paddingTop: 24, paddingBottom: 60 }}>
       <div className="top">
-        <a className="logo" href="/">
+        <Link className="logo" href="/">
           Beacon<span className="dot">.</span>
-        </a>
+        </Link>
       </div>
       <h1>プライバシーポリシー</h1>
       <div className="lead">最終更新日: 2026年7月</div>
@@ -27,6 +28,8 @@ export default function PrivacyPage() {
             利用者が任意で登録するプロフィール情報（名前・自己紹介・ひとこと近況・アイコン/ヘッダー画像・
             リンク一覧・カレンダーメモ）
           </li>
+          <li>本人だけが利用するフォロー中ID一覧（端末間同期のためサーバーにも保存します）</li>
+          <li>ログイン状態を保持するためのセッショントークン（サーバーにはハッシュのみ保存します）</li>
           <li>
             アクセスログ・IPアドレス等 — ホスティング事業者（Vercel）およびデータベース事業者
             （Supabase）が標準的に取得するもの。不正利用防止（アカウント作成のレート制限等）にも利用します
@@ -42,8 +45,10 @@ export default function PrivacyPage() {
 
         <h2 style={{ margin: "20px 0 8px" }}>3. Cookie・端末内保存データ</h2>
         <p>
-          本サービスは、ログインID控え・フォロー中一覧・ログイン状態（セッショントークン）などを
-          利用者の端末（localStorage）に保存します。これらは広告目的のトラッキングには使用しません。
+          本サービスは、ログインID控え・フォロー中一覧の表示用スナップショット・ログイン状態
+          （セッショントークン）などを利用者の端末（localStorage）に保存します。
+          ログイン中は、フォロー中のID一覧を本人専用データとしてサーバーにも保存し、端末間で同期します。
+          他の利用者からこの一覧を検索・閲覧することはできません。これらは広告目的のトラッキングには使用しません。
           「ログイン状態を保持する」を有効にした場合、パスコードそのものではなく、
           サーバーが発行した失効可能なセッショントークンを端末に保存します
           （パスコードの再設定によりすべての端末のログイン状態を無効化できます）。
@@ -60,8 +65,8 @@ export default function PrivacyPage() {
 
         <h2 style={{ margin: "20px 0 8px" }}>5. 保存期間・削除</h2>
         <p>
-          プロフィール情報・リンク・カレンダーメモは、退会（アカウント削除）操作により
-          データベースから削除されます。ただし、アップロードした画像ファイルについては、
+          プロフィール情報・リンク・カレンダーメモ・フォロー中ID一覧・セッションは、
+          退会（アカウント削除）操作によりデータベースから削除されます。ただし、アップロードした画像ファイルについては、
           運用上の制約により退会後もストレージに残存する場合があります。この点は今後の
           改善を予定しています。
         </p>
