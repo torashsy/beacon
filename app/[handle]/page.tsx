@@ -59,8 +59,9 @@ export async function generateMetadata({
     title,
     description,
     robots: NOINDEX,
+    alternates: { canonical: `/@${handle}` },
     // OGP画像は opengraph-image.tsx が動的生成（ブランドカード）
-    openGraph: { title, description, type: "profile" },
+    openGraph: { title, description, type: "profile", url: `/@${handle}` },
     twitter: { card: "summary_large_image", title, description },
   };
 }

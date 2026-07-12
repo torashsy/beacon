@@ -14,6 +14,14 @@ export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 export const alt = "Beacon profile";
 
+const siteHost = (() => {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").host;
+  } catch {
+    return "localhost:3000";
+  }
+})();
+
 function normalizeHandle(raw: string): string | null {
   const d = decodeURIComponent(raw);
   if (!d.startsWith("@")) return null;
@@ -105,7 +113,7 @@ export default async function Image({
               borderRadius: 999,
             }}
           >
-            {`beacon-beige-gamma.vercel.app/@${handle ?? ""}`}
+            {`${siteHost}/@${handle ?? ""}`}
           </div>
         </div>
         <div
