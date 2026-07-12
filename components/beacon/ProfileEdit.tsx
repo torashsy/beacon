@@ -4,12 +4,19 @@ import { useEffect, useRef, useState } from "react";
 import type { Profile } from "@/lib/beacon/types";
 import { COLORS, EMOJIS, grad } from "@/lib/beacon/constants";
 import { CameraIcon } from "./icons";
+import { ImageCropper } from "./ImageCropper";
 
 /**
  * X風のプロフィール編集。beacon.html の prof-edit を移植。
  * 画像は base64 ではなく File を受け取り、保存時に storage.ts 経由で
  * 'avatars' バケットへアップロードする（実処理は onSave 側）。
+ *
+ * 画像選択（新規/既存の位置調整）は必ず ImageCropper を経由し、
+ * ユーザーが指定した切り抜き位置・拡大率で確定した Blob を File 化して使う。
  */
+
+/** ヘッダー画像の切り抜き枠の 幅/高さ 比。 */
+const BANNER_ASPECT = 3;
 
 /** 画像1枚の編集状態。 */
 export interface ImageEdit {
@@ -48,6 +55,10 @@ export function ProfileEdit({
   const [av, setAv] = useState<ImageEdit>({ mode: "keep" });
   const [bn, setBn] = useState<ImageEdit>({ mode: "keep" });
   const [busy, setBusy] = useState(false);
+  const [cropTarget, setCropTarget] = useState<{
+    kind: "av" | "bn";
+    file: File;
+  } | null>(null);
 
   const avInput = useRef<HTMLInputElement>(null);
   const bnInput = useRef<HTMLInputElement>(null);
@@ -67,22 +78,40 @@ export function ProfileEdit({
     const file = e.target.files?.[0];
     e.target.value = ""; // 同じファイルを再選択できるように
     if (!file) return;
-    const previewUrl = URL.createObjectURL(file);
-    if (kind === "av") {
-      setAv((p) => {
-        if (p.previewUrl) URL.revokeObjectURL(p.previewUrl);
-        return { mode: "new", file, previewUrl };
-      });
-    } else {
-      setBn((p) => {
-        if (p.previewUrl) URL.revokeObjectURL(p.previewUrl);
-        return { mode: "new", file, previewUrl };
-      });
-    }
+    setCropTarget({ kind, file }); // 必ずクロッパーを経由させる
   }
 
   const avUrl = currentUrl(av, profile.av_url);
   const bnUrl = currentUrl(bn, profile.bn_url);
+
+  /** 既存（保存済み or 選択済み）の画像を、そのまま切り抜き位置だけ調整し直す。 */
+  async function adjustExisting(kind: "av" | "bn") {
+    const url = kind === "av" ? avUrl : bnUrl;
+    if (!url) return;
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const file = new File([blob], `${kind}.jpg`, {
+        type: blob.type || "image/jpeg",
+      });
+      setCropTarget({ kind, file });
+    } catch {
+      /* 取得できない場合は諦める（新規アップロードで代替可能） */
+    }
+  }
+
+  function applyCrop(blob: Blob) {
+    if (!cropTarget) return;
+    const { kind } = cropTarget;
+    const file = new File([blob], `${kind}.jpg`, { type: "image/jpeg" });
+    const previewUrl = URL.createObjectURL(blob);
+    const setter = kind === "av" ? setAv : setBn;
+    setter((p) => {
+      if (p.previewUrl) URL.revokeObjectURL(p.previewUrl);
+      return { mode: "new", file, previewUrl };
+    });
+    setCropTarget(null);
+  }
 
   async function save() {
     setBusy(true);
@@ -161,20 +190,30 @@ export function ProfileEdit({
         </div>
         <div className="efields">
           {avUrl && av.mode !== "remove" && (
-            <button
-              className="rmimg"
-              onClick={() => setAv({ mode: "remove" })}
-            >
-              アイコン画像を削除
-            </button>
+            <>
+              <button className="editimg" onClick={() => adjustExisting("av")}>
+                アイコンの位置を調整
+              </button>
+              <button
+                className="rmimg"
+                onClick={() => setAv({ mode: "remove" })}
+              >
+                アイコン画像を削除
+              </button>
+            </>
           )}
           {bnUrl && bn.mode !== "remove" && (
-            <button
-              className="rmimg"
-              onClick={() => setBn({ mode: "remove" })}
-            >
-              ヘッダー画像を削除
-            </button>
+            <>
+              <button className="editimg" onClick={() => adjustExisting("bn")}>
+                ヘッダーの位置を調整
+              </button>
+              <button
+                className="rmimg"
+                onClick={() => setBn({ mode: "remove" })}
+              >
+                ヘッダー画像を削除
+              </button>
+            </>
           )}
           <div className="efield">
             <div className="el">名前</div>
@@ -238,6 +277,17 @@ export function ProfileEdit({
           </div>
         </div>
       </div>
+
+      {cropTarget && (
+        <ImageCropper
+          file={cropTarget.file}
+          shape={cropTarget.kind === "av" ? "circle" : "rect"}
+          aspect={BANNER_ASPECT}
+          title={cropTarget.kind === "av" ? "アイコンの位置を調整" : "ヘッダーの位置を調整"}
+          onCancel={() => setCropTarget(null)}
+          onConfirm={applyCrop}
+        />
+      )}
     </div>
   );
 }

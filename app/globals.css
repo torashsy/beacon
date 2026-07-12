@@ -860,6 +860,16 @@ textarea {
   padding: 0;
   margin: 0 14px 14px 0;
 }
+.editimg {
+  font-size: 11px;
+  color: var(--emd);
+  font-weight: 700;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin: 0 14px 14px 0;
+}
 .calhead {
   display: flex;
   align-items: center;
@@ -1109,4 +1119,24 @@ textarea {
 }
 a {
   color: inherit;
+}
+
+/* ---- 画像クロッパー（アイコン/ヘッダーの切り抜き位置指定） ---- */
+.cropFrame {
+  position: relative;
+  overflow: hidden;
+  width: min(320px, 78vw);
+  margin: 0 auto;
+  background: #0b1512;
+  touch-action: none;
+  cursor: grab;
+}
+.cropFrame.circle {
+  border-radius: 50%;
+}
+.cropFrame.rect {
+  border-radius: 12px;
+}
+.cropFrame img {
+  max-width: none;
 }
