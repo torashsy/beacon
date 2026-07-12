@@ -71,7 +71,6 @@ export function AuthView({
   const [cTrust, setCTrust] = useState(true);
 
   const [rc, setRc] = useState("");
-  const [rcSaved, setRcSaved] = useState(false);
   const [rcCopied, setRcCopied] = useState(false);
 
   async function submitCreate() {
@@ -207,10 +206,10 @@ export function AuthView({
 
       {pane === "recovery" && (
         <div>
-          <h1>復旧コード</h1>
+          <h1>アカウントを作成しました</h1>
           <div className="lead">
-            パスコードを忘れた時、これがあれば復旧できます。
-            今この場で必ず控えてください（スクショ・メモ・パスワード管理アプリなど）。
+            この「復旧コード」を控えておくと、パスコードを忘れても復旧できます。
+            あとでプロフィール画面からいつでも確認・再発行できるので、今すぐでなくても大丈夫です。
           </div>
           <div className="card">
             <div className="rcode">{rc}</div>
@@ -224,24 +223,21 @@ export function AuthView({
             >
               {rcCopied ? "コピーしました ✓" : "コピー"}
             </button>
-            <label className="chk" style={{ marginTop: 14 }}>
-              <input
-                type="checkbox"
-                checked={rcSaved}
-                onChange={(e) => setRcSaved(e.target.checked)}
-              />
-              <span>控えました。無くすとログインできなくなることを理解しました。</span>
-            </label>
             <button
               className="btn sig"
-              disabled={!rcSaved}
+              style={{ marginTop: 14 }}
               onClick={onEnter}
             >
-              はじめる
+              控えた・はじめる
+            </button>
+            <button className="btn ghost" onClick={onEnter}>
+              あとで設定する
             </button>
           </div>
           <div className="note">
-            復旧コードは後からプロフィールの「復旧コードを再発行」でも作り直せます。
+            ※ メールアドレスを登録しないため、パスコードと復旧コードの両方を
+            忘れるとログインできなくなります。復旧コードはプロフィールの
+            「復旧コードを再発行」からいつでも作り直せます。
           </div>
         </div>
       )}
