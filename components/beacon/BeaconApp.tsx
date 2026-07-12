@@ -103,7 +103,6 @@ export function BeaconApp() {
   // 全画面オーバーレイ（ナビを隠す）: 認証フォーム / 公開プレビュー
   const [overlay, setOverlay] = useState<Overlay>("none");
   const [editing, setEditing] = useState(false);
-  const [rcPlain, setRcPlain] = useState<string | null>(null);
   const [follows, setFollows] = useState<FollowSnapshot[]>([]);
   const [followStates, setFollowStates] = useState<
     Record<string, FollowStatus>
@@ -311,7 +310,6 @@ export function BeaconApp() {
       const rc = await createAccount(db, handle, pass);
       const secret = await establishSession(handle, pass, remember);
       setSession({ handle, pass: secret });
-      setRcPlain(rc);
       persistHandle(handle);
       setMe(await loadMe(handle, secret));
       return rc;
@@ -363,7 +361,6 @@ export function BeaconApp() {
     }
     setSession(null);
     setMe(null);
-    setRcPlain(null);
     setEditing(false);
     setPreview(null);
     clearStoredSession();
@@ -519,24 +516,10 @@ export function BeaconApp() {
     [db, session],
   );
 
-  const showRc = useCallback(() => {
-    if (rcPlain) {
-      window.alert(
-        "復旧コード:\n\n" +
-          rcPlain +
-          "\n\n控えを残してください。\n（安全のためサーバーには平文を保存していません。この復旧コードは作成時のみ表示され、次回ログイン以降は再表示できません）",
-      );
-    } else {
-      toast("復旧コードは作成時のみ表示されます（再表示不可）");
-    }
-  }, [rcPlain, toast]);
-
   /** 復旧コードの再発行（要パスコード）。古いコードは無効になり新しいものだけ使える。 */
   const reissueRc = useCallback(async (): Promise<string> => {
     if (!session) throw new Error("no session");
-    const rc = await reissueRecovery(db, session.handle, session.pass);
-    setRcPlain(rc); // 今後 showRc でも直近発行分を確認できるようにする
-    return rc;
+    return reissueRecovery(db, session.handle, session.pass);
   }, [db, session]);
 
   const doDeleteAccount = useCallback(async () => {
@@ -561,7 +544,6 @@ export function BeaconApp() {
       setKnownHandles(removeHandle(session.handle));
       setSession(null);
       setMe(null);
-      setRcPlain(null);
       setEditing(false);
       setAuthInitialHandle("");
       setAuthInitialPane("create");
@@ -787,7 +769,6 @@ export function BeaconApp() {
                   handle={session.handle}
                   onEdit={() => setEditing(true)}
                   onPreview={openPreview}
-                  onShowRc={showRc}
                   onReissueRc={reissueRc}
                   onSaveChannels={persistChannels}
                   onSaveCal={persistCal}
