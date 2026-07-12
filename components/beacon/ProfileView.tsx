@@ -10,7 +10,6 @@ import {
 } from "@/lib/beacon/constants";
 import { detectType } from "@/lib/beacon/detect";
 import { dkey } from "@/lib/beacon/format";
-import { safeUrl } from "@/lib/beacon/safe";
 import { isValidLinkUrl } from "@/lib/beacon/validate";
 import { cryptoId, type Me, type ToastFn } from "./appTypes";
 import { LinkThumb, VerifiedBadge } from "./icons";
@@ -27,7 +26,6 @@ export function ProfileView({
   handle,
   onEdit,
   onPreview,
-  onShowRc,
   onReissueRc,
   onSaveChannels,
   onSaveCal,
@@ -39,7 +37,6 @@ export function ProfileView({
   handle: string;
   onEdit: () => void;
   onPreview: () => void;
-  onShowRc: () => void;
   onReissueRc: () => Promise<string>;
   onSaveChannels: (next: Channel[]) => Promise<boolean>;
   onSaveCal: (date: string, memo: string, pub: boolean) => Promise<boolean>;
@@ -214,12 +211,9 @@ export function ProfileView({
         「支援」には、ほしいものリストやFantiaなど外部の支援ページのURLを貼れます。
         Beaconはお金のやり取りを仲介しません。
       </div>
-      <button className="btn ghost" style={{ marginTop: 10 }} onClick={onShowRc}>
-        復旧コードを確認する
-      </button>
       <button
         className="btn ghost"
-        style={{ marginTop: 8 }}
+        style={{ marginTop: 10 }}
         disabled={reissueBusy}
         onClick={doReissueRc}
       >
@@ -339,7 +333,6 @@ function LinksPane({
   const [desc, setDesc] = useState("");
   const [img, setImg] = useState(""); // 個別サムネイルURL
   const [imgBusy, setImgBusy] = useState(false);
-  const [preview, setPreview] = useState(false); // 編集/プレビュー トグル
   const thumbInput = useRef<HTMLInputElement>(null);
 
   const isHeading = type === HEADING_TYPE;
@@ -445,47 +438,8 @@ function LinksPane({
     }
   }
 
-  // プレビュー（訪問者の見え方）
-  if (preview) {
-    const shown = chans.filter(
-      (c) => c.type === HEADING_TYPE || c.status === "live",
-    );
-    return (
-      <div className="xpane">
-        <PreviewToggle preview={preview} setPreview={setPreview} />
-        {shown.length ? (
-          shown.map((c, i) =>
-            c.type === HEADING_TYPE ? (
-              <h2 key={c.id ?? i} style={{ margin: "14px 4px 8px" }}>
-                {c.label}
-              </h2>
-            ) : (
-              <a
-                key={c.id ?? i}
-                className="plink"
-                href={safeUrl(c.url)}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <LinkThumb type={c.type} img={c.img_url} />
-                <div className="pmeta">
-                  <div className="lb2">{c.label || typeMeta(c.type).lb}</div>
-                  {c.descr && <div className="ds">{c.descr}</div>}
-                </div>
-                <span className="go">→</span>
-              </a>
-            ),
-          )
-        ) : (
-          <div className="empty">有効なリンクがありません。</div>
-        )}
-      </div>
-    );
-  }
-
   return (
     <div className="xpane">
-      <PreviewToggle preview={preview} setPreview={setPreview} />
       <div>
         {chans.length ? (
           chans.map((c, i) => {
@@ -741,32 +695,6 @@ function ClickSummary({ me }: { me: Me }) {
           ・一番人気: <b style={{ color: "var(--text)" }}>{topLabel}</b>
         </span>
       )}
-    </div>
-  );
-}
-
-/** 編集 / プレビュー（見え方）を切り替えるセグメント。 */
-function PreviewToggle({
-  preview,
-  setPreview,
-}: {
-  preview: boolean;
-  setPreview: (v: boolean) => void;
-}) {
-  return (
-    <div className="xtabs" style={{ borderTop: "none", marginTop: 0 }}>
-      <button
-        className={`xtab ${!preview ? "on" : ""}`}
-        onClick={() => setPreview(false)}
-      >
-        編集
-      </button>
-      <button
-        className={`xtab ${preview ? "on" : ""}`}
-        onClick={() => setPreview(true)}
-      >
-        見え方
-      </button>
     </div>
   );
 }
