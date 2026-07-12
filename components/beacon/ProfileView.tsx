@@ -12,13 +12,13 @@ import { detectType } from "@/lib/beacon/detect";
 import { dkey } from "@/lib/beacon/format";
 import { safeUrl } from "@/lib/beacon/safe";
 import { isValidLinkUrl } from "@/lib/beacon/validate";
-import { generateShareCard } from "@/lib/beacon/shareCard";
 import { cryptoId, type Me, type ToastFn } from "./appTypes";
 import { LinkThumb, VerifiedBadge } from "./icons";
 
 /**
  * プロフィール表示 + 編集タブ（リンク / カレンダー）。beacon.html の prof-view を移植し、
- * リンクの編集・セクション見出し・シェア(URLコピー/共有/QR) を追加拡張。
+ * リンクの編集・セクション見出し・シェア(共有/QR) を追加拡張。
+ * 共有はOS共有シート、非対応環境ではURLコピーにフォールバックする。
  * 書き込みは onSaveChannels / onSaveCal を通じてサーバーRPC（毎回パスコード）で行う。
  */
 
@@ -59,20 +59,21 @@ export function ProfileView({
 
   const pageUrl = () => `${window.location.origin}/@${handle}`;
 
-  async function copyUrl() {
+  // OS共有シートが使えない環境（デスクトップ等）ではURLコピーにフォールバック
+  async function share() {
+    if (typeof navigator.share === "function") {
+      try {
+        await navigator.share({ title: `@${handle} · Beacon`, url: pageUrl() });
+      } catch {
+        /* キャンセルは無視 */
+      }
+      return;
+    }
     try {
       await navigator.clipboard.writeText(pageUrl());
       toast("URLをコピーしました");
     } catch {
       toast("コピーできませんでした");
-    }
-  }
-
-  async function share() {
-    try {
-      await navigator.share({ title: `@${handle} · Beacon`, url: pageUrl() });
-    } catch {
-      /* キャンセルは無視 */
     }
   }
 
@@ -108,40 +109,6 @@ export function ProfileView({
       toast("QRコードを作成できませんでした");
     }
   }
-
-  async function shareCard() {
-    try {
-      const blob = await generateShareCard({
-        name: me.profile.name,
-        handle,
-        emoji: me.profile.emoji,
-        theme: me.profile.theme,
-        avUrl: me.profile.av_url,
-        url: pageUrl(),
-        channels: me.channels,
-      });
-      const file = new File([blob], `beacon-${handle}.png`, { type: "image/png" });
-      // 対応端末はOS共有シートで画像を、非対応はダウンロード
-      const navAny = navigator as Navigator & {
-        canShare?: (d: { files: File[] }) => boolean;
-      };
-      if (navAny.canShare?.({ files: [file] }) && navigator.share) {
-        await navigator.share({ files: [file], title: `@${handle} · Beacon` });
-      } else {
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = file.name;
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-        toast("画像を保存しました");
-      }
-    } catch {
-      toast("画像を作成できませんでした");
-    }
-  }
-
-  const canShare =
-    typeof navigator !== "undefined" && typeof navigator.share === "function";
 
   return (
     <div>
@@ -207,25 +174,13 @@ export function ProfileView({
             プレビュー
           </button>
           <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-            <button className="pill line" style={{ flex: 1 }} onClick={copyUrl}>
-              URLをコピー
+            <button className="pill line" style={{ flex: 1 }} onClick={share}>
+              共有
             </button>
-            {canShare && (
-              <button className="pill line" style={{ flex: 1 }} onClick={share}>
-                共有
-              </button>
-            )}
             <button className="pill line" style={{ flex: 1 }} onClick={openQr}>
               QRコード
             </button>
           </div>
-          <button
-            className="pill line"
-            style={{ width: "100%", marginTop: 8 }}
-            onClick={shareCard}
-          >
-            🖼 画像で共有（SNSに貼る）
-          </button>
           <ClickSummary me={me} />
           <div className="xtabs">
             <button
