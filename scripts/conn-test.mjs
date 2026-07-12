@@ -2,7 +2,7 @@
 //
 //   node scripts/conn-test.mjs
 //
-// .env.local の NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY を使い、
+// .env.local の URL / publishable key（旧 anon key も可）を使い、
 // 全RPC（create_account〜delete_account）・RLS 公開読み取り・Storage(avatars)を
 // ランダムなハンドルで通しで検証し、最後に退会して後片付けする。
 // SETUP.md 手順2（schema.sql 適用）・手順3（avatars バケット+anonポリシー）が
@@ -21,7 +21,9 @@ const env = Object.fromEntries(
     }),
 );
 const url = env.NEXT_PUBLIC_SUPABASE_URL;
-const key = env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const key =
+  env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+  env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const db = createClient(url, key);
 
 const log = (ok, label, extra = "") =>
@@ -78,7 +80,7 @@ try {
     await rpc("update_profile", {
       p_handle: handle, p_pass: pass,
       p_name: "接続テスト", p_bio: "bio テスト", p_emoji: "🌊",
-      p_theme: 2, p_av: "", p_bn: "",
+      p_theme: 2, p_av: "", p_bn: "", p_status: null,
     });
     log(true, "update_profile");
   } catch (e) { fail("update_profile", e); }

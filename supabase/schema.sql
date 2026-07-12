@@ -275,6 +275,8 @@ begin
 end $$;
 
 -- ---- RPC: プロフィール更新 ----
+drop function if exists update_profile(text,text,text,text,text,int,text,text);
+
 create or replace function update_profile(p_handle text, p_pass text,
   p_name text, p_bio text, p_emoji text, p_theme int, p_av text, p_bn text,
   p_status text default null)

@@ -56,10 +56,10 @@ Supabase の **Settings → API** から 2 値をコピーし `.env.local` に:
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOi...
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 ```
 
-`service_role` キーは**使わない**（このアプリは anon + RPC 検証で完結）。
+`secret` / `service_role` キーは**使わない**（このアプリは publishable + RPC 検証で完結）。
 
 再度 `npm run dev` → 認証やプロフィール実装を進められる状態になる。
 
