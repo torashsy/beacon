@@ -887,6 +887,7 @@ export function BeaconApp() {
             onClick={() => goNav("profile")}
             aria-label="me"
             aria-current={navTab === "profile" ? "page" : undefined}
+            style={{ order: 2 }}
           >
             <NavIcon name="profile" />
           </button>
@@ -895,7 +896,7 @@ export function BeaconApp() {
             onClick={() => goNav("follows")}
             aria-label="Follow"
             aria-current={navTab === "follows" ? "page" : undefined}
-            style={{ position: "relative" }}
+            style={{ position: "relative", order: 1 }}
           >
             <NavIcon name="follows" />
             {followUpdates > 0 && (
