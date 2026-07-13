@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Profile } from "@/lib/beacon/types";
-import { COLORS, EMOJIS, grad } from "@/lib/beacon/constants";
+import { COLORS, grad } from "@/lib/beacon/constants";
 import { CameraIcon } from "./icons";
 import { ImageCropper } from "./ImageCropper";
 
@@ -49,12 +49,13 @@ export function ProfileEdit({
 }) {
   const [name, setName] = useState(profile.name);
   const [bio, setBio] = useState(profile.bio);
-  const [emoji, setEmoji] = useState(profile.emoji || EMOJIS[0]);
+  const [emoji, setEmoji] = useState(profile.emoji || "🙂");
   const [theme, setTheme] = useState(profile.theme ?? 0);
   const [status, setStatus] = useState(profile.status ?? "");
   const [av, setAv] = useState<ImageEdit>({ mode: "keep" });
   const [bn, setBn] = useState<ImageEdit>({ mode: "keep" });
   const [busy, setBusy] = useState(false);
+  const [iconMenuOpen, setIconMenuOpen] = useState(false);
   const [cropTarget, setCropTarget] = useState<{
     kind: "av" | "bn";
     file: File;
@@ -175,7 +176,7 @@ export function ProfileEdit({
           className="eav"
           onClick={(e) => {
             e.stopPropagation();
-            avInput.current?.click();
+            setIconMenuOpen(true);
           }}
         >
           {avUrl ? (
@@ -243,22 +244,6 @@ export function ProfileEdit({
               placeholder="例: 今はInstagramが動いてます / DM開放中"
             />
           </div>
-          <label className="f">画像を使わない場合のアイコン</label>
-          <div className="emojis">
-            {EMOJIS.map((em) => (
-              <button
-                key={em}
-                type="button"
-                className={`em ${em === emoji && !avUrl ? "on" : ""}`}
-                onClick={() => {
-                  setEmoji(em);
-                  setAv({ mode: "remove" }); // 絵文字選択でアイコン画像は外す
-                }}
-              >
-                {em}
-              </button>
-            ))}
-          </div>
           <label className="f">ヘッダーの色（画像を使わない場合）</label>
           <div className="emojis">
             {COLORS.map((c, i) => (
@@ -277,6 +262,51 @@ export function ProfileEdit({
           </div>
         </div>
       </div>
+
+      {iconMenuOpen && (
+        <div className="modalScrim" onClick={() => setIconMenuOpen(false)}>
+          <div
+            className="card iconChoiceModal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="アイコンを変更"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2>アイコンを変更</h2>
+            <button
+              type="button"
+              className="btn ghost"
+              onClick={() => {
+                setIconMenuOpen(false);
+                avInput.current?.click();
+              }}
+            >
+              画像を選ぶ
+            </button>
+            <div className="iconChoiceDivider">または</div>
+            <label className="f" htmlFor="profile-emoji">絵文字を使う</label>
+            <div className="emojiInputRow">
+              <input
+                id="profile-emoji"
+                className="emojiFreeInput"
+                type="text"
+                value={emoji}
+                onChange={(e) => {
+                  setEmoji(e.target.value);
+                  setAv({ mode: "remove" });
+                }}
+                placeholder="絵文字を入力"
+                autoComplete="off"
+              />
+              <span className="emojiPreview">{emoji || "🙂"}</span>
+            </div>
+            <div className="fieldHint">端末の絵文字キーボードから自由に選べます。</div>
+            <button type="button" className="btn sig" onClick={() => setIconMenuOpen(false)}>
+              決定
+            </button>
+          </div>
+        </div>
+      )}
 
       {cropTarget && (
         <ImageCropper
