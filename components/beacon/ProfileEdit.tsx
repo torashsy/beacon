@@ -178,6 +178,15 @@ export function ProfileEdit({
           <div className="camov">
             <CameraIcon />
           </div>
+          <div className="editStatusBubble" onClick={(e) => e.stopPropagation()}>
+            <input
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              maxLength={60}
+              placeholder="今のひとこと"
+              aria-label="今のひとこと"
+            />
+          </div>
         </div>
         <div
           className="eav"
@@ -215,15 +224,6 @@ export function ProfileEdit({
               placeholder="自己紹介を追加"
             />
             <div className="ecount">{bio.length} / 200</div>
-          </div>
-          <div className="efield">
-            <div className="el">今のひとこと（近況）</div>
-            <input
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              maxLength={60}
-              placeholder="例: 今はInstagramが動いてます / DM開放中"
-            />
           </div>
         </div>
       </div>

@@ -188,7 +188,7 @@ export function FollowsView({
                     <FollowBadge st={st} />
                     <div className="st">
                       <b>{live}件のリンク</b>
-                      {dead ? `・${dead}件停止中` : ""}・{ago(f.updated)}
+                      {dead ? `・${dead}件非表示` : ""}・{ago(f.updated)}
                     </div>
                   </div>
                   {st.state === "new" || st.state === "changed" ? (
