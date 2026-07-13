@@ -388,30 +388,47 @@ textarea {
 }
 .statusBubble {
   position: absolute;
-  top: -30px;
-  left: 86px;
-  max-width: min(128px, 34vw);
-  padding: 6px 9px;
-  border: 1px solid rgba(56, 189, 248, .35);
-  border-radius: 12px 12px 12px 3px;
-  background: #fff;
-  color: var(--emd);
-  box-shadow: 0 3px 10px rgba(2, 132, 199, .12);
+  top: -82px;
+  left: 57px;
+  width: 116px;
+  max-width: 32vw;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 16px;
+  background: rgba(31, 41, 48, .88);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, .18);
   font-size: 11.5px;
   font-weight: 650;
   line-height: 1.35;
+  text-align: center;
+  transform: translateX(-50%);
+}
+.statusBubble span {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 .statusBubble::before {
   content: "";
   position: absolute;
-  left: -5px;
-  bottom: 7px;
-  width: 9px;
-  height: 9px;
-  border-left: 1px solid rgba(56, 189, 248, .35);
-  border-bottom: 1px solid rgba(56, 189, 248, .35);
-  background: #fff;
-  transform: rotate(45deg);
+  left: calc(50% - 5px);
+  bottom: -9px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(31, 41, 48, .88);
+}
+.statusBubble::after {
+  content: "";
+  position: absolute;
+  left: calc(50% + 1px);
+  bottom: -17px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(31, 41, 48, .88);
 }
 .editMode,
 .editMode button,

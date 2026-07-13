@@ -70,7 +70,9 @@ export function PublicProfileCard({
       <div className="xhead">
         {actions && <div className={`xactions ${actionsClassName ?? ""}`}>{actions}</div>}
         <Avatar url={profile.av_url} emoji={profile.emoji} handle={handle} />
-        {profile.status && <div className="statusBubble">{profile.status}</div>}
+        {profile.status && (
+          <div className="statusBubble"><span>{profile.status}</span></div>
+        )}
         <div className="xname">
           <span>{profile.name || `@${handle}`}</span>
           <VerifiedBadge />
