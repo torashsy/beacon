@@ -457,8 +457,8 @@ textarea {
 .editStatusBubble::before {
   content: "";
   position: absolute;
-  left: 30px;
-  bottom: -9px;
+  left: 18px;
+  bottom: -11px;
   width: 10px;
   height: 10px;
   border-radius: 50%;
@@ -468,8 +468,8 @@ textarea {
 .editStatusBubble::after {
   content: "";
   position: absolute;
-  left: 41px;
-  bottom: -17px;
+  left: 30px;
+  bottom: -19px;
   width: 6px;
   height: 6px;
   border-radius: 50%;
