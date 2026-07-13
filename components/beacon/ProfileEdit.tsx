@@ -30,6 +30,7 @@ export interface EditResult {
   bio: string;
   emoji: string;
   theme: number;
+  avTheme: number;
   status: string;
   av: ImageEdit;
   bn: ImageEdit;
@@ -57,6 +58,7 @@ export function ProfileEdit({
   const [bio, setBio] = useState(profile.bio);
   const [emoji, setEmoji] = useState(profile.emoji || "🙂");
   const [theme, setTheme] = useState(profile.theme ?? 0);
+  const [avTheme, setAvTheme] = useState(profile.av_theme ?? 0);
   const [status, setStatus] = useState(profile.status ?? "");
   const [av, setAv] = useState<ImageEdit>({ mode: "keep" });
   const [bn, setBn] = useState<ImageEdit>({ mode: "keep" });
@@ -129,6 +131,7 @@ export function ProfileEdit({
         bio: bio.trim(),
         emoji,
         theme,
+        avTheme,
         status: status.trim(),
         av,
         bn,
@@ -145,8 +148,8 @@ export function ProfileEdit({
           ✕
         </button>
         <div className="t">プロフィールを編集</div>
-        <button className="pill solid" disabled={busy} onClick={save}>
-          {busy ? "保存中…" : "保存"}
+        <button className="pill solid editSaveButton" disabled={busy} onClick={save}>
+          {busy ? "保存中…" : "変更を保存"}
         </button>
       </div>
 
@@ -190,6 +193,7 @@ export function ProfileEdit({
         </div>
         <div
           className="eav"
+          style={!avUrl ? { background: grad(avTheme) } : undefined}
           onClick={(e) => {
             e.stopPropagation();
             setIconMenuOpen(true);
@@ -279,9 +283,24 @@ export function ProfileEdit({
                 placeholder="文字を入力"
                 autoComplete="off"
               />
-              <span className="emojiPreview">{emoji || "🙂"}</span>
+              <span className="emojiPreview" style={{ background: grad(avTheme) }}>
+                {emoji || "🙂"}
+              </span>
             </div>
             <div className="fieldHint">絵文字を含む好きな1文字を入力できます。</div>
+            <label className="f">アイコンの背景色</label>
+            <div className="emojis colorPalette" aria-label="アイコンの背景色">
+              {COLORS.map((c, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  aria-label={`アイコンカラー${i + 1}`}
+                  className={`em colorSwatch ${avTheme === i ? "on" : ""}`}
+                  style={{ background: `linear-gradient(135deg,${c[0]},${c[1]})` }}
+                  onClick={() => setAvTheme(i)}
+                />
+              ))}
+            </div>
             <button type="button" className="btn sig" onClick={() => setIconMenuOpen(false)}>
               決定
             </button>
@@ -321,14 +340,14 @@ export function ProfileEdit({
                 </button>
               </>
             )}
-            <div className="iconChoiceDivider">または色を選ぶ</div>
-            <div className="emojis headerColors">
+            <div className="iconChoiceDivider">または背景色を選ぶ</div>
+            <div className="emojis colorPalette headerColors" aria-label="ヘッダーの背景色">
               {COLORS.map((c, i) => (
                 <button
                   key={i}
                   type="button"
                   aria-label={`カラー${i + 1}`}
-                  className={`em ${theme === i && !bnUrl ? "on" : ""}`}
+                  className={`em colorSwatch ${theme === i && !bnUrl ? "on" : ""}`}
                   style={{ background: `linear-gradient(135deg,${c[0]},${c[1]})` }}
                   onClick={() => {
                     setTheme(i);

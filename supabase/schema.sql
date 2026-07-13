@@ -26,6 +26,7 @@ create table if not exists profiles (
   bio      text default '',
   emoji    text default '🙂',
   theme    int  default 0,
+  av_theme int  not null default 0 check (av_theme between 0 and 11),
   av_url   text default '',              -- Storage の公開URL
   bn_url   text default '',
   status   text default '',              -- ひとこと近況
@@ -305,11 +306,12 @@ end $$;
 
 -- ---- RPC: プロフィール更新 ----
 drop function if exists update_profile(text,text,text,text,text,int,text,text);
+drop function if exists update_profile(text,text,text,text,text,int,text,text,text);
 
 create or replace function update_profile(p_handle text, p_pass text,
   p_name text, p_bio text, p_emoji text, p_theme int, p_av text, p_bn text,
-  p_status text default null)
-returns void language plpgsql security definer as $$
+  p_status text default null, p_av_theme int default 0)
+returns void language plpgsql security definer set search_path = public, extensions as $$
 begin
   if not _check_pass(p_handle,p_pass) then raise exception 'auth'; end if;
   -- クライアントの maxLength は UI 制限にすぎず、RPCを直接呼べば無制限に
@@ -317,10 +319,13 @@ begin
   if length(coalesce(p_name,''))   > 100  then raise exception 'name too long'; end if;
   if length(coalesce(p_bio,''))    > 1000 then raise exception 'bio too long'; end if;
   if length(coalesce(p_status,'')) > 200  then raise exception 'status too long'; end if;
+  if p_theme not between 0 and 11 or p_av_theme not between 0 and 11 then
+    raise exception 'invalid theme';
+  end if;
   if length(coalesce(p_av,'')) > 2000 or length(coalesce(p_bn,'')) > 2000 then
     raise exception 'image url too long';
   end if;
-  update profiles set name=p_name, bio=p_bio, emoji=p_emoji, theme=p_theme,
+  update profiles set name=p_name, bio=p_bio, emoji=p_emoji, theme=p_theme, av_theme=p_av_theme,
     av_url=p_av, bn_url=p_bn,
     status = coalesce(p_status, status),
     status_at = case when p_status is not null and p_status <> coalesce(status,'')
@@ -462,7 +467,7 @@ end $$;
 grant execute on function create_account(text,text)                                   to anon;
 grant execute on function verify_login(text,text)                                     to anon;
 grant execute on function reset_pass(text,text,text)                                  to anon;
-grant execute on function update_profile(text,text,text,text,text,int,text,text,text) to anon;
+grant execute on function update_profile(text,text,text,text,text,int,text,text,text,int) to anon;
 grant execute on function save_channels(text,text,jsonb)                              to anon;
 grant execute on function save_cal(text,text,date,text,boolean)                       to anon;
 grant execute on function get_private_cal(text,text)                                  to anon;

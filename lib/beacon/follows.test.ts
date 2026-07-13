@@ -76,6 +76,7 @@ describe("follow update detection", () => {
       bio: "",
       emoji: "🙂",
       theme: 0,
+      av_theme: 0,
       av_url: "",
       bn_url: "",
     },

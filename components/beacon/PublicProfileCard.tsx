@@ -17,15 +17,15 @@ export interface PublicCardData {
   followerCount?: number;
   profile: Pick<
     Profile,
-    "name" | "bio" | "emoji" | "theme" | "av_url" | "bn_url" | "status"
+    "name" | "bio" | "emoji" | "theme" | "av_theme" | "av_url" | "bn_url" | "status"
   >;
   channels: Channel[]; // 非表示リンクも含む。ここで公開対象だけに絞る
   pubcal: CalMemo[]; // 公開メモのみ
 }
 
-function Avatar({ url, emoji, handle }: { url: string; emoji: string; handle: string }) {
+function Avatar({ url, emoji, handle, theme }: { url: string; emoji: string; handle: string; theme: number }) {
   return (
-    <div className="xav">
+    <div className="xav" style={!url ? { background: grad(theme) } : undefined}>
       {url ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={url} alt="" />
@@ -72,7 +72,7 @@ export function PublicProfileCard({
       </div>
       <div className="xhead">
         {actions && <div className={`xactions ${actionsClassName ?? ""}`}>{actions}</div>}
-        <Avatar url={profile.av_url} emoji={profile.emoji} handle={handle} />
+        <Avatar url={profile.av_url} emoji={profile.emoji} handle={handle} theme={profile.av_theme ?? 0} />
         <div className="xname">
           <span>{profile.name || `@${handle}`}</span>
           <VerifiedBadge />
