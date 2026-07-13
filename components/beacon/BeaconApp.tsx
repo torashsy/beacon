@@ -802,11 +802,25 @@ export function BeaconApp() {
         {overlay === "none" && navTab === "profile" && (
           session && me ? (
             editing ? (
-              <ProfileEdit
-                profile={me.profile}
-                onCancel={() => setEditing(false)}
-                onSave={saveProfile}
-              />
+              <>
+                <ProfileEdit
+                  profile={me.profile}
+                  onCancel={() => setEditing(false)}
+                  onSave={saveProfile}
+                />
+                <ProfileView
+                  me={me}
+                  handle={session.handle}
+                  editing
+                  onEdit={() => setEditing(true)}
+                  onReissueRc={reissueRc}
+                  onSaveChannels={persistChannels}
+                  onSaveCal={persistCal}
+                  onLoadCal={loadCal}
+                  onUploadThumb={uploadThumb}
+                  toast={toast}
+                />
+              </>
             ) : (
               <>
                 <ProfileView

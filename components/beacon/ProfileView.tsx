@@ -25,6 +25,7 @@ export function ProfileView({
   me,
   handle,
   onEdit,
+  editing = false,
   onReissueRc,
   onSaveChannels,
   onSaveCal,
@@ -35,6 +36,7 @@ export function ProfileView({
   me: Me;
   handle: string;
   onEdit: () => void;
+  editing?: boolean;
   onReissueRc: () => Promise<string>;
   onSaveChannels: (next: Channel[]) => Promise<boolean>;
   onSaveCal: (date: string, memo: string, pub: boolean) => Promise<boolean>;
@@ -110,8 +112,8 @@ export function ProfileView({
     }
   }
 
-  return (
-    <div>
+  if (!editing) {
+    return (
       <PublicProfileCard
         data={{
           handle,
@@ -126,8 +128,12 @@ export function ProfileView({
           </button>
         }
       />
+    );
+  }
 
-      <div className="xcard" style={{ marginTop: 12 }}>
+  return (
+    <div>
+      <div className="xcard">
         <div className="xhead" style={{ paddingTop: 14 }}>
           <div style={{ display: "flex", gap: 8 }}>
             <button className="pill line" style={{ flex: 1 }} onClick={share}>
