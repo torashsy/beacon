@@ -7,9 +7,12 @@ import {
   TYPES,
   typeMeta,
 } from "@/lib/beacon/constants";
-import { detectType } from "@/lib/beacon/detect";
 import { dkey } from "@/lib/beacon/format";
-import { isValidLinkUrl } from "@/lib/beacon/validate";
+import {
+  normalizeLinkInput,
+  supportsUserId,
+  userIdExample,
+} from "@/lib/beacon/link-input";
 import { cryptoId, type Me, type ToastFn } from "./appTypes";
 import { LinkThumb } from "./icons";
 import { PublicProfileCard } from "./PublicProfileCard";
@@ -304,7 +307,6 @@ function LinksPane({
   const [formOpen, setFormOpen] = useState(chans.length === 0);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [type, setType] = useState("x");
-  const [typeManual, setTypeManual] = useState(false); // 種類を手動で選んだか
   const [url, setUrl] = useState("");
   const [label, setLabel] = useState("");
   const [desc, setDesc] = useState("");
@@ -318,7 +320,6 @@ function LinksPane({
     setFormOpen(false);
     setEditingId(null);
     setType("x");
-    setTypeManual(false);
     setUrl("");
     setLabel("");
     setDesc("");
@@ -328,7 +329,6 @@ function LinksPane({
   function startEdit(c: Channel) {
     setEditingId(c.id!);
     setType(c.type);
-    setTypeManual(true); // 既存編集では自動判定で上書きしない
     setUrl(c.url);
     setLabel(c.label);
     setDesc(c.descr);
@@ -350,11 +350,12 @@ function LinksPane({
     }
   }
 
-  // URL 入力で種類を自動判定（手動選択・見出し時は上書きしない）
-  function onUrlChange(v: string) {
+  // URLを貼った場合は選択中の種類よりURL判定を優先し、アイコンも即時更新する。
+  function onLinkInputChange(v: string) {
     setUrl(v);
-    if (!typeManual && !isHeading && v.trim()) {
-      setType(detectType(v));
+    if (!isHeading && v.trim()) {
+      const normalized = normalizeLinkInput(v, type);
+      if (normalized?.source === "url") setType(normalized.type);
     }
   }
 
@@ -392,16 +393,17 @@ function LinksPane({
       return;
     }
     if (!isHeading && !u) {
-      toast("URLを入れてください");
+      toast(supportsUserId(type) ? "ユーザーIDまたはURLを入れてください" : "URLを入れてください");
       return;
     }
-    if (!isHeading && !isValidLinkUrl(u)) {
-      toast("正しいURLを入力してください（例: https://x.com/...）");
+    const normalized = isHeading ? null : normalizeLinkInput(u, type);
+    if (!isHeading && !normalized) {
+      toast(supportsUserId(type) ? `正しい${userIdExample(type)}またはURLを入力してください` : "正しいURLを入力してください");
       return;
     }
     const fields = {
-      type,
-      url: isHeading ? "" : u,
+      type: normalized?.type ?? type,
+      url: normalized?.url ?? "",
       label: lb,
       descr: isHeading ? "" : desc.trim(),
       img_url: isHeading ? "" : img,
@@ -511,7 +513,7 @@ function LinksPane({
             <span className="big">🔗</span>
             最初のリンクを追加しましょう。
             <br />
-            X や YouTube のURLを貼るだけで種類は自動で判定されます。
+            XなどはユーザーIDだけでも追加できます。URLは種類を自動判定します。
           </div>
         )}
       </div>
@@ -537,7 +539,6 @@ function LinksPane({
               value={type}
               onChange={(e) => {
                 setType(e.target.value);
-                setTypeManual(true);
               }}
             >
               {Object.entries(TYPES).map(([k, v]) => (
@@ -551,9 +552,13 @@ function LinksPane({
               <input
                 className="plain"
                 value={url}
-                onChange={(e) => onUrlChange(e.target.value)}
-                placeholder="URLを貼り付け（種類は自動判定）"
-                inputMode="url"
+                onChange={(e) => onLinkInputChange(e.target.value)}
+                placeholder={
+                  supportsUserId(type)
+                    ? `${userIdExample(type)} またはURL`
+                    : "URLを貼り付け（種類は自動判定）"
+                }
+                inputMode={supportsUserId(type) ? "text" : type === "mail" ? "email" : "url"}
               />
             )}
             {isHeading && (
