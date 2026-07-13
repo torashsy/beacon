@@ -39,11 +39,14 @@ function Avatar({ url, emoji, handle }: { url: string; emoji: string; handle: st
 export function PublicProfileCard({
   data,
   actions,
+  headerActions,
   trackHandle,
 }: {
   data: PublicCardData;
   /** フォローボタン等、カード右上のアクション。 */
   actions?: ReactNode;
+  /** カバー画像上に置く共有等のアクション。 */
+  headerActions?: ReactNode;
   /** 指定時はリンククリックを集計する（公開ページのみ。プレビューでは渡さない）。 */
   trackHandle?: string;
 }) {
@@ -60,6 +63,7 @@ export function PublicProfileCard({
           // eslint-disable-next-line @next/next/no-img-element
           <img src={profile.bn_url} alt="" />
         )}
+        {headerActions && <div className="bannerActions">{headerActions}</div>}
       </div>
       <div className="xhead">
         {actions && <div className="xactions">{actions}</div>}
