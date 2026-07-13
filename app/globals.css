@@ -387,7 +387,7 @@ textarea {
 }
 .statusBubble {
   position: absolute;
-  top: -106px;
+  top: 12px;
   left: 12px;
   width: max-content;
   max-width: calc(100% - 120px);
