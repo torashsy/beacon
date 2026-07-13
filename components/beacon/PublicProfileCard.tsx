@@ -143,14 +143,3 @@ export function PublicProfileCard({
   );
 }
 
-/** 公開ページ末尾の「あなたも無料で作る」導線。 */
-export function CreateYoursFooter({ href = "/" }: { href?: string }) {
-  return (
-    <a className="vfoot" href={href}>
-      <div className="k">my-IDeal — 凍結されても変わらないID</div>
-      <div className="m">
-        あなたも<span className="s">無料で作る →</span>
-      </div>
-    </a>
-  );
-}

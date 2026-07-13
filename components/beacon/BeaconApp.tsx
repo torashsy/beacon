@@ -58,7 +58,6 @@ import { ProfileEdit, type EditResult } from "./ProfileEdit";
 import { FollowsView } from "./FollowsView";
 import { HowtoView } from "./HowtoView";
 import {
-  CreateYoursFooter,
   PublicProfileCard,
   type PublicCardData,
 } from "./PublicProfileCard";
@@ -133,6 +132,13 @@ export function BeaconApp() {
     [follows, followStates],
   );
   const [preview, setPreview] = useState<PublicCardData | null>(null);
+
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get("tab");
+    if (requested && ["profile", "follows", "howto", "settings"].includes(requested)) {
+      setNavTab(requested as NavTab);
+    }
+  }, []);
 
   const [authInitialHandle, setAuthInitialHandle] = useState("");
   const [authInitialPane, setAuthInitialPane] = useState<"create" | "login">(
@@ -716,9 +722,7 @@ export function BeaconApp() {
     ? follows.some((f) => f.handle === session.handle)
     : false;
 
-  // ナビ（下部タブ）を出すのは通常モードのみ。認証フォーム・プレビュー・
-  // プロフィール編集の全画面時は隠す。
-  const showNav = overlay === "none" && !editing;
+  const showNav = true;
 
   return (
     <>
@@ -785,7 +789,7 @@ export function BeaconApp() {
               data={preview}
               actions={
                 <button
-                  className="pill solid"
+                  className="pill solid followAction"
                   disabled={selfFollowed}
                   onClick={followSelf}
                 >
@@ -794,9 +798,6 @@ export function BeaconApp() {
               }
             />
             <div className="previewLabel">公開ページのプレビュー</div>
-            <div style={{ marginTop: 14 }}>
-              <CreateYoursFooter href={`/@${preview.handle}`} />
-            </div>
           </section>
         )}
 

@@ -6,12 +6,12 @@ import { createClient } from "@/lib/supabase/server";
 import { getPublicPage } from "@/lib/beacon/rpc";
 import { toSnapshot } from "@/lib/beacon/follows";
 import {
-  CreateYoursFooter,
   PublicProfileCard,
 } from "@/components/beacon/PublicProfileCard";
 import { FollowButton } from "@/components/beacon/FollowButton";
 import { LegalFooter } from "@/components/beacon/LegalFooter";
 import { PublicBackButton } from "@/components/beacon/PublicBackButton";
+import { PublicBottomNav } from "@/components/beacon/PublicBottomNav";
 
 /**
  * 公開ページ /@{handle}。誰でも閲覧可能だが、列挙防止のため必ずハンドル指定の
@@ -83,6 +83,7 @@ export default async function PublicPage({
   const snapshot = toSnapshot(profile, channels, cal);
 
   return (
+    <>
     <main className="wrap" style={{ paddingTop: 8, paddingBottom: 40 }}>
       <div className="top">
         <Link className="logo" href="/" aria-label="ホームへ戻る">
@@ -101,8 +102,9 @@ export default async function PublicPage({
         actions={<FollowButton snapshot={snapshot} />}
         trackHandle={handle}
       />
-      <CreateYoursFooter href="/" />
       <LegalFooter />
     </main>
+    <PublicBottomNav />
+    </>
   );
 }
