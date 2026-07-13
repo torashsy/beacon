@@ -391,6 +391,43 @@ textarea {
 .profileEditAction {
   top: 14px;
 }
+.homeQuickActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+.homeQuickAction {
+  min-height: 48px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fff;
+  color: var(--emd);
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 750;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.homeQuickAction:active {
+  background: var(--eml);
+}
+.homeQuickAction svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.editorSection {
+  scroll-margin-top: calc(12px + env(safe-area-inset-top));
+}
 .statusBubble {
   position: absolute;
   top: 12px;

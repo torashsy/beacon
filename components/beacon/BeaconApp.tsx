@@ -119,6 +119,7 @@ export function BeaconApp() {
   // 全画面オーバーレイ（ナビを隠す）: 認証フォーム / 公開プレビュー
   const [overlay, setOverlay] = useState<Overlay>("none");
   const [editing, setEditing] = useState(false);
+  const [editTarget, setEditTarget] = useState<"profile" | "links" | "cal">("profile");
   const [follows, setFollows] = useState<FollowSnapshot[]>([]);
   const [followStates, setFollowStates] = useState<
     Record<string, FollowStatus>
@@ -132,6 +133,11 @@ export function BeaconApp() {
     [follows, followStates],
   );
   const [preview, setPreview] = useState<PublicCardData | null>(null);
+
+  function openEditor(target: "profile" | "links" | "cal" = "profile") {
+    setEditTarget(target);
+    setEditing(true);
+  }
 
   useEffect(() => {
     const requested = new URLSearchParams(window.location.search).get("tab");
@@ -815,7 +821,8 @@ export function BeaconApp() {
                   me={me}
                   handle={session.handle}
                   editing
-                  onEdit={() => setEditing(true)}
+                  focusSection={editTarget === "profile" ? undefined : editTarget}
+                  onEdit={openEditor}
                   onReissueRc={reissueRc}
                   onSaveChannels={persistChannels}
                   onSaveCal={persistCal}
@@ -828,7 +835,7 @@ export function BeaconApp() {
               <ProfileView
                   me={me}
                   handle={session.handle}
-                  onEdit={() => setEditing(true)}
+                  onEdit={openEditor}
                   onReissueRc={reissueRc}
                   onSaveChannels={persistChannels}
                   onSaveCal={persistCal}
