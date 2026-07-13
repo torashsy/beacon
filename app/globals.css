@@ -1160,6 +1160,71 @@ textarea {
   z-index: 40;
   box-shadow: 0 -8px 28px rgba(2, 132, 199, 0.08);
 }
+.userSearch input {
+  padding-right: 76px;
+}
+.userSearch > button {
+  position: absolute;
+  top: 50%;
+  right: 7px;
+  min-width: 62px;
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--eml);
+  color: var(--emd);
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+.userSearch > button:disabled {
+  opacity: .6;
+  cursor: default;
+}
+.searchHint,
+.searchMessage {
+  margin: -7px 4px 10px;
+  color: var(--muted);
+  font-size: 10.5px;
+}
+.searchMessage {
+  color: var(--alert);
+}
+.userSearchResult {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 13px 16px;
+  cursor: pointer;
+}
+.userSearchResult .av {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7dd3fc, #0284c7);
+  color: #fff;
+  font-size: 21px;
+}
+.userSearchResult .av img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.userSearchResult .who {
+  flex: 1;
+  min-width: 0;
+}
+.userSearchResult .nm { font-size: 14px; font-weight: 800; }
+.userSearchResult .id,
+.userSearchResult .st { color: var(--muted); font-size: 11.5px; }
+.searchResultArrow { color: var(--emd); font-size: 20px; }
 .iconChoiceModal {
   width: 100%;
   max-width: 340px;

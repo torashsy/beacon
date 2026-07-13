@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { ago } from "@/lib/beacon/format";
 import { HEADING_TYPE } from "@/lib/beacon/constants";
 import type { FollowSnapshot, FollowStatus } from "@/lib/beacon/follows";
+import { getPublicPage, type PublicPage } from "@/lib/beacon/rpc";
 
 /**
  * フォロー中一覧（表示専用）。表示用データは端末ローカル、ID一覧はログイン時にサーバー同期する。
@@ -28,6 +30,9 @@ export function FollowsView({
   onLoginPrompt: () => void;
 }) {
   const [q, setQ] = useState("");
+  const [found, setFound] = useState<{ handle: string; page: PublicPage } | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [searchMessage, setSearchMessage] = useState("");
   const query = q.trim().toLowerCase();
   const shown = follows.filter(
     (f) =>
@@ -39,6 +44,27 @@ export function FollowsView({
     const st = states[f.handle]?.state;
     return st === "new" || st === "changed" || st === "deleted";
   }).length;
+
+  async function searchById(e: React.FormEvent) {
+    e.preventDefault();
+    const handle = q.trim().replace(/^@/, "").toLowerCase();
+    setFound(null);
+    if (!/^[a-z0-9_]{1,30}$/.test(handle)) {
+      setSearchMessage("半角英数字と _ でIDを入力してください");
+      return;
+    }
+    setSearching(true);
+    setSearchMessage("");
+    try {
+      const page = await getPublicPage(createClient(), handle);
+      if (page) setFound({ handle, page });
+      else setSearchMessage("このIDのユーザーは見つかりませんでした");
+    } catch {
+      setSearchMessage("検索できませんでした。通信状況をご確認ください");
+    } finally {
+      setSearching(false);
+    }
+  }
 
   return (
     <section className="view">
@@ -55,17 +81,55 @@ export function FollowsView({
           </button>
         </div>
       )}
-      <div className="search">
+      <form className="search userSearch" onSubmit={searchById}>
         <svg className="searchIcon" viewBox="0 0 24 24" aria-hidden="true">
           <circle cx="11" cy="11" r="6" />
           <path d="m16 16 4 4" />
         </svg>
         <input
           value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="名前・IDで探す"
+          onChange={(e) => {
+            setQ(e.target.value);
+            setFound(null);
+            setSearchMessage("");
+          }}
+          placeholder="名前・ユーザーIDで探す"
         />
-      </div>
+        <button type="submit" disabled={searching}>
+          {searching ? "検索中" : "ID検索"}
+        </button>
+      </form>
+      <div className="searchHint">フォローしていない人は、IDの完全一致で検索できます。</div>
+      {searchMessage && <div className="searchMessage">{searchMessage}</div>}
+      {found && (
+        <div
+          className="card userSearchResult"
+          role="link"
+          tabIndex={0}
+          onClick={() => window.location.assign(`/@${found.handle}`)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              window.location.assign(`/@${found.handle}`);
+            }
+          }}
+        >
+          <div className="av">
+            {found.page.profile.av_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={found.page.profile.av_url} alt="" />
+            ) : (
+              found.page.profile.emoji || found.handle[0]?.toUpperCase()
+            )}
+          </div>
+          <div className="who">
+            <div className="nm">{found.page.profile.name || `@${found.handle}`}</div>
+            <div className="id">@{found.handle}</div>
+            <div className="st">{found.page.follower_count.toLocaleString("ja-JP")} フォロワー</div>
+          </div>
+          <span className="searchResultArrow">→</span>
+        </div>
+      )}
       <div className="count">
         {follows.length
           ? `${follows.length}人をフォロー中` +
