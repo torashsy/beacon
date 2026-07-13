@@ -212,6 +212,11 @@ h1 {
 .pill.line:hover {
   border-color: var(--em);
 }
+.followAction {
+  width: 112px;
+  min-width: 112px;
+  text-align: center;
+}
 .xname {
   font-weight: 800;
   font-size: 19px;
@@ -1288,6 +1293,7 @@ textarea {
   stroke-linecap: round;
 }
 .nav .ni {
+  display: block;
   flex: 1;
   text-align: center;
   border: none;
@@ -1302,6 +1308,7 @@ textarea {
   border-radius: 14px;
   touch-action: manipulation;
   transition: color 0.15s, background 0.15s, transform 0.1s;
+  text-decoration: none;
 }
 .nav .ni .i {
   font-size: 20px;
