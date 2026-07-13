@@ -23,6 +23,9 @@
   margin: 0;
   padding: 0;
 }
+button {
+  font-family: inherit;
+}
 body {
   background: #f6fbfe;
   color: var(--text);
@@ -236,7 +239,7 @@ h1 {
   fill: none;
 }
 .xid {
-  font-family: "JetBrains Mono", monospace;
+  font-family: inherit;
   font-size: 13px;
   color: var(--muted);
 }
@@ -337,7 +340,7 @@ textarea {
   color: var(--text);
   padding: 12px 14px;
   border-radius: 12px;
-  font-family: "JetBrains Mono", monospace;
+  font-family: inherit;
   font-size: 16px;
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
@@ -457,7 +460,7 @@ textarea:focus {
 }
 input.plain,
 textarea.plain {
-  font-family: "Noto Sans JP";
+  font-family: inherit;
   font-weight: 500;
 }
 textarea {
@@ -612,7 +615,7 @@ textarea {
   font-weight: 700;
 }
 .chan .meta .u {
-  font-family: "JetBrains Mono", monospace;
+  font-family: inherit;
   font-size: 11px;
   color: var(--muted);
   white-space: nowrap;
@@ -747,7 +750,7 @@ textarea {
   line-height: 1.25;
 }
 .frow .id {
-  font-family: "JetBrains Mono", monospace;
+  font-family: inherit;
   font-size: 12px;
   color: var(--muted);
 }
@@ -785,7 +788,7 @@ textarea {
   padding-left: 40px;
   box-shadow: var(--shadow);
   background: #fff;
-  font-family: "Noto Sans JP";
+  font-family: inherit;
   font-weight: 500;
 }
 .search .ic {
@@ -858,7 +861,7 @@ textarea {
   font-weight: 500;
 }
 .rcode {
-  font-family: "JetBrains Mono", monospace;
+  font-family: inherit;
   font-size: 20px;
   font-weight: 600;
   letter-spacing: 0.12em;
@@ -988,7 +991,7 @@ textarea {
   background: none;
   padding: 2px 0 0;
   border-radius: 0;
-  font-family: "Noto Sans JP";
+  font-family: inherit;
   font-weight: 500;
   font-size: 14.5px;
 }
@@ -1137,6 +1140,45 @@ textarea {
   padding: 7px 10px calc(7px + env(safe-area-inset-bottom));
   z-index: 40;
   box-shadow: 0 -8px 28px rgba(2, 132, 199, 0.08);
+}
+.iconChoiceModal {
+  width: 100%;
+  max-width: 340px;
+}
+.iconChoiceModal h2 {
+  margin: 0 0 14px;
+}
+.iconChoiceDivider {
+  margin: 13px 0 4px;
+  color: var(--muted);
+  font-size: 11px;
+  text-align: center;
+}
+.emojiInputRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.emojiFreeInput {
+  min-width: 0;
+  font-size: 20px;
+}
+.emojiPreview {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7dd3fc, #0284c7);
+  color: #fff;
+  font-size: 25px;
+  overflow: hidden;
+}
+.fieldHint {
+  margin: 6px 2px 14px;
+  color: var(--muted);
+  font-size: 11px;
 }
 .searchIcon {
   position: absolute;
