@@ -142,6 +142,7 @@ export function ProfileView({
               プロフィール編集
             </button>
           }
+          actionsClassName="profileEditAction"
         />
         {qrDataUrl && (
           <div className="modalScrim" onClick={() => setQrDataUrl(null)}>
