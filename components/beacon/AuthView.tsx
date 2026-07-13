@@ -170,10 +170,22 @@ export function AuthView({
               <span className="at">@</span>
               <input
                 value={cId}
-                onChange={(e) => setCId(cleanHandle(e.target.value))}
+                onChange={(e) =>
+                  setCId(
+                    (e.nativeEvent as InputEvent).isComposing
+                      ? e.target.value
+                      : cleanHandle(e.target.value),
+                  )
+                }
+                onCompositionEnd={(e) => setCId(cleanHandle(e.currentTarget.value))}
+                onBlur={(e) => setCId(cleanHandle(e.currentTarget.value))}
                 placeholder="my_ideal"
                 maxLength={20}
                 autoComplete="off"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                lang="en"
               />
             </div>
             <div className={`hint ${idHint.cls}`}>{idHint.t}</div>
@@ -270,10 +282,22 @@ export function AuthView({
               <span className="at">@</span>
               <input
                 value={lId}
-                onChange={(e) => setLId(cleanHandle(e.target.value))}
+                onChange={(e) =>
+                  setLId(
+                    (e.nativeEvent as InputEvent).isComposing
+                      ? e.target.value
+                      : cleanHandle(e.target.value),
+                  )
+                }
+                onCompositionEnd={(e) => setLId(cleanHandle(e.currentTarget.value))}
+                onBlur={(e) => setLId(cleanHandle(e.currentTarget.value))}
                 placeholder="my_ideal"
                 maxLength={20}
                 autoComplete="off"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                lang="en"
               />
             </div>
             <label className="f">パスコード</label>
@@ -316,10 +340,22 @@ export function AuthView({
               <span className="at">@</span>
               <input
                 value={rId}
-                onChange={(e) => setRId(cleanHandle(e.target.value))}
+                onChange={(e) =>
+                  setRId(
+                    (e.nativeEvent as InputEvent).isComposing
+                      ? e.target.value
+                      : cleanHandle(e.target.value),
+                  )
+                }
+                onCompositionEnd={(e) => setRId(cleanHandle(e.currentTarget.value))}
+                onBlur={(e) => setRId(cleanHandle(e.currentTarget.value))}
                 placeholder="my_ideal"
                 maxLength={20}
                 autoComplete="off"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                lang="en"
               />
             </div>
             <label className="f">復旧コード</label>

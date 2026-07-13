@@ -10,6 +10,7 @@ import {
 } from "@/components/beacon/PublicProfileCard";
 import { FollowButton } from "@/components/beacon/FollowButton";
 import { LegalFooter } from "@/components/beacon/LegalFooter";
+import { PublicBackButton } from "@/components/beacon/PublicBackButton";
 
 /**
  * 公開ページ /@{handle}。誰でも閲覧可能だが、列挙防止のため必ずハンドル指定の
@@ -86,6 +87,7 @@ export default async function PublicPage({
         <div className="logo">
           my-IDeal<span className="dot">.</span>
         </div>
+        <PublicBackButton />
       </div>
       <PublicProfileCard
         data={{
