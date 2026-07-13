@@ -76,11 +76,11 @@ export const EMOJIS = [
 
 /** バナー用グラデーション色（theme インデックス）。 */
 export const COLORS: [string, string][] = [
-  ["#BFF0DD", "#D8F5EC"],
-  ["#CDEFF5", "#DDF7EA"],
-  ["#FFE9D6", "#E8F7E4"],
-  ["#E3E8FF", "#DFF5EE"],
-  ["#F5E6FF", "#E0F5E9"],
+  ["#BAE6FD", "#E0F2FE"],
+  ["#CFFAFE", "#DBEAFE"],
+  ["#E0F2FE", "#EDE9FE"],
+  ["#DBEAFE", "#E0E7FF"],
+  ["#E0F7FF", "#F0F9FF"],
 ];
 
 /** theme インデックスからバナーの CSS グラデーションを作る。 */

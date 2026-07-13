@@ -247,6 +247,7 @@ export interface PublicPage {
   profile: Profile;
   channels: Channel[];
   cal: CalMemo[]; // 公開カレンダーのみ
+  follower_count: number;
 }
 
 /**
@@ -258,13 +259,16 @@ export async function getPublicPage(
   db: DB,
   handle: string,
 ): Promise<PublicPage | null> {
-  const data = unwrap(
-    await db.rpc("get_public_page", { p_handle: handle }),
-  ) as PublicPage | null;
+  const [pageResult, countResult] = await Promise.all([
+    db.rpc("get_public_page", { p_handle: handle }),
+    db.rpc("get_follower_count", { p_handle: handle }),
+  ]);
+  const data = unwrap(pageResult) as PublicPage | null;
   if (!data || !data.profile) return null;
   return {
     profile: data.profile,
     channels: data.channels ?? [],
     cal: data.cal ?? [],
+    follower_count: countResult.error ? 0 : Number(countResult.data ?? 0),
   };
 }

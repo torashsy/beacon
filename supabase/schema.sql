@@ -9,6 +9,8 @@
 
 create extension if not exists pgcrypto;
 
+-- 問い合わせフォームは `contact-form-migration.sql` も参照。
+
 -- ---- アカウント ----
 create table if not exists accounts (
   handle      text primary key,
@@ -67,6 +69,15 @@ create table if not exists auth_attempts (
   rc_locked_til timestamptz
 );
 
+-- ログイン失敗はハンドル単位でなく接続元IPとの組み合わせで制限する。
+create table if not exists login_attempts (
+  handle text not null,
+  ip text not null,
+  fail_count int default 0,
+  locked_til timestamptz,
+  primary key (handle, ip)
+);
+
 -- アカウント作成のレート制限（同一IPから1日あたり）
 create table if not exists signup_attempts (
   ip  text not null,
@@ -82,8 +93,10 @@ alter table channels      enable row level security;
 alter table cal_public    enable row level security;
 alter table cal_private   enable row level security;
 alter table auth_attempts   enable row level security;
+alter table login_attempts  enable row level security;
 alter table signup_attempts enable row level security;
 revoke select on signup_attempts from anon, authenticated;
+revoke all on login_attempts from anon, authenticated;
 
 -- 公開読み取り: profiles / channels / cal_public のみ
 drop policy if exists pub_profiles on profiles;
@@ -124,7 +137,9 @@ revoke all on sessions from anon, authenticated;
 -- 'bst_' で始まるだけの文字列（本物のパスコードかもしれない）はパスコード検証へ。
 create or replace function _check_pass(p_handle text, p_pass text)
 returns boolean language plpgsql security definer as $$
-declare a record;
+declare
+  a record;
+  client_ip text := 'unknown';
 begin
   if p_pass ~ '^bst_[0-9a-f]{64}$' then
     update sessions set expires_at = now() + interval '30 days'
@@ -138,20 +153,32 @@ begin
     return found;
   end if;
 
-  select * into a from auth_attempts where handle=lower(p_handle);
+  begin
+    client_ip := trim(split_part(
+      coalesce(current_setting('request.headers', true)::json->>'x-forwarded-for', ''),
+      ',', 1));
+    if client_ip = '' then client_ip := 'unknown'; end if;
+  exception when others then
+    client_ip := 'unknown';
+  end;
+
+  select * into a from login_attempts
+    where handle=lower(p_handle) and ip=client_ip;
   if a.locked_til is not null and a.locked_til > now() then
     raise exception 'locked';
   end if;
   if exists(select 1 from accounts where handle=lower(p_handle)
             and pass_hash = crypt(p_pass, pass_hash)) then
-    delete from auth_attempts where handle=lower(p_handle);
+    delete from login_attempts where handle=lower(p_handle) and ip=client_ip;
     return true;
   end if;
-  insert into auth_attempts(handle,fail_count) values (lower(p_handle),1)
-    on conflict (handle) do update set
-      fail_count = auth_attempts.fail_count + 1,
-      locked_til = case when auth_attempts.fail_count + 1 >= 5
-                        then now() + interval '15 minutes' else null end;
+  if client_ip <> 'unknown' then
+    insert into login_attempts(handle,ip,fail_count) values (lower(p_handle),client_ip,1)
+      on conflict (handle,ip) do update set
+        fail_count = login_attempts.fail_count + 1,
+        locked_til = case when login_attempts.fail_count + 1 >= 5
+                          then now() + interval '15 minutes' else null end;
+  end if;
   return false;
 end $$;
 
@@ -179,7 +206,8 @@ begin
     raise exception 'too many accounts created from this network today';
   end if;
 
-  if length(p_pass) < 6 then raise exception 'pass too short'; end if;
+  if length(p_pass) < 10 then raise exception 'pass too short'; end if;
+  if octet_length(p_pass) > 72 then raise exception 'pass too long'; end if;
   -- ハンドルの形式・長さはクライアント(cleanHandle)が整形するが、RPCを直接
   -- 呼べば無検証で任意の文字列を通せてしまうため、サーバー側でも検証する。
   if lower(p_handle) !~ '^[a-z0-9_]{3,20}$' then raise exception 'invalid handle'; end if;
@@ -217,7 +245,8 @@ create or replace function reset_pass(p_handle text, p_rc text, p_new text)
 returns boolean language plpgsql security definer as $$
 declare a record;
 begin
-  if length(p_new) < 6 then raise exception 'pass too short'; end if;
+  if length(p_new) < 10 then raise exception 'pass too short'; end if;
+  if octet_length(p_new) > 72 then raise exception 'pass too long'; end if;
 
   select * into a from auth_attempts where handle=lower(p_handle);
   if a.rc_locked_til is not null and a.rc_locked_til > now() then
@@ -275,6 +304,8 @@ begin
 end $$;
 
 -- ---- RPC: プロフィール更新 ----
+drop function if exists update_profile(text,text,text,text,text,int,text,text);
+
 create or replace function update_profile(p_handle text, p_pass text,
   p_name text, p_bio text, p_emoji text, p_theme int, p_av text, p_bn text,
   p_status text default null)
@@ -493,18 +524,48 @@ grant execute on function get_clicks(text, text) to anon;
 -- 権限エラーになる。そのためこの schema.sql には含めず、SETUP.md 手順3で
 --   1) ダッシュボードで 'avatars'(public) バケットを作成
 --   2) supabase/storage-policies.sql を SQL Editor で実行
---      （anon の insert を「実在するハンドルのフォルダのみ」に限定 + バケットの
---       サイズ/MIME制限。濫用防止のため anon の update ポリシーは付与しない）
+--      （ブラウザの匿名insert/updateを禁止 + バケットのサイズ/MIME制限）
 -- の2段で設定する（本体スキーマの実行を安全に保つため分離）。
 
--- avatars_anon_insert ポリシー（storage-policies.sql）が参照する判定関数。
--- storage.objects の RLS からは accounts テーブルを直接参照できない（anon には
--- select 権限が無い）ため、security definer で判定する。
-create or replace function handle_exists(p_handle text)
-returns boolean language sql security definer stable as $$
-  select exists(select 1 from accounts where handle = lower(p_handle));
+create table if not exists avatar_upload_attempts (
+  handle text not null references accounts(handle) on delete cascade,
+  window_start timestamptz not null,
+  n integer not null default 0,
+  primary key (handle, window_start)
+);
+alter table avatar_upload_attempts enable row level security;
+revoke all on avatar_upload_attempts from anon, authenticated;
+
+-- Edge Functionだけが呼ぶ認証・毎時上限チェック。署名付きURLの発行前に実行する。
+create or replace function authorize_avatar_upload(p_handle text, p_pass text)
+returns boolean language plpgsql security definer as $$
+declare
+  current_window timestamptz := date_trunc('hour', now());
+  attempts integer;
+begin
+  if not _check_pass(p_handle, p_pass) then return false; end if;
+  insert into avatar_upload_attempts(handle, window_start, n)
+    values (lower(p_handle), current_window, 1)
+    on conflict (handle, window_start) do update
+      set n = avatar_upload_attempts.n + 1
+    returning n into attempts;
+  if attempts > 30 then raise exception 'upload rate limit'; end if;
+  delete from avatar_upload_attempts where window_start < now() - interval '2 days';
+  return true;
+end $$;
+
+-- フォロワーの個人一覧は公開せず、合計人数だけを返す。
+create or replace function get_follower_count(p_handle text)
+returns bigint language sql security definer stable as $$
+  select case
+    when lower(p_handle) !~ '^[a-z0-9_]{3,20}$' then 0
+    else (select count(*) from follows_server where target = lower(p_handle))
+  end;
 $$;
-grant execute on function handle_exists(text) to anon;
+revoke all on function get_follower_count(text) from public, authenticated;
+grant execute on function get_follower_count(text) to anon;
+revoke all on function authorize_avatar_upload(text, text) from public, anon, authenticated;
+grant execute on function authorize_avatar_upload(text, text) to service_role;
 
 -- ---- 退会後にStorageへ残る画像（アバター/バナー）の定期削除 ----
 -- 詳細・設計方針は supabase/storage-cleanup-migration.sql 参照。

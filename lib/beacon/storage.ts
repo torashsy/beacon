@@ -49,18 +49,23 @@ export async function resizeToJpeg(file: File, kind: ImageKind): Promise<Blob> {
 export async function uploadImage(
   db: SupabaseClient,
   handle: string,
+  secret: string,
   kind: ImageKind,
   file: File,
 ): Promise<string> {
   const blob = await resizeToJpeg(file, kind);
-  // アップロードごとにユニークなパス（純粋な INSERT。upsert=UPDATE 権限を避ける）
-  const path = `${handle.toLowerCase()}/${kind}-${Date.now()}.jpg`;
-
+  const { data: grant, error: grantError } = await db.functions.invoke(
+    "create-avatar-upload",
+    { body: { handle, secret, kind } },
+  );
+  if (grantError || !grant?.path || !grant?.token) {
+    throw new Error(grant?.error ?? grantError?.message ?? "upload authorization failed");
+  }
   const { error } = await db.storage
     .from(BUCKET)
-    .upload(path, blob, { contentType: "image/jpeg" });
+    .uploadToSignedUrl(grant.path, grant.token, blob, { contentType: "image/jpeg" });
   if (error) throw new Error(error.message);
 
-  const { data } = db.storage.from(BUCKET).getPublicUrl(path);
+  const { data } = db.storage.from(BUCKET).getPublicUrl(grant.path);
   return data.publicUrl;
 }

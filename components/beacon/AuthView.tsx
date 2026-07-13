@@ -62,10 +62,16 @@ export function AuthView({
   const passHint =
     !cPass
       ? { t: "", cls: "" }
-      : cPass.length < 6
-        ? { t: "6文字以上にしてください", cls: "no" }
+      : cPass.length < 10
+        ? { t: "10文字以上にしてください", cls: "no" }
+        : new TextEncoder().encode(cPass).length > 72
+          ? { t: "72バイト以内にしてください", cls: "no" }
         : { t: "OK", cls: "ok" };
-  const canCreate = cClean.length >= 3 && cPass.length >= 6 && !cBusy;
+  const canCreate =
+    cClean.length >= 3 &&
+    cPass.length >= 10 &&
+    new TextEncoder().encode(cPass).length <= 72 &&
+    !cBusy;
   // ログイン状態の保持（サーバー発行のセッショントークンを端末に保存）。
   // X/Instagram等と同じ体験を既定にするためデフォルトON。共有PC向けにオフにできる。
   const [cTrust, setCTrust] = useState(true);
@@ -124,8 +130,12 @@ export function AuthView({
       setRHint("IDと復旧コードを入力してください");
       return;
     }
-    if (rNew.length < 6) {
-      setRHint("新しいパスコードは6文字以上にしてください");
+    if (rNew.length < 10) {
+      setRHint("新しいパスコードは10文字以上にしてください");
+      return;
+    }
+    if (new TextEncoder().encode(rNew).length > 72) {
+      setRHint("新しいパスコードは72バイト以内にしてください");
       return;
     }
     setRBusy(true);
@@ -149,14 +159,11 @@ export function AuthView({
       {pane === "create" && (
         <div>
           {onBack && (
-            <a className="backlink" onClick={onBack}>
+            <button type="button" className="backlink" onClick={onBack}>
               ← 戻る
-            </a>
+            </button>
           )}
           <h1>IDを作成</h1>
-          <div className="lead">
-            メールアドレスは不要です。IDとパスコードだけで作れます。
-          </div>
           <div className="card">
             <label className="f">ID</label>
             <div className="idfield">
@@ -164,13 +171,13 @@ export function AuthView({
               <input
                 value={cId}
                 onChange={(e) => setCId(cleanHandle(e.target.value))}
-                placeholder="beacon_user"
+                placeholder="my_ideal"
                 maxLength={20}
                 autoComplete="off"
               />
             </div>
             <div className={`hint ${idHint.cls}`}>{idHint.t}</div>
-            <label className="f">パスコード（6文字以上）</label>
+            <label className="f">パスコード（10文字以上）</label>
             <input
               value={cPass}
               onChange={(e) => setCPass(e.target.value)}
@@ -199,7 +206,7 @@ export function AuthView({
             </button>
           </div>
           <div className="authswitch">
-            すでにIDがある → <a onClick={() => setPane("login")}>ログイン</a>
+            すでにIDがある → <button type="button" className="textlink" onClick={() => setPane("login")}>ログイン</button>
           </div>
         </div>
       )}
@@ -207,10 +214,7 @@ export function AuthView({
       {pane === "recovery" && (
         <div>
           <h1>アカウントを作成しました</h1>
-          <div className="lead">
-            この「復旧コード」を控えておくと、パスコードを忘れても復旧できます。
-            あとでプロフィール画面からいつでも確認・再発行できるので、今すぐでなくても大丈夫です。
-          </div>
+          <div className="lead">復旧コードを安全な場所に保存してください。</div>
           <div className="card">
             <div className="rcode">{rc}</div>
             <button
@@ -228,16 +232,8 @@ export function AuthView({
               style={{ marginTop: 14 }}
               onClick={onEnter}
             >
-              控えた・はじめる
+              はじめる
             </button>
-            <button className="btn ghost" onClick={onEnter}>
-              あとで設定する
-            </button>
-          </div>
-          <div className="note">
-            ※ メールアドレスを登録しないため、パスコードと復旧コードの両方を
-            忘れるとログインできなくなります。復旧コードはプロフィールの
-            「復旧コードを再発行」からいつでも作り直せます。
           </div>
         </div>
       )}
@@ -245,12 +241,11 @@ export function AuthView({
       {pane === "login" && (
         <div>
           {onBack && (
-            <a className="backlink" onClick={onBack}>
+            <button type="button" className="backlink" onClick={onBack}>
               ← 戻る
-            </a>
+            </button>
           )}
           <h1>ログイン</h1>
-          <div className="lead">別の端末で作ったIDにも、これで入れます。</div>
           <div className="card">
             {knownHandles.length > 0 && (
               <>
@@ -276,7 +271,7 @@ export function AuthView({
               <input
                 value={lId}
                 onChange={(e) => setLId(cleanHandle(e.target.value))}
-                placeholder="beacon_user"
+                placeholder="my_ideal"
                 maxLength={20}
                 autoComplete="off"
               />
@@ -306,8 +301,8 @@ export function AuthView({
             </button>
           </div>
           <div className="authswitch">
-            IDを作る → <a onClick={() => setPane("create")}>新規作成</a>　/
-            <a onClick={() => setPane("recover")}>パスコードを忘れた</a>
+            IDを作る → <button type="button" className="textlink" onClick={() => setPane("create")}>新規作成</button>　/
+            <button type="button" className="textlink" onClick={() => setPane("recover")}>パスコードを忘れた</button>
           </div>
         </div>
       )}
@@ -315,9 +310,6 @@ export function AuthView({
       {pane === "recover" && (
         <div>
           <h1>パスコードの再設定</h1>
-          <div className="lead">
-            作成時に控えた復旧コードで再設定できます。
-          </div>
           <div className="card">
             <label className="f">ID</label>
             <div className="idfield">
@@ -325,7 +317,7 @@ export function AuthView({
               <input
                 value={rId}
                 onChange={(e) => setRId(cleanHandle(e.target.value))}
-                placeholder="beacon_user"
+                placeholder="my_ideal"
                 maxLength={20}
                 autoComplete="off"
               />
@@ -337,7 +329,7 @@ export function AuthView({
               placeholder="作成時に表示された12桁コード"
               autoComplete="off"
             />
-            <label className="f">新しいパスコード（6文字以上）</label>
+            <label className="f">新しいパスコード（10文字以上）</label>
             <input
               value={rNew}
               onChange={(e) => setRNew(e.target.value)}
@@ -352,7 +344,7 @@ export function AuthView({
             </button>
           </div>
           <div className="authswitch">
-            <a onClick={() => setPane("login")}>ログインに戻る</a>
+            <button type="button" className="textlink" onClick={() => setPane("login")}>ログインに戻る</button>
           </div>
         </div>
       )}

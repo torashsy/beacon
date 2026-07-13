@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "利用規約 · Beacon",
+  title: "利用規約 · my-IDeal",
   robots: { index: false, follow: false },
 };
 
@@ -9,9 +10,9 @@ export default function TermsPage() {
   return (
     <main className="wrap" style={{ paddingTop: 24, paddingBottom: 60 }}>
       <div className="top">
-        <a className="logo" href="/">
-          Beacon<span className="dot">.</span>
-        </a>
+        <Link className="logo" href="/">
+          my-IDeal<span className="dot">.</span>
+        </Link>
       </div>
       <h1>利用規約</h1>
       <div className="lead">最終更新日: 2026年7月</div>
@@ -19,7 +20,7 @@ export default function TermsPage() {
       <div className="card" style={{ fontSize: 13.5, lineHeight: 1.9 }}>
         <h2 style={{ margin: "0 0 8px" }}>1. サービス概要</h2>
         <p>
-          Beacon（以下「本サービス」）は、複数のSNS等の連絡先リンクと、公開・非公開を選べるカレンダーメモを
+          my-IDeal（以下「本サービス」）は、複数のSNS等の連絡先リンクと、公開・非公開を選べるカレンダーメモを
           ひとつの公開ページにまとめる個人向けサービスです。本サービスは以下を提供しません。
         </p>
         <ul style={{ margin: "8px 0 0 18px" }}>
@@ -77,7 +78,7 @@ export default function TermsPage() {
         </p>
 
         <h2 style={{ margin: "20px 0 8px" }}>8. お問い合わせ・通報</h2>
-        <p>不適切なコンテンツの通報、その他お問い合わせ窓口は現在準備中です。</p>
+        <p>不適切なコンテンツの通報、その他のお問い合わせは<Link href="/contact">お問い合わせ・通報フォーム</Link>から受け付けます。</p>
       </div>
     </main>
   );

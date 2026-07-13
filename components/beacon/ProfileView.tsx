@@ -60,7 +60,7 @@ export function ProfileView({
   async function share() {
     if (typeof navigator.share === "function") {
       try {
-        await navigator.share({ title: `@${handle} · Beacon`, url: pageUrl() });
+        await navigator.share({ title: `@${handle} · my-IDeal`, url: pageUrl() });
       } catch {
         /* キャンセルは無視 */
       }
@@ -142,12 +142,15 @@ export function ProfileView({
             <VerifiedBadge />
           </div>
           <div className="xid">@{handle}</div>
+          <div className="followerCount">
+            <strong>{me.followerCount.toLocaleString("ja-JP")}</strong> フォロワー
+          </div>
           {me.profile.status && (
             <div
               style={{
                 marginTop: 10,
                 background: "var(--eml)",
-                border: "1px solid rgba(16,185,129,.3)",
+                border: "1px solid rgba(56,189,248,.3)",
                 borderRadius: 12,
                 padding: "8px 12px",
                 fontSize: 13,
@@ -155,14 +158,10 @@ export function ProfileView({
                 color: "var(--emd)",
               }}
             >
-              💬 {me.profile.status}
+              {me.profile.status}
             </div>
           )}
           {me.profile.bio && <div className="xbio">{me.profile.bio}</div>}
-          <div className="xmeta">
-            <span className="live" />
-            <span>Beacon で公開中</span>
-          </div>
           <button
             className="pill solid"
             style={{ marginTop: 12, width: "100%" }}
@@ -207,17 +206,13 @@ export function ProfileView({
         )}
       </div>
 
-      <div className="note">
-        「支援」には、ほしいものリストやFantiaなど外部の支援ページのURLを貼れます。
-        Beaconはお金のやり取りを仲介しません。
-      </div>
       <button
         className="btn ghost"
         style={{ marginTop: 10 }}
         disabled={reissueBusy}
         onClick={doReissueRc}
       >
-        {reissueBusy ? "発行中…" : "新しい復旧コードを発行する"}
+        {reissueBusy ? "発行中…" : "復旧コードを再発行"}
       </button>
 
       {reissuedRc && (
@@ -240,7 +235,7 @@ export function ProfileView({
           >
             <h2 style={{ margin: "0 0 10px" }}>新しい復旧コード</h2>
             <div className="lead" style={{ margin: "0 0 12px" }}>
-              古い復旧コードは無効になりました。今この場で必ず控えてください。
+              このコードを安全な場所に保存してください。
             </div>
             <div className="rcode">{reissuedRc}</div>
             <button

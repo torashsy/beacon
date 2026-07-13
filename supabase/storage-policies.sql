@@ -5,8 +5,8 @@
 -- これを SQL Editor で Run する（schema.sql の handle_exists 関数が必要。
 -- 先に schema.sql を実行しておくこと）。
 --
---   - insert を anon に許可。ただし「実在するハンドルのフォルダ」への
---     アップロードのみ許可し、任意パスへの無制限アップロードを防ぐ
+--   - ブラウザからの匿名 insert/update は許可しない
+--   - Edge Function create-avatar-upload が認証後に発行する署名付きURLだけを使う
 --   - upsert は使わない設計（storage.ts が毎回ユニークなファイル名で INSERT する）
 --     ため update ポリシーは付与しない。未使用の書込権限を残さない
 --   - select は public バケットのため自動で読める
@@ -25,11 +25,4 @@ update storage.buckets
   where id = 'avatars';
 
 drop policy if exists avatars_anon_insert on storage.objects;
-create policy avatars_anon_insert on storage.objects
-  for insert to anon
-  with check (
-    bucket_id = 'avatars'
-    and handle_exists((storage.foldername(name))[1])
-  );
-
 drop policy if exists avatars_anon_update on storage.objects;

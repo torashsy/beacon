@@ -12,7 +12,15 @@ import { COLORS, HEADING_TYPE, typeMeta } from "@/lib/beacon/constants";
 
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
-export const alt = "Beacon profile";
+export const alt = "my-IDeal profile";
+
+const siteHost = (() => {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").host;
+  } catch {
+    return "localhost:3000";
+  }
+})();
 
 function normalizeHandle(raw: string): string | null {
   const d = decodeURIComponent(raw);
@@ -81,14 +89,14 @@ export default async function Image({
           }}
         >
           <div style={{ fontSize: 64, fontWeight: 800, color: "#17242B" }}>
-            {`@${handle ?? "beacon"}`}
+            {`@${handle ?? "my_ideal"}`}
           </div>
           {platforms.length > 0 && (
             <div
               style={{
                 fontSize: 34,
                 fontWeight: 700,
-                color: "#0B9A6D",
+                color: "#0284C7",
                 marginTop: 20,
               }}
             >
@@ -105,7 +113,7 @@ export default async function Image({
               borderRadius: 999,
             }}
           >
-            {`beacon-beige-gamma.vercel.app/@${handle ?? ""}`}
+            {`${siteHost}/@${handle ?? ""}`}
           </div>
         </div>
         <div
@@ -115,11 +123,11 @@ export default async function Image({
             marginTop: 44,
             fontSize: 40,
             fontWeight: 800,
-            color: "#0B9A6D",
+            color: "#0284C7",
           }}
         >
-          <span>Beacon</span>
-          <span style={{ color: "#2AC98C" }}>.</span>
+          <span>my-IDeal</span>
+          <span style={{ color: "#7DD3FC" }}>.</span>
           <span
             style={{ fontSize: 26, fontWeight: 600, color: "#17242B", marginLeft: 18 }}
           >

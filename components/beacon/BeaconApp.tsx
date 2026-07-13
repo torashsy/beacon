@@ -40,6 +40,7 @@ import {
   type FollowStatus,
   K_HANDLE,
   loadFollows,
+  replaceFollows,
   removeFollow,
   toSnapshot,
 } from "@/lib/beacon/follows";
@@ -78,6 +79,20 @@ import {
 type NavTab = "profile" | "follows" | "howto";
 type Overlay = "none" | "auth" | "public";
 
+function NavIcon({ name }: { name: NavTab }) {
+  const path =
+    name === "profile"
+      ? "M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z"
+      : name === "follows"
+        ? "M6 4h12a2 2 0 0 1 2 2v14l-8-4-8 4V6a2 2 0 0 1 2-2Z"
+        : "M9.1 9a3 3 0 1 1 4.3 2.7c-.9.5-1.4 1.1-1.4 2.3M12 18h.01";
+  return (
+    <svg className="navIcon" viewBox="0 0 24 24" aria-hidden="true">
+      <path d={path} />
+    </svg>
+  );
+}
+
 function publicMemos(cal: CalMap): CalMemo[] {
   return Object.entries(cal)
     .filter(([, v]) => v.pub && v.memo)
@@ -107,6 +122,14 @@ export function BeaconApp() {
   const [followStates, setFollowStates] = useState<
     Record<string, FollowStatus>
   >({});
+  const followUpdates = useMemo(
+    () =>
+      follows.filter((follow) => {
+        const state = followStates[follow.handle]?.state;
+        return state === "new" || state === "changed" || state === "deleted";
+      }).length,
+    [follows, followStates],
+  );
   const [preview, setPreview] = useState<PublicCardData | null>(null);
 
   const [authInitialHandle, setAuthInitialHandle] = useState("");
@@ -134,6 +157,17 @@ export function BeaconApp() {
 
   const calLoading = useRef(false);
 
+  useEffect(() => {
+    const badgeNavigator = navigator as Navigator & {
+      setAppBadge?: (count?: number) => Promise<void>;
+      clearAppBadge?: () => Promise<void>;
+    };
+    const request = followUpdates
+      ? badgeNavigator.setAppBadge?.(followUpdates)
+      : badgeNavigator.clearAppBadge?.();
+    void request?.catch(() => {});
+  }, [followUpdates]);
+
   // 起動: フォロー一覧を読み込み、控えた handle があればログインのプリフィルに使う。
   // ログインは要求せず、ナビ（フォロー中/使い方）は最初から使える。
   // 保存済みセッショントークンがあれば自動ログインする（失効していれば捨てて
@@ -142,7 +176,7 @@ export function BeaconApp() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const loaded = loadFollows();
+      const loaded = loadFollows(null);
       setFollows(loaded);
       setKnownHandles(loadHandles());
       let stored = "";
@@ -207,6 +241,7 @@ export function BeaconApp() {
       }
       return {
         profile: page?.profile ?? emptyProfile(handle),
+        followerCount: page?.follower_count ?? 0,
         channels: ensureIds(page?.channels ?? []),
         cal,
         calLoaded,
@@ -243,37 +278,30 @@ export function BeaconApp() {
     [db, session],
   );
 
-  /** ログイン直後にサーバーの一覧を取り込み、端末側だけの分もサーバーへ反映する。 */
+  /** ログイン直後にサーバーのID一覧を正本として取り込み、アカウント別キャッシュを作る。 */
   const syncFollowsFromServer = useCallback(
     async (handle: string, pass: string) => {
       try {
         const targets = await getMyFollows(db, handle, pass);
-        const local = loadFollows();
-        const localHandles = new Set(local.map((f) => f.handle));
-        const missing = targets.filter((t) => !localHandles.has(t));
-        let merged = local;
-        if (missing.length) {
-          const fetched = await Promise.all(
-            missing.map(async (h) => {
-              try {
-                const page = await getPublicPage(db, h);
-                return page
-                  ? toSnapshot(page.profile, page.channels, page.cal)
-                  : null;
-              } catch {
-                return null;
-              }
-            }),
-          );
-          for (const snap of fetched) if (snap) merged = addFollow(snap);
-          setFollows(merged);
-        }
-        void saveMyFollows(
-          db,
-          handle,
-          pass,
-          merged.map((f) => f.handle),
-        ).catch(() => {});
+        const local = loadFollows(handle);
+        const cached = new Map(local.map((item) => [item.handle, item]));
+        const resolved = await Promise.all(
+          targets.map(async (target) => {
+            try {
+              const page = await getPublicPage(db, target);
+              return page
+                ? toSnapshot(page.profile, page.channels, page.cal)
+                : null;
+            } catch {
+              return cached.get(target) ?? null;
+            }
+          }),
+        );
+        const accountFollows = resolved.filter(
+          (item): item is FollowSnapshot => item !== null,
+        );
+        replaceFollows(handle, accountFollows);
+        setFollows(accountFollows);
       } catch {
         /* サーバー同期に失敗しても端末のローカル一覧はそのまま使える */
       }
@@ -310,6 +338,7 @@ export function BeaconApp() {
       const rc = await createAccount(db, handle, pass);
       const secret = await establishSession(handle, pass, remember);
       setSession({ handle, pass: secret });
+      setFollows(loadFollows(handle));
       persistHandle(handle);
       setMe(await loadMe(handle, secret));
       return rc;
@@ -328,6 +357,7 @@ export function BeaconApp() {
       if (!ok) throw new Error("auth");
       const secret = await establishSession(handle, pass, remember);
       setSession({ handle, pass: secret });
+      setFollows(loadFollows(handle));
       persistHandle(handle);
       setMe(await loadMe(handle, secret));
       void syncFollowsFromServer(handle, secret); // 端末をまたいだフォロー一覧の統合
@@ -361,6 +391,7 @@ export function BeaconApp() {
     }
     setSession(null);
     setMe(null);
+    setFollows(loadFollows(null));
     setEditing(false);
     setPreview(null);
     clearStoredSession();
@@ -374,7 +405,7 @@ export function BeaconApp() {
     setAuthInitialPane("login");
     setOverlay("none");
     setNavTab("profile"); // ログアウト後はランディング（プロフィールタブ）へ
-  }, [session]);
+  }, [db, session]);
 
   /** 認証フォームを開く（ランディングのボタンから）。 */
   const openAuth = useCallback((pane: "create" | "login") => {
@@ -468,10 +499,10 @@ export function BeaconApp() {
         let av_url = prof.av_url;
         let bn_url = prof.bn_url;
         if (edit.av.mode === "new" && edit.av.file)
-          av_url = await uploadImage(db, session.handle, "av", edit.av.file);
+          av_url = await uploadImage(db, session.handle, session.pass, "av", edit.av.file);
         else if (edit.av.mode === "remove") av_url = "";
         if (edit.bn.mode === "new" && edit.bn.file)
-          bn_url = await uploadImage(db, session.handle, "bn", edit.bn.file);
+          bn_url = await uploadImage(db, session.handle, session.pass, "bn", edit.bn.file);
         else if (edit.bn.mode === "remove") bn_url = "";
 
         const nextProfile = {
@@ -511,7 +542,7 @@ export function BeaconApp() {
   const uploadThumb = useCallback(
     async (file: File): Promise<string> => {
       if (!session) throw new Error("no session");
-      return uploadImage(db, session.handle, "thumb", file);
+      return uploadImage(db, session.handle, session.pass, "thumb", file);
     },
     [db, session],
   );
@@ -559,6 +590,7 @@ export function BeaconApp() {
     setPreview({
       handle: session.handle,
       profile: me.profile,
+      followerCount: me.followerCount,
       channels: me.channels,
       pubcal: publicMemos(me.cal),
     });
@@ -575,21 +607,49 @@ export function BeaconApp() {
           if (!next[f.handle]) next[f.handle] = { state: "loading", addedLive: 0 };
         return next;
       });
-      await Promise.all(
+      const entries = await Promise.all(
         list.map(async (snap) => {
           try {
             const page = await getPublicPage(db, snap.handle);
-            setFollowStates((s) => ({ ...s, [snap.handle]: diffFollow(snap, page) }));
+            return [snap.handle, diffFollow(snap, page)] as const;
           } catch {
-            setFollowStates((s) => ({
-              ...s,
-              [snap.handle]: { state: "same", addedLive: 0 },
-            }));
+            return [
+              snap.handle,
+              { state: "same", addedLive: 0 } as FollowStatus,
+            ] as const;
           }
         }),
       );
+      setFollowStates(Object.fromEntries(entries));
+
+      const changed = entries.filter(([, status]) =>
+        ["new", "changed", "deleted"].includes(status.state),
+      );
+      const owner = session?.handle ?? "guest";
+      const storageKey = `myideal:follow-notifications:v1:${owner}`;
+      const fingerprint = JSON.stringify(
+        changed.map(([handle, status]) => ({
+          handle,
+          state: status.state,
+          added: status.addedLive,
+          name: status.fresh?.name,
+          channels: status.fresh?.channels,
+          pubcal: status.fresh?.pubcal,
+        })),
+      );
+      try {
+        const previous = window.localStorage.getItem(storageKey) ?? "";
+        if (changed.length && fingerprint !== previous) {
+          toast(`フォロー中に${changed.length}件の更新があります`);
+          window.localStorage.setItem(storageKey, fingerprint);
+        } else if (!changed.length) {
+          window.localStorage.removeItem(storageKey);
+        }
+      } catch {
+        if (changed.length) toast(`フォロー中に${changed.length}件の更新があります`);
+      }
     },
-    [db],
+    [db, session, toast],
   );
 
   // 起動時とフォローの顔ぶれ変更時に再チェック（他人がサーバー側で変えた分を検知）
@@ -610,6 +670,7 @@ export function BeaconApp() {
     if (!me || !session) return;
     const next = addFollow(
       toSnapshot(me.profile, me.channels, publicMemos(me.cal)),
+      session.handle,
     );
     setFollows(next);
     pushFollowsToServer(next);
@@ -618,17 +679,17 @@ export function BeaconApp() {
 
   const onUnfollow = useCallback(
     (handle: string) => {
-      const next = removeFollow(handle);
+      const next = removeFollow(handle, session?.handle ?? null);
       setFollows(next);
       pushFollowsToServer(next);
       toast("解除しました");
     },
-    [toast, pushFollowsToServer],
+    [session, toast, pushFollowsToServer],
   );
 
   const onUpdateSnapshot = useCallback(
     (snap: FollowSnapshot) => {
-      const next = addFollow(snap);
+      const next = addFollow(snap, session?.handle ?? null);
       setFollows(next);
       pushFollowsToServer(next);
       setFollowStates((s) => ({
@@ -636,7 +697,7 @@ export function BeaconApp() {
         [snap.handle]: { state: "same", addedLive: 0 },
       }));
     },
-    [pushFollowsToServer],
+    [session, pushFollowsToServer],
   );
 
   function goNav(v: NavTab) {
@@ -650,7 +711,7 @@ export function BeaconApp() {
       <div className="wrap">
         <div className="top">
           <div className="logo">
-            Beacon<span className="dot">.</span>
+            my-IDeal<span className="dot">.</span>
           </div>
         </div>
       </div>
@@ -661,11 +722,6 @@ export function BeaconApp() {
     ? follows.some((f) => f.handle === session.handle)
     : false;
 
-  const followUpdates = follows.filter((f) => {
-    const st = followStates[f.handle]?.state;
-    return st === "new" || st === "changed" || st === "deleted";
-  }).length;
-
   // ナビ（下部タブ）を出すのは通常モードのみ。認証フォーム・プレビュー・
   // プロフィール編集の全画面時は隠す。
   const showNav = overlay === "none" && !editing;
@@ -675,7 +731,7 @@ export function BeaconApp() {
       <div className="wrap">
         <div className="top">
           <div className="logo">
-            Beacon<span className="dot">.</span>
+            my-IDeal<span className="dot">.</span>
           </div>
           {session && overlay === "none" && saveStatus !== "idle" && (
             <span
@@ -699,12 +755,12 @@ export function BeaconApp() {
           )}
           {session && overlay === "none" && (
             <>
-              <div className="tag" onClick={() => openAuth("login")}>
+              <button type="button" className="tag" onClick={() => openAuth("login")}>
                 切替
-              </div>
-              <div className="tag" style={{ marginLeft: 8 }} onClick={logout}>
+              </button>
+              <button type="button" className="tag" style={{ marginLeft: 8 }} onClick={logout}>
                 ログアウト
-              </div>
+              </button>
             </>
           )}
         </div>
@@ -728,9 +784,9 @@ export function BeaconApp() {
         {/* 全画面: 公開プレビュー */}
         {overlay === "public" && preview && (
           <section className="view">
-            <a className="backlink" onClick={() => setOverlay("none")}>
+            <button type="button" className="backlink" onClick={() => setOverlay("none")}>
               ← 戻る
-            </a>
+            </button>
             <PublicProfileCard
               data={preview}
               actions={
@@ -743,10 +799,7 @@ export function BeaconApp() {
                 </button>
               }
             />
-            <div className="note" style={{ marginTop: 14 }}>
-              これはあなたの公開ページ（/@{preview.handle}）のプレビューです。
-              相手にはこの見た目で表示されます。
-            </div>
+            <div className="previewLabel">公開ページのプレビュー</div>
             <div style={{ marginTop: 14 }}>
               <CreateYoursFooter href={`/@${preview.handle}`} />
             </div>
@@ -808,19 +861,21 @@ export function BeaconApp() {
       </div>
 
       {showNav && (
-        <div className="nav">
+        <nav className="nav" aria-label="メインナビゲーション">
           <button
             className={`ni ${navTab === "profile" ? "on" : ""}`}
             onClick={() => goNav("profile")}
+            aria-current={navTab === "profile" ? "page" : undefined}
           >
-            <span className="i">👤</span>プロフィール
+            <NavIcon name="profile" />プロフィール
           </button>
           <button
             className={`ni ${navTab === "follows" ? "on" : ""}`}
             onClick={() => goNav("follows")}
+            aria-current={navTab === "follows" ? "page" : undefined}
             style={{ position: "relative" }}
           >
-            <span className="i">📋</span>フォロー中
+            <NavIcon name="follows" />フォロー中
             {followUpdates > 0 && (
               <span
                 aria-label={`${followUpdates}件の更新`}
@@ -848,13 +903,14 @@ export function BeaconApp() {
           <button
             className={`ni ${navTab === "howto" ? "on" : ""}`}
             onClick={() => goNav("howto")}
+            aria-current={navTab === "howto" ? "page" : undefined}
           >
-            <span className="i">❓</span>使い方
+            <NavIcon name="howto" />使い方
           </button>
-        </div>
+        </nav>
       )}
 
-      <div className={`toast ${toastOn ? "show" : ""}`}>{toastMsg}</div>
+      <div className={`toast ${toastOn ? "show" : ""}`} role="status" aria-live="polite">{toastMsg}</div>
     </>
   );
 }
