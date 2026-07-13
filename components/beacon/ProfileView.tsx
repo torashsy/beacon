@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { Channel } from "@/lib/beacon/types";
 import {
-  grad,
   HEADING_TYPE,
   TYPES,
   typeMeta,
@@ -12,7 +11,8 @@ import { detectType } from "@/lib/beacon/detect";
 import { dkey } from "@/lib/beacon/format";
 import { isValidLinkUrl } from "@/lib/beacon/validate";
 import { cryptoId, type Me, type ToastFn } from "./appTypes";
-import { LinkThumb, VerifiedBadge } from "./icons";
+import { LinkThumb } from "./icons";
+import { PublicProfileCard } from "./PublicProfileCard";
 
 /**
  * プロフィール表示 + 編集タブ（リンク / カレンダー）。beacon.html の prof-view を移植し、
@@ -25,7 +25,6 @@ export function ProfileView({
   me,
   handle,
   onEdit,
-  onPreview,
   onReissueRc,
   onSaveChannels,
   onSaveCal,
@@ -36,7 +35,6 @@ export function ProfileView({
   me: Me;
   handle: string;
   onEdit: () => void;
-  onPreview: () => void;
   onReissueRc: () => Promise<string>;
   onSaveChannels: (next: Channel[]) => Promise<boolean>;
   onSaveCal: (date: string, memo: string, pub: boolean) => Promise<boolean>;
@@ -49,6 +47,11 @@ export function ProfileView({
   const [reissuedRc, setReissuedRc] = useState<string | null>(null);
   const [reissueBusy, setReissueBusy] = useState(false);
   const [reissueSaved, setReissueSaved] = useState(false);
+
+  const publicCal = Object.entries(me.cal)
+    .filter(([, value]) => value.pub && value.memo)
+    .map(([d, value]) => ({ d, memo: value.memo }))
+    .sort((a, b) => a.d.localeCompare(b.d));
 
   useEffect(() => {
     if (tab === "cal" && !me.calLoaded) onLoadCal();
@@ -109,67 +112,24 @@ export function ProfileView({
 
   return (
     <div>
-      <div className="xcard">
-        <div
-          className="banner"
-          style={
-            me.profile.bn_url
-              ? { background: "none" }
-              : { background: grad(me.profile.theme) }
-          }
-        >
-          {me.profile.bn_url && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={me.profile.bn_url} alt="" />
-          )}
-        </div>
-        <div className="xhead">
-          <div className="xactions">
-            <button className="pill line" onClick={onEdit}>
-              プロフィールを編集
-            </button>
-          </div>
-          <div className="xav">
-            {me.profile.av_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={me.profile.av_url} alt="" />
-            ) : (
-              me.profile.emoji || handle[0]?.toUpperCase()
-            )}
-          </div>
-          <div className="xname">
-            <span>{me.profile.name || `@${handle}`}</span>
-            <VerifiedBadge />
-          </div>
-          <div className="xid">@{handle}</div>
-          <div className="followerCount">
-            <strong>{me.followerCount.toLocaleString("ja-JP")}</strong> フォロワー
-          </div>
-          {me.profile.status && (
-            <div
-              style={{
-                marginTop: 10,
-                background: "var(--eml)",
-                border: "1px solid rgba(56,189,248,.3)",
-                borderRadius: 12,
-                padding: "8px 12px",
-                fontSize: 13,
-                fontWeight: 600,
-                color: "var(--emd)",
-              }}
-            >
-              {me.profile.status}
-            </div>
-          )}
-          {me.profile.bio && <div className="xbio">{me.profile.bio}</div>}
-          <button
-            className="pill solid"
-            style={{ marginTop: 12, width: "100%" }}
-            onClick={onPreview}
-          >
-            プレビュー
+      <PublicProfileCard
+        data={{
+          handle,
+          followerCount: me.followerCount,
+          profile: me.profile,
+          channels: me.channels,
+          pubcal: publicCal,
+        }}
+        actions={
+          <button className="pill line" onClick={onEdit}>
+            編集
           </button>
-          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+        }
+      />
+
+      <div className="xcard" style={{ marginTop: 12 }}>
+        <div className="xhead" style={{ paddingTop: 14 }}>
+          <div style={{ display: "flex", gap: 8 }}>
             <button className="pill line" style={{ flex: 1 }} onClick={share}>
               共有
             </button>

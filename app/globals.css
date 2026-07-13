@@ -54,6 +54,12 @@ body {
 .logo .dot {
   color: var(--em2);
 }
+.logoButton {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
 .tag {
   margin-left: auto;
   font-size: 11px;
