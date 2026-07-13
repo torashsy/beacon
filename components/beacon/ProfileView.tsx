@@ -405,7 +405,7 @@ function LinksPane({
     ) as Channel[];
     if (await onSaveChannels(next)) {
       const c = next.find((x) => x.id === id);
-      toast(c?.status === "dead" ? "停止にしました" : "有効にしました");
+      toast(c?.status === "dead" ? "非表示にしました" : "表示しました");
     }
   }
 
@@ -508,7 +508,7 @@ function LinksPane({
                       <div className="lb">
                         {c.label || typeMeta(c.type).lb}
                       </div>
-                      <div className={`u ${c.status === "dead" ? "strike" : ""}`}>
+                      <div className="u">
                         {c.url}
                       </div>
                       {c.descr && (
@@ -524,7 +524,7 @@ function LinksPane({
                     className={`tog ${c.status}`}
                     onClick={() => toggle(c.id!)}
                   >
-                    {c.status === "live" ? "有効" : "停止"}
+                    {c.status === "live" ? "表示中" : "非表示"}
                   </button>
                 )}
                 <button
@@ -538,11 +538,13 @@ function LinksPane({
             );
           })
         ) : (
-          <div className="empty">
-            <span className="big">🔗</span>
+          <div className="empty linksEmpty">
+            <svg className="emptyLinkIcon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M9.5 14.5 14.5 9M8 17H6a4 4 0 0 1 0-8h3m6-2h3a4 4 0 0 1 0 8h-3" />
+            </svg>
             最初のリンクを追加しましょう。
             <br />
-            XなどはユーザーIDだけでも追加できます。URLは種類を自動判定します。
+            X・InstagramなどはIDだけで追加できます。
           </div>
         )}
       </div>
@@ -584,9 +586,10 @@ function LinksPane({
                 onChange={(e) => onLinkInputChange(e.target.value)}
                 placeholder={
                   supportsUserId(type)
-                    ? `${userIdExample(type)} またはURL`
-                    : "URLを貼り付け（種類は自動判定）"
+                    ? "ユーザーID または URL"
+                    : "URLを入力"
                 }
+                aria-label={supportsUserId(type) ? "ユーザーIDまたはURL" : "URL"}
                 inputMode={supportsUserId(type) ? "text" : type === "mail" ? "email" : "url"}
               />
             )}
@@ -600,6 +603,13 @@ function LinksPane({
               />
             )}
           </div>
+          {!isHeading && (
+            <div className="fieldHint linkInputHint">
+              {supportsUserId(type)
+                ? `IDの例: ${userIdExample(type)}。URLを貼るとサービスを自動判定します。`
+                : "URLを貼るとサービスを自動判定します。"}
+            </div>
+          )}
           {!isHeading && (
             <>
               <label className="f">表示名（任意）</label>
@@ -618,7 +628,10 @@ function LinksPane({
                 placeholder="例: DMはこちらが早いです"
                 maxLength={40}
               />
-              <label className="f">サムネイル画像（任意）</label>
+              <label className="f">リンク画像（任意）</label>
+              <div className="fieldHint linkImageHint">
+                サービスアイコンの代わりに表示する画像です。
+              </div>
               <input
                 ref={thumbInput}
                 type="file"
@@ -680,7 +693,6 @@ function CalendarPane({
   const [m, setM] = useState(now.getMonth());
   const [sel, setSel] = useState<string | null>(null);
   const [memo, setMemo] = useState("");
-  const [pub, setPub] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const first = new Date(y, m, 1).getDay();
@@ -690,7 +702,6 @@ function CalendarPane({
     setSel(k);
     const e = me.cal[k];
     setMemo(e?.memo ?? "");
-    setPub(e?.pub ?? false);
   }
   function nav(d: -1 | 1) {
     let nm = m + d;
@@ -706,7 +717,6 @@ function CalendarPane({
     setY(ny);
     setSel(null);
     setMemo("");
-    setPub(false);
   }
   async function save() {
     if (!sel) {
@@ -715,7 +725,7 @@ function CalendarPane({
     }
     setBusy(true);
     try {
-      if (await onSaveCal(sel, memo.trim(), pub)) toast("保存しました");
+      if (await onSaveCal(sel, memo.trim(), true)) toast("保存しました");
     } finally {
       setBusy(false);
     }
@@ -767,9 +777,7 @@ function CalendarPane({
               onClick={() => selectDay(k)}
             >
               {d}
-              {entry?.memo && (
-                <span className={`dot ${entry.pub ? "" : "priv"}`} />
-              )}
+              {entry?.memo && <span className="dot" />}
             </div>
           );
         })}
@@ -778,28 +786,16 @@ function CalendarPane({
       <label className="f" style={{ marginTop: 14 }}>
         {selLabel}
       </label>
-      <textarea
+      <input
         className="plain"
         value={memo}
         onChange={(e) => setMemo(e.target.value)}
-        placeholder="例: ライブ出演 19:00〜 / 20時以降 空きあり"
-        maxLength={500}
+        placeholder="例: ライブ 19:00〜"
+        maxLength={100}
       />
-      <label className="chk">
-        <input
-          type="checkbox"
-          checked={pub}
-          onChange={(e) => setPub(e.target.checked)}
-        />
-        <span>このメモを公開ページに表示する</span>
-      </label>
       <button className="btn sig" disabled={busy} onClick={save}>
         {busy ? "保存中…" : "保存する"}
       </button>
-      <div className="note" style={{ marginTop: 12 }}>
-        公開にすると、相手（フォロワー）にもこの日のメモが見えます。空き日の告知などに
-        使えます。予定などプライベートな内容は公開にしないでください。
-      </div>
     </div>
   );
 }

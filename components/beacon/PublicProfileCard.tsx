@@ -19,7 +19,7 @@ export interface PublicCardData {
     Profile,
     "name" | "bio" | "emoji" | "theme" | "av_url" | "bn_url" | "status"
   >;
-  channels: Channel[]; // live/dead 両方。ここで振り分ける
+  channels: Channel[]; // 非表示リンクも含む。ここで公開対象だけに絞る
   pubcal: CalMemo[]; // 公開メモのみ
 }
 
@@ -53,7 +53,7 @@ export function PublicProfileCard({
   trackHandle?: string;
 }) {
   const { handle, profile, channels, pubcal } = data;
-  const hasLinks = channels.some((c) => c.type !== HEADING_TYPE);
+  const hasLinks = channels.some((c) => c.type !== HEADING_TYPE && c.status === "live");
 
   return (
     <div className="xcard">
@@ -88,7 +88,7 @@ export function PublicProfileCard({
 
       <div className="xpane" style={{ paddingTop: 4, paddingBottom: 0 }}>
         {hasLinks ? (
-          // 並び順のまま描画する（見出しで区切れるように。停止リンクもその場に表示）
+          // 並び順のまま描画し、非表示リンクは公開ページへ一切出さない。
           channels.map((c, i) => {
             const key = c.id ?? `${c.type}-${i}`;
             if (c.type === HEADING_TYPE) {
@@ -99,12 +99,7 @@ export function PublicProfileCard({
               );
             }
             if (c.status === "dead") {
-              return (
-                <div key={key} className="pdead">
-                  <span className="s">{c.label || typeMeta(c.type).lb}</span>
-                  は現在使えません
-                </div>
-              );
+              return null;
             }
             return (
               <TrackedLink
@@ -124,7 +119,7 @@ export function PublicProfileCard({
             );
           })
         ) : (
-          <div className="empty">有効なリンクがありません。</div>
+          <div className="empty">表示中のリンクがありません。</div>
         )}
       </div>
 
