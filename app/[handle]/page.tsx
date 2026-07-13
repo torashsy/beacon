@@ -1,5 +1,6 @@
 import { cache } from "react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getPublicPage } from "@/lib/beacon/rpc";
@@ -84,9 +85,9 @@ export default async function PublicPage({
   return (
     <main className="wrap" style={{ paddingTop: 8, paddingBottom: 40 }}>
       <div className="top">
-        <div className="logo">
+        <Link className="logo" href="/" aria-label="ホームへ戻る">
           my-IDeal<span className="dot">.</span>
-        </div>
+        </Link>
         <PublicBackButton />
       </div>
       <PublicProfileCard

@@ -584,19 +584,6 @@ export function BeaconApp() {
     }
   }, [db, session, runWrite, toast]);
 
-  // ---- プレビュー / フォロー ----
-  const openPreview = useCallback(() => {
-    if (!me || !session) return;
-    setPreview({
-      handle: session.handle,
-      profile: me.profile,
-      followerCount: me.followerCount,
-      channels: me.channels,
-      pubcal: publicMemos(me.cal),
-    });
-    setOverlay("public");
-  }, [me, session]);
-
   // ---- フォローの変化検知（ナビの更新ドットと一覧のバッジを共有）----
   const checkFollows = useCallback(
     async (list: FollowSnapshot[]) => {
@@ -706,13 +693,18 @@ export function BeaconApp() {
     setOverlay("none");
   }
 
+  function goHome() {
+    goNav("profile");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   if (booting) {
     return (
       <div className="wrap">
         <div className="top">
-          <div className="logo">
+          <button type="button" className="logo logoButton" onClick={goHome} aria-label="ホームへ戻る">
             my-IDeal<span className="dot">.</span>
-          </div>
+          </button>
         </div>
       </div>
     );
@@ -730,9 +722,9 @@ export function BeaconApp() {
     <>
       <div className="wrap">
         <div className="top">
-          <div className="logo">
+          <button type="button" className="logo logoButton" onClick={goHome} aria-label="ホームへ戻る">
             my-IDeal<span className="dot">.</span>
-          </div>
+          </button>
           {session && overlay === "none" && saveStatus !== "idle" && (
             <span
               style={{
@@ -821,7 +813,6 @@ export function BeaconApp() {
                   me={me}
                   handle={session.handle}
                   onEdit={() => setEditing(true)}
-                  onPreview={openPreview}
                   onReissueRc={reissueRc}
                   onSaveChannels={persistChannels}
                   onSaveCal={persistCal}
