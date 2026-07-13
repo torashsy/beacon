@@ -38,6 +38,12 @@ export interface EditResult {
 const currentUrl = (edit: ImageEdit, keepUrl: string): string =>
   edit.mode === "new" ? (edit.previewUrl ?? "") : edit.mode === "keep" ? keepUrl : "";
 
+function firstCharacter(value: string): string {
+  if (!value) return "";
+  const segmenter = new Intl.Segmenter("ja", { granularity: "grapheme" });
+  return Array.from(segmenter.segment(value))[0]?.segment ?? "";
+}
+
 export function ProfileEdit({
   profile,
   onCancel,
@@ -56,6 +62,7 @@ export function ProfileEdit({
   const [bn, setBn] = useState<ImageEdit>({ mode: "keep" });
   const [busy, setBusy] = useState(false);
   const [iconMenuOpen, setIconMenuOpen] = useState(false);
+  const [bannerMenuOpen, setBannerMenuOpen] = useState(false);
   const [cropTarget, setCropTarget] = useState<{
     kind: "av" | "bn";
     file: File;
@@ -162,7 +169,7 @@ export function ProfileEdit({
         <div
           className="ebanner"
           style={bnUrl ? { background: "none" } : { background: grad(theme) }}
-          onClick={() => bnInput.current?.click()}
+          onClick={() => setBannerMenuOpen(true)}
         >
           {bnUrl && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -190,32 +197,6 @@ export function ProfileEdit({
           </div>
         </div>
         <div className="efields">
-          {avUrl && av.mode !== "remove" && (
-            <>
-              <button className="editimg" onClick={() => adjustExisting("av")}>
-                アイコンの位置を調整
-              </button>
-              <button
-                className="rmimg"
-                onClick={() => setAv({ mode: "remove" })}
-              >
-                アイコン画像を削除
-              </button>
-            </>
-          )}
-          {bnUrl && bn.mode !== "remove" && (
-            <>
-              <button className="editimg" onClick={() => adjustExisting("bn")}>
-                ヘッダーの位置を調整
-              </button>
-              <button
-                className="rmimg"
-                onClick={() => setBn({ mode: "remove" })}
-              >
-                ヘッダー画像を削除
-              </button>
-            </>
-          )}
           <div className="efield">
             <div className="el">名前</div>
             <input
@@ -244,22 +225,6 @@ export function ProfileEdit({
               placeholder="例: 今はInstagramが動いてます / DM開放中"
             />
           </div>
-          <label className="f">ヘッダーの色（画像を使わない場合）</label>
-          <div className="emojis">
-            {COLORS.map((c, i) => (
-              <button
-                key={i}
-                type="button"
-                aria-label={`カラー${i + 1}`}
-                className={`em ${theme === i && !bnUrl ? "on" : ""}`}
-                style={{ background: `linear-gradient(135deg,${c[0]},${c[1]})` }}
-                onClick={() => {
-                  setTheme(i);
-                  setBn({ mode: "remove" }); // 色選択でヘッダー画像は外す
-                }}
-              />
-            ))}
-          </div>
         </div>
       </div>
 
@@ -283,8 +248,24 @@ export function ProfileEdit({
             >
               画像を選ぶ
             </button>
+            {avUrl && av.mode !== "remove" && (
+              <>
+                <button className="btn ghost" onClick={() => {
+                  setIconMenuOpen(false);
+                  void adjustExisting("av");
+                }}>
+                  画像の位置を調整
+                </button>
+                <button className="textDangerButton iconRemoveButton" onClick={() => {
+                  setAv({ mode: "remove" });
+                  setIconMenuOpen(false);
+                }}>
+                  画像を削除
+                </button>
+              </>
+            )}
             <div className="iconChoiceDivider">または</div>
-            <label className="f" htmlFor="profile-emoji">絵文字を使う</label>
+            <label className="f" htmlFor="profile-emoji">1文字を使う</label>
             <div className="emojiInputRow">
               <input
                 id="profile-emoji"
@@ -292,16 +273,71 @@ export function ProfileEdit({
                 type="text"
                 value={emoji}
                 onChange={(e) => {
-                  setEmoji(e.target.value);
+                  setEmoji(firstCharacter(e.target.value));
                   setAv({ mode: "remove" });
                 }}
-                placeholder="絵文字を入力"
+                placeholder="文字を入力"
                 autoComplete="off"
               />
               <span className="emojiPreview">{emoji || "🙂"}</span>
             </div>
-            <div className="fieldHint">端末の絵文字キーボードから自由に選べます。</div>
+            <div className="fieldHint">絵文字を含む好きな1文字を入力できます。</div>
             <button type="button" className="btn sig" onClick={() => setIconMenuOpen(false)}>
+              決定
+            </button>
+          </div>
+        </div>
+      )}
+
+      {bannerMenuOpen && (
+        <div className="modalScrim" onClick={() => setBannerMenuOpen(false)}>
+          <div
+            className="card iconChoiceModal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="ヘッダーを変更"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2>ヘッダーを変更</h2>
+            <button type="button" className="btn ghost" onClick={() => {
+              setBannerMenuOpen(false);
+              bnInput.current?.click();
+            }}>
+              画像を選ぶ
+            </button>
+            {bnUrl && bn.mode !== "remove" && (
+              <>
+                <button className="btn ghost" onClick={() => {
+                  setBannerMenuOpen(false);
+                  void adjustExisting("bn");
+                }}>
+                  画像の位置を調整
+                </button>
+                <button className="textDangerButton iconRemoveButton" onClick={() => {
+                  setBn({ mode: "remove" });
+                  setBannerMenuOpen(false);
+                }}>
+                  画像を削除
+                </button>
+              </>
+            )}
+            <div className="iconChoiceDivider">または色を選ぶ</div>
+            <div className="emojis headerColors">
+              {COLORS.map((c, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  aria-label={`カラー${i + 1}`}
+                  className={`em ${theme === i && !bnUrl ? "on" : ""}`}
+                  style={{ background: `linear-gradient(135deg,${c[0]},${c[1]})` }}
+                  onClick={() => {
+                    setTheme(i);
+                    setBn({ mode: "remove" });
+                  }}
+                />
+              ))}
+            </div>
+            <button type="button" className="btn sig" onClick={() => setBannerMenuOpen(false)}>
               決定
             </button>
           </div>

@@ -161,9 +161,7 @@ export function ProfileView({
   return (
     <div>
       <div className="xcard">
-        <div className="xhead" style={{ paddingTop: 14 }}>
-          <ClickSummary me={me} />
-          <div className="xtabs">
+          <div className="xtabs editTabs">
             <button
               className={`xtab ${tab === "links" ? "on" : ""}`}
               onClick={() => setTab("links")}
@@ -177,7 +175,6 @@ export function ProfileView({
               カレンダー
             </button>
           </div>
-        </div>
 
         {tab === "links" ? (
           <LinksPane
@@ -423,7 +420,6 @@ function LinksPane({
       <div>
         {chans.length ? (
           chans.map((c, i) => {
-            const clicks = c.type !== HEADING_TYPE ? me.clicks[c.url] : undefined;
             return (
               <div
                 key={c.id}
@@ -480,18 +476,6 @@ function LinksPane({
                     <>
                       <div className="lb">
                         {c.label || typeMeta(c.type).lb}
-                        {clicks ? (
-                          <span
-                            style={{
-                              color: "var(--muted)",
-                              fontWeight: 600,
-                              marginLeft: 8,
-                              fontSize: 11,
-                            }}
-                          >
-                            👆 {clicks}
-                          </span>
-                        ) : null}
                       </div>
                       <div className={`u ${c.status === "dead" ? "strike" : ""}`}>
                         {c.url}
@@ -639,41 +623,6 @@ function LinksPane({
             キャンセル
           </button>
         </div>
-      )}
-    </div>
-  );
-}
-
-/** クリック解析サマリー（本人のみ）。合計と一番押されたリンク。 */
-function ClickSummary({ me }: { me: Me }) {
-  const total = Object.values(me.clicks).reduce((a, b) => a + b, 0);
-  if (!total) return null;
-  const top = Object.entries(me.clicks).sort((a, b) => b[1] - a[1])[0];
-  const topChan = top ? me.channels.find((c) => c.url === top[0]) : undefined;
-  const topLabel = topChan ? topChan.label || typeMeta(topChan.type).lb : null;
-  return (
-    <div
-      style={{
-        marginTop: 10,
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-        background: "var(--ink)",
-        border: "1px solid var(--border)",
-        borderRadius: 12,
-        padding: "10px 14px",
-        fontSize: 12.5,
-        fontWeight: 600,
-        color: "var(--muted)",
-      }}
-    >
-      <span style={{ color: "var(--emd)", fontWeight: 800 }}>
-        👆 合計 {total} クリック
-      </span>
-      {topLabel && (
-        <span>
-          ・一番人気: <b style={{ color: "var(--text)" }}>{topLabel}</b>
-        </span>
       )}
     </div>
   );
