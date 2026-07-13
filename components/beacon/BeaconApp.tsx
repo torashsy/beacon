@@ -804,7 +804,7 @@ export function BeaconApp() {
         {overlay === "none" && navTab === "profile" && (
           session && me ? (
             editing ? (
-              <>
+              <div className="editMode">
                 <ProfileEdit
                   profile={me.profile}
                   onCancel={() => setEditing(false)}
@@ -822,7 +822,7 @@ export function BeaconApp() {
                   onUploadThumb={uploadThumb}
                   toast={toast}
                 />
-              </>
+              </div>
             ) : (
               <ProfileView
                   me={me}

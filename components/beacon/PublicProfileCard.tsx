@@ -39,12 +39,14 @@ function Avatar({ url, emoji, handle }: { url: string; emoji: string; handle: st
 export function PublicProfileCard({
   data,
   actions,
+  actionsClassName,
   headerActions,
   trackHandle,
 }: {
   data: PublicCardData;
   /** フォローボタン等、カード右上のアクション。 */
   actions?: ReactNode;
+  actionsClassName?: string;
   /** カバー画像上に置く共有等のアクション。 */
   headerActions?: ReactNode;
   /** 指定時はリンククリックを集計する（公開ページのみ。プレビューでは渡さない）。 */
@@ -66,7 +68,7 @@ export function PublicProfileCard({
         {headerActions && <div className="bannerActions">{headerActions}</div>}
       </div>
       <div className="xhead">
-        {actions && <div className="xactions">{actions}</div>}
+        {actions && <div className={`xactions ${actionsClassName ?? ""}`}>{actions}</div>}
         <Avatar url={profile.av_url} emoji={profile.emoji} handle={handle} />
         {profile.status && <div className="statusBubble">{profile.status}</div>}
         <div className="xname">
