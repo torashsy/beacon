@@ -146,7 +146,7 @@ export async function updateProfile(
   db: DB,
   handle: string,
   pass: string,
-  p: Pick<Profile, "name" | "bio" | "emoji" | "theme" | "av_url" | "bn_url"> & {
+  p: Pick<Profile, "name" | "bio" | "emoji" | "theme" | "av_theme" | "av_url" | "bn_url"> & {
     status?: string;
   },
 ): Promise<void> {
@@ -161,6 +161,7 @@ export async function updateProfile(
       p_av: p.av_url,
       p_bn: p.bn_url,
       p_status: p.status ?? null,
+      p_av_theme: p.av_theme,
     }),
   );
 }

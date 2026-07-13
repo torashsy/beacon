@@ -21,6 +21,7 @@ export interface Profile {
   bio: string;
   emoji: string;
   theme: number;
+  av_theme: number;
   av_url: string;
   bn_url: string;
   status?: string; // ひとこと近況（任意）

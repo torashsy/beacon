@@ -81,6 +81,13 @@ export const COLORS: [string, string][] = [
   ["#E0F2FE", "#EDE9FE"],
   ["#DBEAFE", "#E0E7FF"],
   ["#E0F7FF", "#F0F9FF"],
+  ["#D1FAE5", "#CCFBF1"],
+  ["#FCE7F3", "#F3E8FF"],
+  ["#FFE4E6", "#FFEDD5"],
+  ["#FEF3C7", "#ECFCCB"],
+  ["#E2E8F0", "#F1F5F9"],
+  ["#DDD6FE", "#DBEAFE"],
+  ["#CCFBF1", "#E0F2FE"],
 ];
 
 /** theme インデックスからバナーの CSS グラデーションを作る。 */

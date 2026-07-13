@@ -80,8 +80,7 @@ try {
     await rpc("update_profile", {
       p_handle: handle, p_pass: pass,
       p_name: "接続テスト", p_bio: "bio テスト", p_emoji: "🌊",
-      // p_status を省略し、旧8引数版が残ってRPC解決が曖昧になっていないことも確認する。
-      p_theme: 2, p_av: "", p_bn: "",
+      p_theme: 2, p_av_theme: 7, p_av: "", p_bn: "", p_status: "テスト中",
     });
     log(true, "update_profile");
   } catch (e) { fail("update_profile", e); }
@@ -89,8 +88,9 @@ try {
   // 5. 公開ページ取得（get_public_page RPC）
   try {
     const page = await rpc("get_public_page", { p_handle: handle });
-    const ok = page?.profile?.name === "接続テスト" && page?.profile?.emoji === "🌊";
-    log(ok, "get_public_page（プロフィール）", `name=${page?.profile?.name}`);
+    const ok = page?.profile?.name === "接続テスト" && page?.profile?.emoji === "🌊"
+      && page?.profile?.av_theme === 7;
+    log(ok, "get_public_page（プロフィール）", `name=${page?.profile?.name}, av_theme=${page?.profile?.av_theme}`);
     if (!ok) failures++;
   } catch (e) { fail("get_public_page", e); }
 

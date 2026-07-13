@@ -20,6 +20,7 @@ export interface FollowSnapshot {
   status_at?: string | null;
   emoji: string;
   theme: number;
+  av_theme?: number;
   av_url: string;
   bn_url: string;
   channels: Pick<Channel, "type" | "url" | "label" | "descr" | "status">[];
@@ -41,6 +42,7 @@ export function toSnapshot(
     status_at: profile.status_at ?? null,
     emoji: profile.emoji,
     theme: profile.theme,
+    av_theme: profile.av_theme ?? 0,
     av_url: profile.av_url,
     bn_url: profile.bn_url,
     channels: channels.map((c) => ({
@@ -145,6 +147,7 @@ function snapshotSignature(snapshot: FollowSnapshot): string {
     status_at: snapshot.status_at ?? null,
     emoji: snapshot.emoji,
     theme: snapshot.theme,
+    av_theme: snapshot.av_theme ?? 0,
     av_url: snapshot.av_url,
     bn_url: snapshot.bn_url,
     channels: snapshot.channels.map((channel) => ({

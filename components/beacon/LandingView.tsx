@@ -12,6 +12,7 @@ const DEMO: PublicCardData = {
     bio: "連絡先はここにまとめています🌸",
     emoji: "🌸",
     theme: 0,
+    av_theme: 5,
     av_url: "",
     bn_url: "",
   },
