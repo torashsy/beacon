@@ -2,6 +2,7 @@ import { ImageResponse } from "next/og";
 import { createClient } from "@/lib/supabase/server";
 import { getPublicPage } from "@/lib/beacon/rpc";
 import { COLORS, HEADING_TYPE, typeMeta } from "@/lib/beacon/constants";
+import { getSiteUrl } from "@/lib/site";
 
 /**
  * 公開ページの OGP 画像を動的生成（SNSシェア時に映えるブランドカード）。
@@ -16,7 +17,7 @@ export const alt = "my-IDeal profile";
 
 const siteHost = (() => {
   try {
-    return new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").host;
+    return new URL(getSiteUrl()).host;
   } catch {
     return "localhost:3000";
   }

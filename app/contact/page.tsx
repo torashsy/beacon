@@ -4,8 +4,6 @@ import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-const TEMP_EMAIL = "contact@my-ideal.example";
-
 export default function ContactPage() {
   const [category, setCategory] = useState("inquiry");
   const [email, setEmail] = useState("");
@@ -75,7 +73,7 @@ export default function ContactPage() {
         </button>
       </form>
       <div className="lead" style={{ marginTop: 18 }}>
-        仮メールアドレス: {TEMP_EMAIL}（現在は上のフォームをご利用ください）
+        お問い合わせ・通報はこのフォームで受け付けています。
       </div>
     </main>
   );

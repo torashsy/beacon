@@ -1,17 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { ago } from "@/lib/beacon/format";
 import { HEADING_TYPE } from "@/lib/beacon/constants";
 import type { FollowSnapshot, FollowStatus } from "@/lib/beacon/follows";
-import { getPublicPage, type PublicPage } from "@/lib/beacon/rpc";
+import type { PublicPage } from "@/lib/beacon/rpc";
 
 /**
  * フォロー中一覧（表示専用）。表示用データは端末ローカル、ID一覧はログイン時にサーバー同期する。
  * 変化検知（各相手の最新取得と差分）は BeaconApp 側で行い、ここは states を
  * 受け取ってバッジ表示するだけ（ナビの更新ドットと計算を共有するため）。
- * サーバーへの横断検索・一覧はしない。
+ * 一覧・名前検索・おすすめは行わず、未フォローの相手はID完全一致でのみ取得する。
  */
 
 export function FollowsView({
@@ -49,14 +48,22 @@ export function FollowsView({
     e.preventDefault();
     const handle = q.trim().replace(/^@/, "").toLowerCase();
     setFound(null);
-    if (!/^[a-z0-9_]{1,30}$/.test(handle)) {
+    if (!/^[a-z0-9_]{3,20}$/.test(handle)) {
       setSearchMessage("半角英数字と _ でIDを入力してください");
       return;
     }
     setSearching(true);
     setSearchMessage("");
     try {
-      const page = await getPublicPage(createClient(), handle);
+      const response = await fetch(`/api/user-search?handle=${encodeURIComponent(handle)}`, {
+        cache: "no-store",
+      });
+      if (response.status === 429) {
+        setSearchMessage("検索回数が多すぎます。しばらく待ってからお試しください");
+        return;
+      }
+      if (!response.ok) throw new Error("search failed");
+      const page = (await response.json()) as PublicPage | null;
       if (page) setFound({ handle, page });
       else setSearchMessage("このIDのユーザーは見つかりませんでした");
     } catch {
@@ -93,7 +100,7 @@ export function FollowsView({
             setFound(null);
             setSearchMessage("");
           }}
-          placeholder="名前・ユーザーIDで探す"
+          placeholder="フォロー中の名前 / ユーザーID"
         />
         <button type="submit" disabled={searching}>
           {searching ? "検索中" : "ID検索"}
