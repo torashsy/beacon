@@ -928,6 +928,7 @@ export function BeaconApp() {
             onClick={() => goNav("help")}
             aria-label="Help"
             aria-current={navTab === "help" ? "page" : undefined}
+            style={{ order: 3 }}
           >
             <NavIcon name="help" />
           </button>
