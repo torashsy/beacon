@@ -123,22 +123,24 @@ export function ProfileView({
             channels: me.channels,
             pubcal: publicCal,
           }}
-          actions={
+          headerActions={
             <>
-              <button className="circleAction" onClick={share} aria-label="共有">
+              <button className="circleAction headerCircleAction" onClick={share} aria-label="共有">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M12 16V3m0 0L7 8m5-5 5 5M5 13v7h14v-7" />
                 </svg>
               </button>
-              <button className="circleAction" onClick={openQr} aria-label="QRコード">
+              <button className="circleAction headerCircleAction" onClick={openQr} aria-label="QRコード">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M4 4h6v6H4V4Zm10 0h6v6h-6V4ZM4 14h6v6H4v-6Zm11 0h2v2h-2v-2Zm3 0h2v3h-2v-3Zm-4 4h3v2h-3v-2Zm5 1h1v1h-1v-1Z" />
                 </svg>
               </button>
-              <button className="pill line" onClick={onEdit}>
-                プロフィール編集
-              </button>
             </>
+          }
+          actions={
+            <button className="pill line compactEdit" onClick={onEdit}>
+              プロフィール編集
+            </button>
           }
         />
         {qrDataUrl && (

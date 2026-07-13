@@ -342,6 +342,14 @@ textarea {
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
 }
+.bannerActions {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+  display: flex;
+  gap: 8px;
+}
 .circleAction {
   width: 38px;
   height: 38px;
@@ -361,18 +369,28 @@ textarea {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+.headerCircleAction {
+  border-color: rgba(255, 255, 255, .42);
+  background: rgba(23, 36, 43, .68);
+  color: #fff;
+  backdrop-filter: blur(5px);
+}
+.compactEdit {
+  padding: 7px 12px;
+  font-size: 12px;
+}
 .statusBubble {
   position: absolute;
-  top: 2px;
+  top: -34px;
   left: 82px;
-  max-width: min(180px, 46vw);
-  padding: 7px 10px;
+  max-width: min(150px, 40vw);
+  padding: 6px 9px;
   border: 1px solid rgba(56, 189, 248, .35);
   border-radius: 12px 12px 12px 3px;
   background: #fff;
   color: var(--emd);
   box-shadow: 0 3px 10px rgba(2, 132, 199, .12);
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 650;
   line-height: 1.35;
 }
