@@ -383,7 +383,8 @@ textarea {
   font-size: 12px;
 }
 .profileEditAction {
-  top: -17px;
+  top: 0;
+  transform: translateY(-50%);
 }
 .statusBubble {
   position: absolute;
@@ -1179,6 +1180,17 @@ textarea {
   margin: 6px 2px 14px;
   color: var(--muted);
   font-size: 11px;
+}
+.iconRemoveButton {
+  display: block;
+  margin: 10px auto 2px;
+}
+.headerColors {
+  margin-bottom: 14px;
+}
+.editTabs {
+  margin-top: 0;
+  border-top: 0;
 }
 .searchIcon {
   position: absolute;
