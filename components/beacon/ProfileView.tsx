@@ -29,6 +29,7 @@ export function ProfileView({
   handle,
   onEdit,
   editing = false,
+  focusSection,
   onReissueRc,
   onSaveChannels,
   onSaveCal,
@@ -38,8 +39,9 @@ export function ProfileView({
 }: {
   me: Me;
   handle: string;
-  onEdit: () => void;
+  onEdit: (section?: "profile" | "links" | "cal") => void;
   editing?: boolean;
+  focusSection?: "links" | "cal";
   onReissueRc: () => Promise<string>;
   onSaveChannels: (next: Channel[]) => Promise<boolean>;
   onSaveCal: (date: string, memo: string, pub: boolean) => Promise<boolean>;
@@ -47,7 +49,8 @@ export function ProfileView({
   onUploadThumb: (file: File) => Promise<string>;
   toast: ToastFn;
 }) {
-  const [tab, setTab] = useState<"links" | "cal">("links");
+  const [tab, setTab] = useState<"links" | "cal">(focusSection ?? "links");
+  const editorSection = useRef<HTMLDivElement>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [reissuedRc, setReissuedRc] = useState<string | null>(null);
   const [reissueBusy, setReissueBusy] = useState(false);
@@ -61,6 +64,15 @@ export function ProfileView({
   useEffect(() => {
     if (tab === "cal" && !me.calLoaded) onLoadCal();
   }, [tab, me.calLoaded, onLoadCal]);
+
+  useEffect(() => {
+    if (!editing || !focusSection) return;
+    setTab(focusSection);
+    const timer = window.setTimeout(() => {
+      editorSection.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [editing, focusSection]);
 
   const pageUrl = () => `${window.location.origin}/@${handle}`;
 
@@ -141,12 +153,26 @@ export function ProfileView({
             </>
           }
           actions={
-            <button className="pill line compactEdit" onClick={onEdit}>
+            <button className="pill line compactEdit" onClick={() => onEdit("profile")}>
               プロフィール編集
             </button>
           }
           actionsClassName="profileEditAction"
         />
+        <div className="homeQuickActions" aria-label="プロフィールへ追加">
+          <button className="homeQuickAction" onClick={() => onEdit("links")}>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M9.5 14.5 14.5 9M8 17H6a4 4 0 0 1 0-8h3m6-2h3a4 4 0 0 1 0 8h-3" />
+            </svg>
+            <span>リンクを追加</span>
+          </button>
+          <button className="homeQuickAction" onClick={() => onEdit("cal")}>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 4h14a2 2 0 0 1 2 2v13H3V6a2 2 0 0 1 2-2Zm2-2v4m10-4v4M3 9h18m-9 3v5m-2.5-2.5h5" />
+            </svg>
+            <span>予定を追加</span>
+          </button>
+        </div>
         {qrDataUrl && (
           <div className="modalScrim" onClick={() => setQrDataUrl(null)}>
             <div className="card qrModal" onClick={(e) => e.stopPropagation()}>
@@ -162,7 +188,7 @@ export function ProfileView({
   }
 
   return (
-    <div>
+    <div ref={editorSection} className="editorSection">
       <div className="xcard">
           <div className="xtabs editTabs">
             <button
@@ -182,6 +208,7 @@ export function ProfileView({
         {tab === "links" ? (
           <LinksPane
             me={me}
+            startAdding={focusSection === "links"}
             onSaveChannels={onSaveChannels}
             onUploadThumb={onUploadThumb}
             toast={toast}
@@ -293,18 +320,20 @@ export function ProfileView({
 
 function LinksPane({
   me,
+  startAdding = false,
   onSaveChannels,
   onUploadThumb,
   toast,
 }: {
   me: Me;
+  startAdding?: boolean;
   onSaveChannels: (next: Channel[]) => Promise<boolean>;
   onUploadThumb: (file: File) => Promise<string>;
   toast: ToastFn;
 }) {
   const chans = me.channels;
   // 空なら最初からフォームを開いておく（初回オンボーディング）
-  const [formOpen, setFormOpen] = useState(chans.length === 0);
+  const [formOpen, setFormOpen] = useState(startAdding || chans.length === 0);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [type, setType] = useState("x");
   const [url, setUrl] = useState("");
