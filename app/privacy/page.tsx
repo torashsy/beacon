@@ -79,7 +79,7 @@ export default function PrivacyPage() {
         </p>
 
         <h2 style={{ margin: "20px 0 8px" }}>7. お問い合わせ</h2>
-        <p><Link href="/contact">お問い合わせ・通報フォーム</Link>からご連絡ください。仮メールアドレスは contact@my-ideal.example です。</p>
+        <p><Link href="/contact">お問い合わせ・通報フォーム</Link>からご連絡ください。</p>
 
         <h2 style={{ margin: "20px 0 8px" }}>8. 改定</h2>
         <p>
