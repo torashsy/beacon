@@ -342,6 +342,63 @@ textarea {
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
 }
+.circleAction {
+  width: 38px;
+  height: 38px;
+  padding: 9px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: #fff;
+  color: var(--emd);
+  cursor: pointer;
+}
+.circleAction svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.statusBubble {
+  position: absolute;
+  top: 2px;
+  left: 82px;
+  max-width: min(180px, 46vw);
+  padding: 7px 10px;
+  border: 1px solid rgba(56, 189, 248, .35);
+  border-radius: 12px 12px 12px 3px;
+  background: #fff;
+  color: var(--emd);
+  box-shadow: 0 3px 10px rgba(2, 132, 199, .12);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+.modalScrim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(23, 36, 43, .55);
+}
+.qrModal { width: 100%; max-width: 320px; text-align: center; }
+.qrModal img { width: 100%; border-radius: 12px; }
+.textDangerButton {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--alert);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 .followerCount {
   margin-top: 7px;
   color: var(--muted);

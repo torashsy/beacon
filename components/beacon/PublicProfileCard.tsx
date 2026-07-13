@@ -64,6 +64,7 @@ export function PublicProfileCard({
       <div className="xhead">
         {actions && <div className="xactions">{actions}</div>}
         <Avatar url={profile.av_url} emoji={profile.emoji} handle={handle} />
+        {profile.status && <div className="statusBubble">{profile.status}</div>}
         <div className="xname">
           <span>{profile.name || `@${handle}`}</span>
           <VerifiedBadge />
@@ -72,22 +73,6 @@ export function PublicProfileCard({
         {typeof data.followerCount === "number" && (
           <div className="followerCount">
             <strong>{data.followerCount.toLocaleString("ja-JP")}</strong> フォロワー
-          </div>
-        )}
-        {profile.status && (
-          <div
-            style={{
-              marginTop: 10,
-              background: "var(--eml)",
-              border: "1px solid rgba(56,189,248,.3)",
-              borderRadius: 12,
-              padding: "8px 12px",
-              fontSize: 13,
-              fontWeight: 600,
-              color: "var(--emd)",
-            }}
-          >
-            {profile.status}
           </div>
         )}
         {profile.bio && <div className="xbio">{profile.bio}</div>}
