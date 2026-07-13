@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { ago } from "@/lib/beacon/format";
 import { HEADING_TYPE } from "@/lib/beacon/constants";
 import type { FollowSnapshot, FollowStatus } from "@/lib/beacon/follows";
@@ -29,7 +28,6 @@ export function FollowsView({
   onLoginPrompt: () => void;
 }) {
   const [q, setQ] = useState("");
-  const router = useRouter();
   const query = q.trim().toLowerCase();
   const shown = follows.filter(
     (f) =>
@@ -94,7 +92,16 @@ export function FollowsView({
                 <div
                   key={f.handle}
                   className="frow"
-                  onClick={() => router.push(`/@${f.handle}`)}
+                  role="link"
+                  tabIndex={0}
+                  onClick={() => window.location.assign(`/@${f.handle}`)}
+                  onKeyDown={(e) => {
+                    if ((e.target as HTMLElement).closest("button")) return;
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      window.location.assign(`/@${f.handle}`);
+                    }
+                  }}
                 >
                   <div className="av">
                     {f.av_url ? (
