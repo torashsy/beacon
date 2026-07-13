@@ -383,38 +383,38 @@ textarea {
   font-size: 12px;
 }
 .profileEditAction {
-  top: 0;
-  transform: translateY(-50%);
+  top: 14px;
 }
 .statusBubble {
   position: absolute;
-  top: -82px;
-  left: 57px;
-  width: 116px;
-  max-width: 32vw;
-  padding: 8px 10px;
+  top: -106px;
+  left: 12px;
+  width: max-content;
+  max-width: calc(100% - 120px);
+  height: 38px;
+  padding: 0 12px;
   border: 0;
-  border-radius: 16px;
+  border-radius: 19px;
   background: rgba(31, 41, 48, .88);
   color: #fff;
   box-shadow: 0 4px 12px rgba(15, 23, 42, .18);
   font-size: 11.5px;
   font-weight: 650;
   line-height: 1.35;
-  text-align: center;
-  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
 }
 .statusBubble span {
+  display: block;
   overflow: hidden;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .statusBubble::before {
   content: "";
   position: absolute;
-  left: calc(50% - 5px);
-  bottom: -9px;
+  left: 36px;
+  bottom: -8px;
   width: 10px;
   height: 10px;
   border-radius: 50%;
@@ -423,8 +423,8 @@ textarea {
 .statusBubble::after {
   content: "";
   position: absolute;
-  left: calc(50% + 1px);
-  bottom: -17px;
+  left: 42px;
+  bottom: -15px;
   width: 6px;
   height: 6px;
   border-radius: 50%;
