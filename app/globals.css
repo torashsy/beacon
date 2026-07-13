@@ -1452,14 +1452,14 @@ textarea {
   stroke-linecap: round;
 }
 .nav .ni {
-  display: block;
+  display: grid;
+  place-items: center;
   flex: 1;
   text-align: center;
   border: none;
   background: none;
   font-family: inherit;
-  min-height: 52px;
-  font-size: 11px;
+  min-height: 54px;
   font-weight: 700;
   color: var(--muted);
   cursor: pointer;
@@ -1536,10 +1536,10 @@ textarea {
   font-family: inherit;
 }
 .navIcon {
-  width: 21px;
-  height: 21px;
+  width: 25px;
+  height: 25px;
   display: block;
-  margin: 0 auto 3px;
+  margin: 0;
   fill: none;
   stroke: currentColor;
   stroke-width: 1.9;
