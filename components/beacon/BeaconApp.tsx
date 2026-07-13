@@ -76,7 +76,7 @@ import {
  *     パスコードをメモリだけに持つ（リロードで再入力。旧方式aと同じ）。
  */
 
-type NavTab = "profile" | "follows" | "howto";
+type NavTab = "profile" | "follows" | "howto" | "settings";
 type Overlay = "none" | "auth" | "public";
 
 function NavIcon({ name }: { name: NavTab }) {
@@ -85,7 +85,9 @@ function NavIcon({ name }: { name: NavTab }) {
       ? "M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z"
       : name === "follows"
         ? "M6 4h12a2 2 0 0 1 2 2v14l-8-4-8 4V6a2 2 0 0 1 2-2Z"
-        : "M9.1 9a3 3 0 1 1 4.3 2.7c-.9.5-1.4 1.1-1.4 2.3M12 18h.01";
+        : name === "howto"
+          ? "M9.1 9a3 3 0 1 1 4.3 2.7c-.9.5-1.4 1.1-1.4 2.3M12 18h.01"
+          : "M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm0-12v2m0 13v2m8.5-8.5h-2m-13 0h-2m14.5-6-1.5 1.5m-9 9L6 18m12 0-1.5-1.5m-9-9L6 6";
   return (
     <svg className="navIcon" viewBox="0 0 24 24" aria-hidden="true">
       <path d={path} />
@@ -822,8 +824,7 @@ export function BeaconApp() {
                 />
               </>
             ) : (
-              <>
-                <ProfileView
+              <ProfileView
                   me={me}
                   handle={session.handle}
                   onEdit={() => setEditing(true)}
@@ -834,14 +835,6 @@ export function BeaconApp() {
                   onUploadThumb={uploadThumb}
                   toast={toast}
                 />
-                <button
-                  className="btn ghost"
-                  style={{ marginTop: 10, color: "var(--alert)" }}
-                  onClick={doDeleteAccount}
-                >
-                  退会（アカウントを削除）
-                </button>
-              </>
             )
           ) : (
             <LandingView
@@ -863,6 +856,22 @@ export function BeaconApp() {
         )}
 
         {overlay === "none" && navTab === "howto" && <HowtoView />}
+
+        {overlay === "none" && navTab === "settings" && (
+          <section className="view">
+            <div className="card">
+              <h2 style={{ margin: "0 0 8px" }}>設定</h2>
+              <div className="lead" style={{ marginBottom: 18 }}>アカウントに関する設定です。</div>
+              {session ? (
+                <button className="textDangerButton" onClick={doDeleteAccount}>
+                  アカウントを削除
+                </button>
+              ) : (
+                <div className="lead">ログインすると設定を変更できます。</div>
+              )}
+            </div>
+          </section>
+        )}
       </div>
 
       {showNav && (
@@ -911,6 +920,13 @@ export function BeaconApp() {
             aria-current={navTab === "howto" ? "page" : undefined}
           >
             <NavIcon name="howto" />使い方
+          </button>
+          <button
+            className={`ni ${navTab === "settings" ? "on" : ""}`}
+            onClick={() => goNav("settings")}
+            aria-current={navTab === "settings" ? "page" : undefined}
+          >
+            <NavIcon name="settings" />設定
           </button>
         </nav>
       )}

@@ -114,20 +114,44 @@ export function ProfileView({
 
   if (!editing) {
     return (
-      <PublicProfileCard
-        data={{
-          handle,
-          followerCount: me.followerCount,
-          profile: me.profile,
-          channels: me.channels,
-          pubcal: publicCal,
-        }}
-        actions={
-          <button className="pill line" onClick={onEdit}>
-            編集
-          </button>
-        }
-      />
+      <>
+        <PublicProfileCard
+          data={{
+            handle,
+            followerCount: me.followerCount,
+            profile: me.profile,
+            channels: me.channels,
+            pubcal: publicCal,
+          }}
+          actions={
+            <>
+              <button className="circleAction" onClick={share} aria-label="共有">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 16V3m0 0L7 8m5-5 5 5M5 13v7h14v-7" />
+                </svg>
+              </button>
+              <button className="circleAction" onClick={openQr} aria-label="QRコード">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 4h6v6H4V4Zm10 0h6v6h-6V4ZM4 14h6v6H4v-6Zm11 0h2v2h-2v-2Zm3 0h2v3h-2v-3Zm-4 4h3v2h-3v-2Zm5 1h1v1h-1v-1Z" />
+                </svg>
+              </button>
+              <button className="pill line" onClick={onEdit}>
+                プロフィール編集
+              </button>
+            </>
+          }
+        />
+        {qrDataUrl && (
+          <div className="modalScrim" onClick={() => setQrDataUrl(null)}>
+            <div className="card qrModal" onClick={(e) => e.stopPropagation()}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={qrDataUrl} alt={`@${handle} のQRコード`} />
+              <div className="xid" style={{ marginTop: 8 }}>@{handle}</div>
+              <button className="btn ghost" onClick={() => setQrDataUrl(null)}>閉じる</button>
+            </div>
+          </div>
+        )}
+      </>
     );
   }
 
@@ -135,14 +159,6 @@ export function ProfileView({
     <div>
       <div className="xcard">
         <div className="xhead" style={{ paddingTop: 14 }}>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button className="pill line" style={{ flex: 1 }} onClick={share}>
-              共有
-            </button>
-            <button className="pill line" style={{ flex: 1 }} onClick={openQr}>
-              QRコード
-            </button>
-          </div>
           <ClickSummary me={me} />
           <div className="xtabs">
             <button
