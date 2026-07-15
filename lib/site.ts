@@ -1,4 +1,4 @@
-const PRODUCTION_FALLBACK = "https://beacon-beige-gamma.vercel.app";
+const PRODUCTION_FALLBACK = "https://via-mi.com";
 
 export function getSiteUrl(): string {
   const explicit = process.env.NEXT_PUBLIC_SITE_URL?.trim();
