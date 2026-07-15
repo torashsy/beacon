@@ -247,23 +247,6 @@ h1 {
   gap: 6px;
   letter-spacing: -0.01em;
 }
-.vbadge {
-  width: 17px;
-  height: 17px;
-  border-radius: 50%;
-  background: var(--em);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 17px;
-}
-.vbadge svg {
-  width: 10px;
-  height: 10px;
-  stroke: #fff;
-  stroke-width: 3.2;
-  fill: none;
-}
 .xid {
   font-family: inherit;
   font-size: 13px;

@@ -33,17 +33,6 @@ export function LinkThumb({ type, img }: { type: string; img?: string }) {
   return <TypeBadge type={type} />;
 }
 
-/** 認証済みバッジ（緑丸チェック）。 */
-export function VerifiedBadge() {
-  return (
-    <span className="vbadge">
-      <svg viewBox="0 0 24 24">
-        <path d="M20 6L9 17l-5-5" />
-      </svg>
-    </span>
-  );
-}
-
 /** 画像変更用カメラアイコン（編集オーバーレイ内）。 */
 export function CameraIcon() {
   return (
