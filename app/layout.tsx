@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
   description:
-    "X・Instagram・LINEなどの連絡先とイベント予定をひとつの公開ページに。メール不要、IDとパスコードだけ。",
+    "X・Instagram・LINEなどの連絡先とイベント予定をひとつの公開ページに。IDとパスキーですぐ始められます。",
   alternates: { canonical: "/" },
 };
 

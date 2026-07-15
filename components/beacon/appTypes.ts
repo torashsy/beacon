@@ -2,7 +2,7 @@ import type { Channel, Profile } from "@/lib/beacon/types";
 
 // クライアントアプリ内で共有する型と小さなユーティリティ。
 
-/** セッション。保持時の pass は失効可能なトークン、非保持時だけパスコード。 */
+/** アプリ用の失効可能なセッショントークン。 */
 export interface Session {
   handle: string;
   pass: string;
@@ -19,6 +19,9 @@ export interface Me {
   cal: CalMap;
   calLoaded: boolean;
   clicks: Record<string, number>; // URL → クリック数（本人だけが取得可能）
+  passkeyLinked: boolean;
+  recoveryVerified: boolean;
+  recoveryKind: "email" | "phone" | "email+phone" | null;
 }
 
 export type View = "auth" | "profile" | "follows" | "howto" | "public";
@@ -27,12 +30,19 @@ export type ToastFn = (msg: string) => void;
 /** Postgres の raise exception メッセージを日本語に対応づける。 */
 export function authErrorMessage(e: unknown): string {
   const m = String((e as { message?: string })?.message ?? e);
+  const name = String((e as { name?: string })?.name ?? "");
   if (m.includes("taken")) return "このIDは使われています";
+  if (m.includes("passkey already linked")) return "このIDはすでにパスキーへ移行済みです";
+  if (m.includes("not supported") || name === "NotSupportedError") return "この端末はパスキーに対応していません";
+  if (m.includes("cancel") || m.includes("NotAllowedError") || name === "NotAllowedError") return "パスキーの操作を中止しました";
+  if (m.includes("not allowed")) return "IDまたは現在のパスコードが違います";
+  if (m.includes("phone provider") || m.includes("Unsupported phone")) return "電話認証は現在利用できません。メールをお使いください";
+  if (m.includes("otp_expired") || m.includes("Token has expired")) return "確認コードが違うか、期限が切れています";
   if (m.includes("locked")) return "試行回数が多すぎます。約15分後にお試しください";
   if (m.includes("bad recovery")) return "IDまたは復旧コードが違います";
   if (m.includes("pass too short")) return "パスコードは10文字以上にしてください";
   if (m.includes("pass too long")) return "パスコードは72バイト以内にしてください";
-  if (m.includes("auth")) return "IDまたはパスコードが違います";
+  if (m.includes("auth")) return "ログインを確認できませんでした";
   return "通信に失敗しました。しばらくして再度お試しください";
 }
 

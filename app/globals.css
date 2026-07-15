@@ -798,6 +798,28 @@ textarea {
   font-weight: 500;
   margin-top: 1px;
 }
+
+.authSimple .card { display: grid; gap: 12px; }
+.authSimple .passkeyMark { font-size: 42px; text-align: center; line-height: 1; }
+.authSimple .passkeyLead { margin: 2px 0; }
+.authSimple .legacyLink { margin-top: 20px; font-size: 11px; opacity: .72; }
+.recoveryBanner {
+  width: 100%; border: 1px solid #f6c86c; border-radius: 13px; background: #fff8e8;
+  color: #6f4c08; padding: 10px 12px; margin: 0 0 12px; display: flex;
+  align-items: center; gap: 8px; text-align: left; font: inherit; font-size: 12px; cursor: pointer;
+}
+.recoveryBanner span { background: #e89b13; color: white; border-radius: 999px; padding: 3px 7px; font-weight: 800; }
+.recoveryBanner b { margin-left: auto; font-size: 20px; }
+.recoveryCard { display: grid; gap: 12px; padding: 14px; border: 1px solid #f1cf89; border-radius: 15px; background: #fffaf0; }
+.recoveryCard.verified { border-color: #9ddbc4; background: #f0fbf7; }
+.recoveryState { font-weight: 800; color: #147a58; }
+.recoveryState.warning { color: #a36300; }
+.methodTabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.methodTabs button { border: 1px solid var(--border); border-radius: 10px; padding: 8px; background: white; color: var(--muted); font: inherit; font-weight: 700; }
+.methodTabs button.on { border-color: var(--em); color: var(--emd); background: var(--soft); }
+.xname { display: flex; align-items: center; gap: 5px; }
+.verifiedBadge { width: 18px; height: 18px; border-radius: 50%; background: var(--em); display: inline-flex; align-items: center; justify-content: center; flex: 0 0 18px; }
+.verifiedBadge svg { width: 13px; height: 13px; fill: none; stroke: white; stroke-width: 2.3; }
 .plink .pmeta .clickCount {
   color: var(--faint);
   font-size: 10.5px;

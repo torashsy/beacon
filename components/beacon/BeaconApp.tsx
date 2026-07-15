@@ -3,27 +3,24 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
-  createAccount,
-  createSession,
+  createPasskeySession,
   deleteAccount as rpcDeleteAccount,
   deleteSession,
+  finalizePasskeyAccount,
+  getAccountSecurity,
   getClicks,
   getMyFollows,
   getPrivateCal,
   getPublicPage,
-  reissueRecovery,
   revokeOtherSessions,
-  resetPass,
   saveMyFollows,
   saveCal as rpcSaveCal,
   saveChannels as rpcSaveChannels,
   updateProfile,
-  verifyLogin,
+  verifyAppSession,
 } from "@/lib/beacon/rpc";
 import { uploadImage } from "@/lib/beacon/storage";
 import type { Channel } from "@/lib/beacon/types";
-import { normalizeRecoveryCode } from "@/lib/beacon/format";
-import { addHandle, loadHandles, removeHandle } from "@/lib/beacon/accounts";
 import {
   clearTrustedDevice,
 } from "@/lib/beacon/deviceTrust";
@@ -57,18 +54,14 @@ import { ProfileView } from "./ProfileView";
 import { ProfileEdit, type EditResult } from "./ProfileEdit";
 import { FollowsView } from "./FollowsView";
 import { HowtoView } from "./HowtoView";
+import { RecoverySetup } from "./RecoverySetup";
 
 /**
  * Beacon クライアントアプリ本体。beacon.html の SPA を Next.js のクライアント
  * コンポーネントとして再構成したもの。
  *
- * セッション方式（セッショントークン）:
- *   - ログイン成功時にサーバーが失効可能なトークンを発行し（create_session）、
- *     既定でそれを localStorage に保持する（X/Instagram等と同じ「ログインしっぱなし」）。
- *   - パスコードそのものは端末に保存しない。session.pass にはトークンが入り、
- *     すべての書込RPCにそのまま渡してサーバー検証する（_check_pass が両方受ける）。
- *   - 「ログイン状態を保持する」をオフにした場合はトークンを発行せず、
- *     パスコードをメモリだけに持つ（リロードで再入力。旧方式aと同じ）。
+ * Supabase Authがパスキーを検証し、アプリ内では失効可能なbst_セッションを使う。
+ * パスワードは通常の登録・ログイン導線では扱わない。
  */
 
 type NavTab = "profile" | "follows" | "help";
@@ -92,7 +85,7 @@ function writeErrorMessage(e: unknown): string {
   const m = String((e as { message?: string })?.message ?? e);
   if (m.includes("locked"))
     return "試行回数が多すぎます。約15分後にお試しください";
-  if (m.includes("auth")) return "パスコードが無効です。再度ログインしてください";
+  if (m.includes("auth")) return "ログインが無効です。パスキーで再度ログインしてください";
   return "保存に失敗しました。通信状況をご確認ください";
 }
 
@@ -132,12 +125,10 @@ export function BeaconApp() {
   }, []);
 
   const [authInitialHandle, setAuthInitialHandle] = useState("");
-  const [authInitialPane, setAuthInitialPane] = useState<"create" | "login">(
+  const [authInitialPane, setAuthInitialPane] = useState<"create" | "login" | "recover">(
     "create",
   );
-  // この端末で使ったID一覧（複数プロフィールの切替チップ用）
-  const [knownHandles, setKnownHandles] = useState<string[]>([]);
-
+  const [recoverySessionReady, setRecoverySessionReady] = useState(false);
   // 保存状態（「保存したか分からない」不安を解消するための常時表示インジケータ）
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">(
     "idle",
@@ -177,7 +168,6 @@ export function BeaconApp() {
     (async () => {
       const loaded = loadFollows(null);
       setFollows(loaded);
-      setKnownHandles(loadHandles());
       let stored = "";
       try {
         stored = window.localStorage.getItem(K_HANDLE) ?? "";
@@ -196,7 +186,7 @@ export function BeaconApp() {
       const saved = loadStoredSession();
       if (saved && !cancelled) {
         try {
-          await doLogin(saved.handle, saved.token, { silent: true });
+          await doTokenLogin(saved.handle, saved.token, true);
         } catch {
           clearStoredSession(); // 失効・削除済みアカウント等
         }
@@ -209,9 +199,19 @@ export function BeaconApp() {
     return () => {
       cancelled = true;
     };
-    // 初回マウント時のみ実行（doLogin は同一レンダー内で以降に定義される）
+    // 初回マウント時のみ実行（doTokenLogin は同一レンダー内で以降に定義される）
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("recover") !== "1") return;
+    void db.auth.getSession().then(({ data }) => {
+      if (!data.session) return;
+      setRecoverySessionReady(true);
+      setAuthInitialPane("recover");
+      setOverlay("auth");
+    });
+  }, [db]);
 
   // ---- データ読み込み ----
   const loadMe = useCallback(
@@ -223,6 +223,11 @@ export function BeaconApp() {
       const cal: CalMap = {};
       let calLoaded = false;
       const clicksPromise = getClicks(db, handle, pass).catch(() => ({}));
+      const securityPromise = getAccountSecurity(db, handle, pass).catch(() => ({
+        passkey_linked: false,
+        recovery_verified: false,
+        recovery_kind: null,
+      }));
       (page?.cal ?? []).forEach((e) => (cal[e.d] = { memo: e.memo, pub: true }));
       try {
         const privList = await getPrivateCal(db, handle, pass);
@@ -231,6 +236,7 @@ export function BeaconApp() {
       } catch {
         calLoaded = false;
       }
+      const security = await securityPromise;
       return {
         profile: page?.profile ?? emptyProfile(handle),
         followerCount: page?.follower_count ?? 0,
@@ -238,6 +244,9 @@ export function BeaconApp() {
         cal,
         calLoaded,
         clicks: await clicksPromise,
+        passkeyLinked: security.passkey_linked,
+        recoveryVerified: security.recovery_verified,
+        recoveryKind: security.recovery_kind,
       };
     },
     [db],
@@ -249,7 +258,6 @@ export function BeaconApp() {
     } catch {
       /* noop */
     }
-    setKnownHandles(addHandle(handle)); // 切替チップ用に控える
   }
 
   // フォロー中一覧はサーバーにも保存する（本人のみ読める私的ブックマーク。
@@ -302,78 +310,143 @@ export function BeaconApp() {
   );
 
   // ---- 認証アクション ----
-  /**
-   * 認証成功後の秘密情報を確定する。remember 時はサーバーにセッショントークンを
-   * 発行させて端末に保持し、以後の全RPCにはパスコードでなくトークンを渡す。
-   * トークン発行に失敗してもログイン自体は成立させる（メモリのみ・旧方式a相当）。
-   */
-  const establishSession = useCallback(
-    async (handle: string, secret: string, remember: boolean): Promise<string> => {
-      if (isSessionToken(secret)) {
-        storeSession(handle, secret); // 自動ログイン時: 同じトークンを使い続ける
-        return secret;
-      }
-      if (!remember) return secret;
-      try {
-        const token = await createSession(db, handle, secret);
-        storeSession(handle, token);
-        return token;
-      } catch {
-        return secret;
-      }
-    },
-    [db],
-  );
-
-  const doCreate = useCallback(
-    async (handle: string, pass: string, remember = true): Promise<string> => {
-      const rc = await createAccount(db, handle, pass);
-      const secret = await establishSession(handle, pass, remember);
-      setSession({ handle, pass: secret });
+  const finishAppLogin = useCallback(
+    async (handle: string, token: string, silent = false) => {
+      storeSession(handle, token);
+      setSession({ handle, pass: token });
       setFollows(loadFollows(handle));
       persistHandle(handle);
-      setMe(await loadMe(handle, secret));
-      return rc;
-    },
-    [db, loadMe, establishSession],
-  );
-
-  const doLogin = useCallback(
-    async (
-      handle: string,
-      pass: string,
-      opts: { silent?: boolean; remember?: boolean } = {},
-    ): Promise<void> => {
-      const { silent = false, remember = true } = opts;
-      const ok = await verifyLogin(db, handle, pass);
-      if (!ok) throw new Error("auth");
-      const secret = await establishSession(handle, pass, remember);
-      setSession({ handle, pass: secret });
-      setFollows(loadFollows(handle));
-      persistHandle(handle);
-      setMe(await loadMe(handle, secret));
-      void syncFollowsFromServer(handle, secret); // 端末をまたいだフォロー一覧の統合
+      setMe(await loadMe(handle, token));
+      void syncFollowsFromServer(handle, token);
       setOverlay("none");
       setNavTab("profile");
       setEditing(false);
       if (!silent) toast("ログインしました");
     },
-    [db, loadMe, toast, syncFollowsFromServer, establishSession],
+    [loadMe, syncFollowsFromServer, toast],
   );
 
-  const doReset = useCallback(
-    async (handle: string, code: string, newPass: string): Promise<void> => {
-      await resetPass(db, handle, normalizeRecoveryCode(code), newPass);
+  const doTokenLogin = useCallback(
+    async (handle: string, token: string, silent = false) => {
+      if (!await verifyAppSession(db, handle, token)) throw new Error("auth");
+      await finishAppLogin(handle, token, silent);
     },
-    [db],
+    [db, finishAppLogin],
   );
 
-  const enterAfterCreate = useCallback(() => {
-    setOverlay("none");
-    setNavTab("profile");
-    setEditing(false);
-    toast("作成しました");
-  }, [toast]);
+  const bootstrapPasskey = useCallback(
+    async (handle: string, legacySecret?: string) => {
+      const { data, error } = await db.functions.invoke("create-passkey-user", {
+        body: { handle, legacySecret: legacySecret || undefined },
+      });
+      const tokenHash = (data as { tokenHash?: string; error?: string } | null)?.tokenHash;
+      if (error || !tokenHash) {
+        const reason = (data as { error?: string } | null)?.error ?? error?.message ?? "bootstrap failed";
+        throw new Error(reason);
+      }
+      const verified = await db.auth.verifyOtp({ token_hash: tokenHash, type: "signup" });
+      if (verified.error) throw verified.error;
+      try {
+        const registered = await db.auth.registerPasskey();
+        if (registered.error) throw registered.error;
+        const appSession = await finalizePasskeyAccount(db, handle, legacySecret);
+        await db.auth.signOut({ scope: "local" });
+        await finishAppLogin(appSession.handle, appSession.token, true);
+      } finally {
+        await db.auth.signOut({ scope: "local" }).catch(() => {});
+      }
+    },
+    [db, finishAppLogin],
+  );
+
+  const doCreate = useCallback(async (handle: string) => {
+    await bootstrapPasskey(handle);
+    toast("IDを作成しました");
+  }, [bootstrapPasskey, toast]);
+
+  const doLegacyMigrate = useCallback(async (handle: string, passcode: string) => {
+    await bootstrapPasskey(handle, passcode);
+    toast("パスキーへ移行しました");
+  }, [bootstrapPasskey, toast]);
+
+  const doPasskeyLogin = useCallback(async () => {
+    const signedIn = await db.auth.signInWithPasskey();
+    if (signedIn.error) throw signedIn.error;
+    try {
+      const appSession = await createPasskeySession(db);
+      await db.auth.signOut({ scope: "local" });
+      await finishAppLogin(appSession.handle, appSession.token);
+    } finally {
+      await db.auth.signOut({ scope: "local" }).catch(() => {});
+    }
+  }, [db, finishAppLogin]);
+
+  const sendRecoveryCode = useCallback(async (method: "email" | "phone", destination: string) => {
+    const result = method === "email"
+      ? await db.auth.signInWithOtp({
+          email: destination,
+          options: {
+            shouldCreateUser: false,
+            emailRedirectTo: "https://via-mi.com/?recover=1",
+          },
+        })
+      : await db.auth.signInWithOtp({
+          phone: destination,
+          options: { shouldCreateUser: false },
+        });
+    if (result.error) throw result.error;
+    toast("確認コードを送信しました");
+  }, [db, toast]);
+
+  const completeRecovery = useCallback(async () => {
+    const sessionResult = await db.auth.getSession();
+    if (!sessionResult.data.session) throw new Error("auth");
+    try {
+      const registered = await db.auth.registerPasskey();
+      if (registered.error) throw registered.error;
+      const appSession = await createPasskeySession(db);
+      await db.auth.signOut({ scope: "local" });
+      setRecoverySessionReady(false);
+      window.history.replaceState({}, "", "/");
+      await finishAppLogin(appSession.handle, appSession.token, true);
+      toast("アカウントを復旧しました");
+    } finally {
+      await db.auth.signOut({ scope: "local" }).catch(() => {});
+    }
+  }, [db, finishAppLogin, toast]);
+
+  const recoverWithCode = useCallback(async (
+    method: "email" | "phone",
+    destination: string,
+    code: string,
+  ) => {
+    const verified = method === "email"
+      ? await db.auth.verifyOtp({ email: destination, token: code, type: "email" })
+      : await db.auth.verifyOtp({ phone: destination, token: code, type: "sms" });
+    if (verified.error) throw verified.error;
+    try {
+      const registered = await db.auth.registerPasskey();
+      if (registered.error) throw registered.error;
+      const appSession = await createPasskeySession(db);
+      await db.auth.signOut({ scope: "local" });
+      await finishAppLogin(appSession.handle, appSession.token, true);
+      toast("アカウントを復旧しました");
+    } finally {
+      await db.auth.signOut({ scope: "local" }).catch(() => {});
+    }
+  }, [db, finishAppLogin, toast]);
+
+  const reauthenticatePasskey = useCallback(async () => {
+    const signedIn = await db.auth.signInWithPasskey();
+    if (signedIn.error) throw signedIn.error;
+    const appSession = await createPasskeySession(db);
+    if (session && appSession.handle !== session.handle) {
+      await db.auth.signOut({ scope: "local" });
+      throw new Error("別のIDのパスキーが選択されました");
+    }
+    storeSession(appSession.handle, appSession.token);
+    setSession({ handle: appSession.handle, pass: appSession.token });
+  }, [db, session]);
 
   const logout = useCallback(() => {
     const last = session?.handle ?? "";
@@ -386,6 +459,7 @@ export function BeaconApp() {
     setFollows(loadFollows(null));
     setEditing(false);
     clearStoredSession();
+    void db.auth.signOut({ scope: "local" }).catch(() => {});
     clearTrustedDevice(); // 旧方式の保存が残っていれば併せて解除
     try {
       window.localStorage.removeItem(K_HANDLE);
@@ -531,12 +605,6 @@ export function BeaconApp() {
     [db, session, me, toast, logout],
   );
 
-  /** 復旧コードの再発行（要パスコード）。古いコードは無効になり新しいものだけ使える。 */
-  const reissueRc = useCallback(async (): Promise<string> => {
-    if (!session) throw new Error("no session");
-    return reissueRecovery(db, session.handle, session.pass);
-  }, [db, session]);
-
   const doDeleteAccount = useCallback(async () => {
     if (!session) return;
     if (
@@ -556,7 +624,6 @@ export function BeaconApp() {
       }
       clearStoredSession(); // セッションはDB側でcascade削除済み。端末側も破棄
       clearTrustedDevice(); // 旧方式の保存が残っていれば併せて破棄
-      setKnownHandles(removeHandle(session.handle));
       setSession(null);
       setMe(null);
       setEditing(false);
@@ -736,6 +803,14 @@ export function BeaconApp() {
           )}
         </div>
 
+        {session && me && !me.recoveryVerified && overlay === "none" && (
+          <button type="button" className="recoveryBanner" onClick={() => goNav("help")}>
+            <span>未認証</span>
+            復旧用のメールまたは電話番号を追加してください
+            <b aria-hidden="true">›</b>
+          </button>
+        )}
+
         {/* 全画面: 認証フォーム */}
         {overlay === "auth" && (
           <AuthView
@@ -743,11 +818,13 @@ export function BeaconApp() {
             initialHandle={authInitialHandle}
             initialPane={authInitialPane}
             onCreate={doCreate}
-            onLogin={doLogin}
-            onReset={doReset}
-            onEnter={enterAfterCreate}
+            onLogin={doPasskeyLogin}
+            onLegacyMigrate={doLegacyMigrate}
+            onRecoverySend={sendRecoveryCode}
+            onRecoveryVerify={recoverWithCode}
+            onRecoveryComplete={completeRecovery}
+            recoverySessionReady={recoverySessionReady}
             onBack={() => setOverlay("none")}
-            knownHandles={knownHandles}
             toast={toast}
           />
         )}
@@ -768,7 +845,6 @@ export function BeaconApp() {
                   editing
                   focusSection={editTarget === "profile" ? undefined : editTarget}
                   onEdit={openEditor}
-                  onReissueRc={reissueRc}
                   onSaveChannels={persistChannels}
                   onSaveCal={persistCal}
                   onLoadCal={loadCal}
@@ -780,7 +856,6 @@ export function BeaconApp() {
                   me={me}
                   handle={session.handle}
                   onEdit={openEditor}
-                  onReissueRc={reissueRc}
                   onSaveChannels={persistChannels}
                   onSaveCal={persistCal}
                   onLoadCal={loadCal}
@@ -815,6 +890,20 @@ export function BeaconApp() {
               <div className="lead" style={{ marginBottom: 18 }}>アカウントに関する設定です。</div>
               {session ? (
                 <div style={{ display: "grid", gap: 14 }}>
+                  {me && (
+                    <RecoverySetup
+                      verified={me.recoveryVerified}
+                      kind={me.recoveryKind}
+                      onReauthenticate={reauthenticatePasskey}
+                      onVerified={(status) => setMe((current) => current ? {
+                        ...current,
+                        recoveryVerified: status.recovery_verified,
+                        recoveryKind: status.recovery_kind,
+                        profile: { ...current.profile, verified: status.recovery_verified },
+                      } : current)}
+                      toast={toast}
+                    />
+                  )}
                   <button className="btn ghost" onClick={doRevokeOtherSessions}>
                     他の端末をログアウト
                   </button>

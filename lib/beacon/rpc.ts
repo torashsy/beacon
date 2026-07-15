@@ -8,15 +8,14 @@ import {
 
 /**
  * supabase/schema.sql の RPC 群を型付きで呼ぶ薄いラッパー。
- * 設計原則（schema.sql 冒頭コメント）:
- *   - パスコード検証はすべてサーバー側 RPC。書込 RPC は毎回 p_pass を要求する。
- *     p_pass にはパスコードの代わりにセッショントークン（create_session が発行、
- *     'bst_' 始まり）も渡せる（_check_pass が両方受ける）。
+ * 設計原則:
+ *   - Supabase Authがパスキーを検証し、書込RPCは毎回失効可能なアプリセッション
+ *     （'bst_' 始まり）を検証する。旧アカウント移行時だけ従来パスコードを受け付ける。
  *   - 横断検索・一覧・レコメンドAPIは絶対に作らない（異性紹介事業の回避）。
  *
  * エラーは Postgres の raise exception がそのまま code/message で返る。
- * 代表例: 'taken'（ハンドル重複） / 'locked'（5回失敗で15分ロック） /
- *         'auth'（パスコード不一致） / 'bad recovery code' / 'pass too short'。
+ * 代表例: 'taken'（ハンドル重複） / 'auth'（認証不成立） /
+ *         'passkey already linked'（移行済み）。
  */
 
 type DB = SupabaseClient;
@@ -28,7 +27,57 @@ function unwrap<T>(res: { data: T; error: { message: string } | null }): T {
 
 // ---- 認証 ----
 
-/** アカウント作成。成功時は復旧コード（平文）を一度だけ返す。必ず控えさせること。 */
+export interface PasskeyAppSession {
+  handle: string;
+  token: string;
+}
+
+export interface AccountSecurity {
+  passkey_linked: boolean;
+  recovery_verified: boolean;
+  recovery_kind: "email" | "phone" | "email+phone" | null;
+}
+
+/** Supabase Authのパスキー登録後にアプリ用アカウントとセッションを確定する。 */
+export async function finalizePasskeyAccount(
+  db: DB,
+  handle: string,
+  legacySecret?: string,
+): Promise<PasskeyAppSession> {
+  return unwrap(
+    await db.rpc("finalize_passkey_account", {
+      p_handle: handle,
+      p_legacy_secret: legacySecret || null,
+    }),
+  ) as PasskeyAppSession;
+}
+
+/** パスキーで成立したSupabase Authセッションからアプリ用トークンを発行する。 */
+export async function createPasskeySession(db: DB): Promise<PasskeyAppSession> {
+  return unwrap(await db.rpc("create_passkey_session")) as PasskeyAppSession;
+}
+
+/** 保存済みアプリセッションはトークン形式だけを受け付けて検証する。 */
+export async function verifyAppSession(db: DB, handle: string, token: string): Promise<boolean> {
+  return Boolean(unwrap(await db.rpc("verify_app_session", { p_handle: handle, p_token: token })));
+}
+
+export async function getAccountSecurity(
+  db: DB,
+  handle: string,
+  secret: string,
+): Promise<AccountSecurity> {
+  return unwrap(await db.rpc("get_account_security", { p_handle: handle, p_secret: secret })) as AccountSecurity;
+}
+
+export async function syncRecoveryStatus(db: DB): Promise<Pick<AccountSecurity, "recovery_verified" | "recovery_kind">> {
+  return unwrap(await db.rpc("sync_recovery_status")) as Pick<
+    AccountSecurity,
+    "recovery_verified" | "recovery_kind"
+  >;
+}
+
+/** 旧アカウント互換用。新規登録では使用しない。 */
 export async function createAccount(
   db: DB,
   handle: string,
@@ -39,7 +88,7 @@ export async function createAccount(
   ) as string;
 }
 
-/** ログイン検証。true のときのみ成功。以降の書込は毎回 pass を渡す。 */
+/** 旧アカウント移行用のログイン検証。 */
 export async function verifyLogin(
   db: DB,
   handle: string,

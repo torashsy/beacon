@@ -17,7 +17,7 @@ export interface PublicCardData {
   followerCount?: number;
   profile: Pick<
     Profile,
-    "name" | "bio" | "emoji" | "theme" | "av_theme" | "av_url" | "bn_url" | "status"
+    "name" | "bio" | "emoji" | "theme" | "av_theme" | "av_url" | "bn_url" | "status" | "verified"
   >;
   channels: Channel[]; // 非表示リンクも含む。ここで公開対象だけに絞る
   pubcal: CalMemo[]; // 公開メモのみ
@@ -78,6 +78,11 @@ export function PublicProfileCard({
         <Avatar url={profile.av_url} emoji={profile.emoji} handle={handle} theme={profile.av_theme ?? 0} />
         <div className="xname">
           <span>{profile.name || `@${handle}`}</span>
+          {profile.verified && (
+            <span className="verifiedBadge" aria-label="復旧手段を認証済み" title="復旧手段を認証済み">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7.9 14.2-4-4 1.7-1.7 2.3 2.3 6.5-6.5L16.1 6l-8.2 8.2Z" /></svg>
+            </span>
+          )}
         </div>
         <div className="xid">@{handle}</div>
         {typeof data.followerCount === "number" && (
