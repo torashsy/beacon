@@ -31,3 +31,20 @@ test("report links prefill the target page", async ({ page }) => {
   await expect(page.getByLabel("対象ページURL")).toHaveValue(target);
   await expect(page.getByLabel("対象ページURL")).toHaveAttribute("required", "");
 });
+
+test("account creation requires matching passcodes", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "無料でIDを作る", exact: true }).click();
+
+  await page.getByLabel("ID", { exact: true }).fill("new_user");
+  await page.getByLabel("パスコード（10文字以上）", { exact: true }).fill("safe-pass-123");
+  const confirmation = page.getByLabel("パスコード（確認）", { exact: true });
+  const create = page.getByRole("button", { name: "作成する", exact: true });
+
+  await confirmation.fill("different-pass");
+  await expect(page.getByText("パスコードが一致しません", { exact: true })).toBeVisible();
+  await expect(create).toBeDisabled();
+
+  await confirmation.fill("safe-pass-123");
+  await expect(create).toBeEnabled();
+});

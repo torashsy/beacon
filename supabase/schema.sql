@@ -141,6 +141,16 @@ declare
   a record;
   client_ip text := 'unknown';
 begin
+  -- 運営により停止されたアカウントは、既存トークン・パスコードのどちらでも
+  -- 再認証させない。停止時のセッション削除後に再ログインされる抜け道も塞ぐ。
+  if exists (
+    select 1 from account_moderation
+    where handle = lower(p_handle) and suspended
+  ) then
+    delete from sessions where handle = lower(p_handle);
+    return false;
+  end if;
+
   if p_pass ~ '^bst_[0-9a-f]{64}$' then
     update sessions set expires_at = now() + interval '30 days'
       where token_hash = encode(digest(p_pass, 'sha256'), 'hex')
@@ -301,6 +311,24 @@ begin
   delete from sessions
     where handle = lower(p_handle)
       and token_hash = encode(digest(p_token, 'sha256'), 'hex');
+end $$;
+
+-- 現在の端末以外をまとめてログアウトする。現在が非保持ログイン（生パスコード）
+-- の場合は、保存済みセッションをすべて削除する。
+create or replace function revoke_other_sessions(p_handle text, p_pass text)
+returns integer language plpgsql security definer as $$
+declare removed integer := 0;
+begin
+  if not _check_pass(p_handle, p_pass) then raise exception 'auth'; end if;
+  if p_pass ~ '^bst_[0-9a-f]{64}$' then
+    delete from sessions
+      where handle = lower(p_handle)
+        and token_hash <> encode(digest(p_pass, 'sha256'), 'hex');
+  else
+    delete from sessions where handle = lower(p_handle);
+  end if;
+  get diagnostics removed = row_count;
+  return removed;
 end $$;
 
 -- ---- RPC: プロフィール更新 ----
@@ -475,6 +503,8 @@ grant execute on function save_my_follows(text,text,jsonb)                      
 grant execute on function delete_account(text,text)                                   to anon;
 grant execute on function create_session(text,text)                                   to anon;
 grant execute on function delete_session(text,text)                                   to anon;
+revoke all on function revoke_other_sessions(text,text) from public, authenticated;
+grant execute on function revoke_other_sessions(text,text)                            to anon;
 
 -- ---- リンククリック数（本人だけが見られる簡易アナリティクス）----
 create table if not exists link_clicks (
@@ -691,6 +721,8 @@ create table if not exists account_moderation (
 );
 alter table account_moderation enable row level security;
 revoke all on account_moderation from anon, authenticated;
+delete from sessions s using account_moderation m
+  where s.handle = m.handle and m.suspended;
 
 create table if not exists moderation_log (
   id bigserial primary key,

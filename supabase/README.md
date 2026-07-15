@@ -10,7 +10,7 @@
 
 ## 現行 via-mi プロジェクト
 
-2026-07-12時点で以下を適用・検証済み。
+2026-07-16時点で以下を適用・検証済み。
 
 - `remove-legacy-update-profile.sql`
 - `authenticated-storage-migration.sql`
@@ -19,6 +19,7 @@
 - `follower-count-migration.sql`
 - `public-launch-migration.sql`
 - `profile-color-migration.sql`
+- `auth-finalization-migration.sql`
 - `create-avatar-upload` Edge Function
 
 次に適用する変更:

@@ -18,7 +18,10 @@ await check("/api/health", async (_response, body) => {
 await check("/", (response, body) => {
   if (!body.includes("via-mi")) throw new Error("home marker missing");
   if (body.includes("http://localhost:3000")) throw new Error("localhost metadata detected");
-  if (!response.headers.get("content-security-policy")) throw new Error("CSP header missing");
+  const csp = response.headers.get("content-security-policy") ?? "";
+  if (!csp) throw new Error("CSP header missing");
+  if (csp.includes("'unsafe-eval'")) throw new Error("development CSP detected");
+  if (!csp.includes("upgrade-insecure-requests")) throw new Error("production CSP incomplete");
 });
 
 await check("/contact", (_response, body) => {

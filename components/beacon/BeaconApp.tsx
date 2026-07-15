@@ -12,6 +12,7 @@ import {
   getPrivateCal,
   getPublicPage,
   reissueRecovery,
+  revokeOtherSessions,
   resetPass,
   saveMyFollows,
   saveCal as rpcSaveCal,
@@ -25,7 +26,6 @@ import { normalizeRecoveryCode } from "@/lib/beacon/format";
 import { addHandle, loadHandles, removeHandle } from "@/lib/beacon/accounts";
 import {
   clearTrustedDevice,
-  getTrustedSession,
 } from "@/lib/beacon/deviceTrust";
 import {
   clearStoredSession,
@@ -189,6 +189,10 @@ export function BeaconApp() {
         setAuthInitialPane("login");
       }
 
+      // 保存セッションのネットワーク確認で初期画面をブロックしない。通信が遅い・
+      // オフラインでも、まずランディングとナビを操作できる状態にする。
+      if (!cancelled) setBooting(false);
+
       const saved = loadStoredSession();
       if (saved && !cancelled) {
         try {
@@ -197,17 +201,10 @@ export function BeaconApp() {
           clearStoredSession(); // 失効・削除済みアカウント等
         }
       } else {
-        const trusted = await getTrustedSession();
-        if (trusted && !cancelled) {
-          try {
-            await doLogin(trusted.handle, trusted.pass, { silent: true });
-          } catch {
-            /* 失効・削除済みアカウント等。移行せず捨てるだけ */
-          }
-          clearTrustedDevice(); // 成否によらず旧方式の保存は破棄（新方式へ片道移行）
-        }
+        // 旧方式はパスコードを端末に難読化保存しており、IndexedDBの応答待ちで
+        // 起動が止まることもある。現行ユーザーはトークン方式なので読み込まず破棄する。
+        clearTrustedDevice();
       }
-      if (!cancelled) setBooting(false);
     })();
     return () => {
       cancelled = true;
@@ -571,6 +568,18 @@ export function BeaconApp() {
     }
   }, [db, session, runWrite, toast]);
 
+  const doRevokeOtherSessions = useCallback(async () => {
+    if (!session) return;
+    if (!window.confirm("この端末以外をすべてログアウトしますか？")) return;
+    let removed = 0;
+    const ok = await runWrite(async () => {
+      removed = await revokeOtherSessions(db, session.handle, session.pass);
+    });
+    if (ok) {
+      toast(removed > 0 ? `${removed}台のログインを解除しました` : "他にログイン中の端末はありません");
+    }
+  }, [db, session, runWrite, toast]);
+
   // ---- フォローの変化検知（ナビの更新ドットと一覧のバッジを共有）----
   const checkFollows = useCallback(
     async (list: FollowSnapshot[]) => {
@@ -805,9 +814,14 @@ export function BeaconApp() {
               <h2 style={{ margin: "0 0 8px" }}>設定</h2>
               <div className="lead" style={{ marginBottom: 18 }}>アカウントに関する設定です。</div>
               {session ? (
-                <button className="textDangerButton" onClick={doDeleteAccount}>
-                  アカウントを削除
-                </button>
+                <div style={{ display: "grid", gap: 14 }}>
+                  <button className="btn ghost" onClick={doRevokeOtherSessions}>
+                    他の端末をログアウト
+                  </button>
+                  <button className="textDangerButton" onClick={doDeleteAccount}>
+                    アカウントを削除
+                  </button>
+                </div>
               ) : (
                 <div className="lead">ログインすると設定を変更できます。</div>
               )}
