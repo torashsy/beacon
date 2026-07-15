@@ -4,439 +4,253 @@ import { useState } from "react";
 import { cleanHandle } from "@/lib/beacon/format";
 import { authErrorMessage, type ToastFn } from "./appTypes";
 
-/**
- * 認証画面。beacon.html の v-auth を移植。
- * 4ペイン: 作成 / 復旧コード表示 / ログイン / パスコード再設定。
- *
- * デモとの違い（本番化）:
- *   - ハッシュ照合をブラウザでやらず、createAccount/verifyLogin/resetPass で
- *     サーバー検証する（呼び出しは onCreate/onLogin/onReset 経由）。
- *   - ID の空き確認はサーバーの accounts を読めないため、作成時の 'taken'
- *     エラーで判定する（形式チェックのみ即時）。
- */
-
-type Pane = "create" | "recovery" | "login" | "recover";
+type Pane = "create" | "login" | "legacy" | "recover";
+type RecoveryMethod = "email" | "phone";
 
 export function AuthView({
   initialHandle,
   initialPane,
   onCreate,
   onLogin,
-  onReset,
-  onEnter,
+  onLegacyMigrate,
+  onRecoverySend,
+  onRecoveryVerify,
+  onRecoveryComplete,
+  recoverySessionReady = false,
   onBack,
-  knownHandles = [],
   toast,
 }: {
   initialHandle: string;
-  initialPane: "create" | "login";
-  /** 成功時は復旧コード（平文）を返す。remember でログイン状態を保持する。 */
-  onCreate: (handle: string, pass: string, remember: boolean) => Promise<string>;
-  onLogin: (
-    handle: string,
-    pass: string,
-    opts: { remember: boolean },
-  ) => Promise<void>;
-  onReset: (handle: string, code: string, newPass: string) => Promise<void>;
-  /** 復旧コードを控えたあとアプリへ入る。 */
-  onEnter: () => void;
-  /** ランディングへ戻る（作成/ログイン画面のみ表示）。 */
+  initialPane: "create" | "login" | "recover";
+  onCreate: (handle: string) => Promise<void>;
+  onLogin: () => Promise<void>;
+  onLegacyMigrate: (handle: string, passcode: string) => Promise<void>;
+  onRecoverySend: (method: RecoveryMethod, destination: string) => Promise<void>;
+  onRecoveryVerify: (method: RecoveryMethod, destination: string, code: string) => Promise<void>;
+  onRecoveryComplete: () => Promise<void>;
+  recoverySessionReady?: boolean;
   onBack?: () => void;
-  /** この端末で使ったID（複数プロフィールの切替チップ）。 */
-  knownHandles?: string[];
   toast: ToastFn;
 }) {
   const [pane, setPane] = useState<Pane>(initialPane);
+  const [handleInput, setHandleInput] = useState(initialHandle);
+  const [legacyPasscode, setLegacyPasscode] = useState("");
+  const [recoveryMethod, setRecoveryMethod] = useState<RecoveryMethod>("email");
+  const [recoveryDestination, setRecoveryDestination] = useState("");
+  const [recoveryPending, setRecoveryPending] = useState(false);
+  const [recoveryCode, setRecoveryCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [hint, setHint] = useState("");
+  const handle = cleanHandle(handleInput);
+  const supported = typeof window === "undefined" || "PublicKeyCredential" in window;
 
-  // ---- 作成 ----
-  const [cId, setCId] = useState(initialHandle);
-  const [cPass, setCPass] = useState("");
-  const [cPassConfirm, setCPassConfirm] = useState("");
-  const [cBusy, setCBusy] = useState(false);
-  const cClean = cleanHandle(cId);
-  const idHint =
-    !cClean
-      ? { t: "", cls: "" }
-      : cClean.length < 3
-        ? { t: "3文字以上にしてください", cls: "no" }
-        : { t: "@" + cClean + " で作成します", cls: "ok" };
-  const passHint =
-    !cPass
-      ? { t: "", cls: "" }
-      : cPass.length < 10
-        ? { t: "10文字以上にしてください", cls: "no" }
-        : new TextEncoder().encode(cPass).length > 72
-          ? { t: "72バイト以内にしてください", cls: "no" }
-        : { t: "OK", cls: "ok" };
-  const canCreate =
-    cClean.length >= 3 &&
-    cPass.length >= 10 &&
-    cPass === cPassConfirm &&
-    new TextEncoder().encode(cPass).length <= 72 &&
-    !cBusy;
-  // ログイン状態の保持（サーバー発行のセッショントークンを端末に保存）。
-  // X/Instagram等と同じ体験を既定にするためデフォルトON。共有PC向けにオフにできる。
-  const [cTrust, setCTrust] = useState(true);
-
-  const [rc, setRc] = useState("");
-  const [rcCopied, setRcCopied] = useState(false);
-  const [rcSaved, setRcSaved] = useState(false);
-
-  async function submitCreate() {
-    if (!canCreate) return;
-    setCBusy(true);
+  async function run(action: () => Promise<void>) {
+    setBusy(true);
+    setHint("");
     try {
-      const code = await onCreate(cClean, cPass, cTrust);
-      setRc(code);
-      setCPass("");
-      setCPassConfirm("");
-      setPane("recovery");
-    } catch (e) {
-      toast(authErrorMessage(e));
+      await action();
+    } catch (error) {
+      const message = authErrorMessage(error);
+      setHint(message);
+      toast(message);
     } finally {
-      setCBusy(false);
+      setBusy(false);
     }
   }
 
-  // ---- ログイン ----
-  const [lId, setLId] = useState(initialHandle);
-  const [lPass, setLPass] = useState("");
-  const [lHint, setLHint] = useState("");
-  const [lBusy, setLBusy] = useState(false);
-  const [lTrust, setLTrust] = useState(true);
-  async function submitLogin() {
-    const h = cleanHandle(lId);
-    if (!h || !lPass) {
-      setLHint("IDとパスコードを入力してください");
-      return;
-    }
-    setLBusy(true);
-    setLHint("");
-    try {
-      await onLogin(h, lPass, { remember: lTrust });
-      setLPass("");
-    } catch (e) {
-      setLHint(authErrorMessage(e));
-    } finally {
-      setLBusy(false);
-    }
+  const back = onBack && (
+    <button type="button" className="backlink" onClick={onBack}>← 戻る</button>
+  );
+
+  if (pane === "login") {
+    return (
+      <section className="view authSimple">
+        {back}
+        <h1>ログイン</h1>
+        <div className="card">
+          <div className="passkeyMark" aria-hidden="true">🔑</div>
+          <p className="lead">Face ID・指紋認証・端末のロック解除でログインします。</p>
+          <div className="hint no">{hint}</div>
+          <button className="btn sig" disabled={busy || !supported} onClick={() => run(onLogin)}>
+            {busy ? "確認中…" : "パスキーでログイン"}
+          </button>
+          {!supported && <div className="hint no">この端末はパスキーに対応していません。</div>}
+        </div>
+        <div className="authswitch">
+          IDを作る → <button type="button" className="textlink" onClick={() => setPane("create")}>新規作成</button>
+        </div>
+        <div className="authswitch legacyLink">
+          <button type="button" className="textlink" onClick={() => setPane("legacy")}>以前のIDをパスキーへ移行</button>
+        </div>
+        <div className="authswitch legacyLink">
+          <button type="button" className="textlink" onClick={() => setPane("recover")}>パスキーを使えない場合</button>
+        </div>
+      </section>
+    );
   }
 
-  // ---- 再設定 ----
-  const [rId, setRId] = useState("");
-  const [rCode, setRCode] = useState("");
-  const [rNew, setRNew] = useState("");
-  const [rNewConfirm, setRNewConfirm] = useState("");
-  const [rHint, setRHint] = useState("");
-  const [rBusy, setRBusy] = useState(false);
-  async function submitReset() {
-    const h = cleanHandle(rId);
-    if (!h || !rCode.trim()) {
-      setRHint("IDと復旧コードを入力してください");
-      return;
-    }
-    if (rNew.length < 10) {
-      setRHint("新しいパスコードは10文字以上にしてください");
-      return;
-    }
-    if (new TextEncoder().encode(rNew).length > 72) {
-      setRHint("新しいパスコードは72バイト以内にしてください");
-      return;
-    }
-    if (rNew !== rNewConfirm) {
-      setRHint("新しいパスコードが一致しません");
-      return;
-    }
-    setRBusy(true);
-    setRHint("");
-    try {
-      await onReset(h, rCode, rNew);
-      setRNew("");
-      setRNewConfirm("");
-      setRCode("");
-      toast("再設定しました。ログインしてください");
-      setLId(h);
-      setPane("login");
-    } catch (e) {
-      setRHint(authErrorMessage(e));
-    } finally {
-      setRBusy(false);
-    }
+  if (pane === "recover") {
+    return (
+      <section className="view authSimple">
+        <button type="button" className="backlink" onClick={() => setPane("login")}>← ログインに戻る</button>
+        <h1>アカウントを復旧</h1>
+        <div className="card">
+          <p className="lead">認証済みの連絡先で確認し、この端末に新しいパスキーを登録します。</p>
+          {recoverySessionReady ? (
+            <>
+              <div className="hint ok">メールアドレスを確認できました。</div>
+              <button className="btn sig" disabled={busy || !supported} onClick={() => run(onRecoveryComplete)}>
+                {busy ? "登録中…" : "新しいパスキーを登録"}
+              </button>
+              <div className="hint no">{hint}</div>
+            </>
+          ) : (
+            <>
+          <div className="methodTabs" role="tablist" aria-label="復旧方法">
+            <button type="button" className={recoveryMethod === "email" ? "on" : ""} onClick={() => { setRecoveryMethod("email"); setRecoveryPending(false); }}>メール</button>
+            <button type="button" className={recoveryMethod === "phone" ? "on" : ""} onClick={() => { setRecoveryMethod("phone"); setRecoveryPending(false); }}>電話番号</button>
+          </div>
+          {!recoveryPending ? (
+            <>
+              <label className="f" htmlFor="recover-destination">{recoveryMethod === "email" ? "メールアドレス" : "電話番号（国番号付き）"}</label>
+              <input
+                id="recover-destination"
+                type={recoveryMethod === "email" ? "email" : "tel"}
+                value={recoveryDestination}
+                onChange={(event) => setRecoveryDestination(event.target.value)}
+                placeholder={recoveryMethod === "email" ? "you@example.com" : "+819012345678"}
+                autoComplete={recoveryMethod === "email" ? "email" : "tel"}
+              />
+              <button
+                className="btn sig"
+                disabled={busy || !recoveryDestination.trim()}
+                onClick={() => run(async () => {
+                  await onRecoverySend(recoveryMethod, recoveryDestination.trim());
+                  setRecoveryPending(true);
+                })}
+              >
+                {busy ? "送信中…" : recoveryMethod === "email" ? "確認メールを送る" : "確認コードを送る"}
+              </button>
+            </>
+          ) : recoveryMethod === "email" ? (
+            <>
+              <div className="lead">メール内の確認リンクを開いてください。確認後、この画面に戻ります。</div>
+              <button className="textlink" type="button" onClick={() => { setRecoveryPending(false); }}>メールアドレスを入力し直す</button>
+            </>
+          ) : (
+            <>
+              <div className="lead">届いた確認コードを入力してください。</div>
+              <label className="f" htmlFor="recover-code">確認コード</label>
+              <input
+                id="recover-code"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                value={recoveryCode}
+                onChange={(event) => setRecoveryCode(event.target.value.replace(/\D/g, "").slice(0, 8))}
+                placeholder="確認コード"
+              />
+              <button
+                className="btn sig"
+                disabled={busy || recoveryCode.length < 6 || !supported}
+                onClick={() => run(() => onRecoveryVerify(recoveryMethod, recoveryDestination.trim(), recoveryCode))}
+              >
+                {busy ? "登録中…" : "新しいパスキーを登録"}
+              </button>
+              <button className="textlink" type="button" onClick={() => { setRecoveryPending(false); setRecoveryCode(""); }}>入力し直す</button>
+            </>
+          )}
+          <div className="hint no">{hint}</div>
+            </>
+          )}
+        </div>
+      </section>
+    );
+  }
+
+  if (pane === "legacy") {
+    return (
+      <section className="view authSimple">
+        <button type="button" className="backlink" onClick={() => setPane("login")}>← ログインに戻る</button>
+        <h1>以前のIDを移行</h1>
+        <div className="card">
+          <label className="f" htmlFor="legacy-id">ID</label>
+          <div className="idfield">
+            <span className="at">@</span>
+            <input
+              id="legacy-id"
+              value={handleInput}
+              onChange={(event) => setHandleInput(event.target.value)}
+              onCompositionEnd={(event) => setHandleInput(cleanHandle(event.currentTarget.value))}
+              onBlur={(event) => setHandleInput(cleanHandle(event.currentTarget.value))}
+              maxLength={20}
+              autoComplete="username"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              lang="en"
+            />
+          </div>
+          <label className="f" htmlFor="legacy-pass">現在のパスコード</label>
+          <input
+            id="legacy-pass"
+            type="password"
+            value={legacyPasscode}
+            onChange={(event) => setLegacyPasscode(event.target.value)}
+            autoComplete="current-password"
+          />
+          <div className="hint no">{hint}</div>
+          <button
+            className="btn sig"
+            disabled={busy || handle.length < 3 || !legacyPasscode || !supported}
+            onClick={() => run(() => onLegacyMigrate(handle, legacyPasscode))}
+          >
+            {busy ? "移行中…" : "パスキーへ移行"}
+          </button>
+        </div>
+      </section>
+    );
   }
 
   return (
-    <section className="view">
-      {pane === "create" && (
-        <div>
-          {onBack && (
-            <button type="button" className="backlink" onClick={onBack}>
-              ← 戻る
-            </button>
-          )}
-          <h1>IDを作成</h1>
-          <div className="card">
-            <label className="f" htmlFor="create-id">ID</label>
-            <div className="idfield">
-              <span className="at">@</span>
-              <input
-                id="create-id"
-                value={cId}
-                onChange={(e) =>
-                  setCId(
-                    (e.nativeEvent as InputEvent).isComposing
-                      ? e.target.value
-                      : cleanHandle(e.target.value),
-                  )
-                }
-                onCompositionEnd={(e) => setCId(cleanHandle(e.currentTarget.value))}
-                onBlur={(e) => setCId(cleanHandle(e.currentTarget.value))}
-                placeholder="via_mi_id"
-                maxLength={20}
-                autoComplete="off"
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                lang="en"
-              />
-            </div>
-            <div className={`hint ${idHint.cls}`}>{idHint.t}</div>
-            <label className="f" htmlFor="create-pass">パスコード（10文字以上）</label>
-            <input
-              id="create-pass"
-              value={cPass}
-              onChange={(e) => setCPass(e.target.value)}
-              type="password"
-              placeholder="••••••"
-              autoComplete="new-password"
-              onKeyDown={(e) => e.key === "Enter" && submitCreate()}
-            />
-            <div className={`hint ${passHint.cls}`}>{passHint.t}</div>
-            <label className="f" htmlFor="create-pass-confirm">パスコード（確認）</label>
-            <input
-              id="create-pass-confirm"
-              value={cPassConfirm}
-              onChange={(e) => setCPassConfirm(e.target.value)}
-              type="password"
-              placeholder="もう一度入力"
-              autoComplete="new-password"
-              onKeyDown={(e) => e.key === "Enter" && submitCreate()}
-            />
-            {cPassConfirm && cPass !== cPassConfirm && (
-              <div className="hint no">パスコードが一致しません</div>
-            )}
-            <label className="chk">
-              <input
-                type="checkbox"
-                checked={cTrust}
-                onChange={(e) => setCTrust(e.target.checked)}
-              />
-              <span>
-                ログイン状態を保持する（共有PCではオフにしてください）
-              </span>
-            </label>
-            <button
-              className="btn sig"
-              disabled={!canCreate}
-              onClick={submitCreate}
-            >
-              {cBusy ? "作成中…" : "作成する"}
-            </button>
-          </div>
-          <div className="authswitch">
-            すでにIDがある → <button type="button" className="textlink" onClick={() => setPane("login")}>ログイン</button>
-          </div>
+    <section className="view authSimple">
+      {back}
+      <h1>IDを作成</h1>
+      <div className="card">
+        <label className="f" htmlFor="create-id">ID</label>
+        <div className="idfield">
+          <span className="at">@</span>
+          <input
+            id="create-id"
+            value={handleInput}
+            onChange={(event) => setHandleInput(event.target.value)}
+            onCompositionEnd={(event) => setHandleInput(cleanHandle(event.currentTarget.value))}
+            onBlur={(event) => setHandleInput(cleanHandle(event.currentTarget.value))}
+            placeholder="via_mi_id"
+            maxLength={20}
+            autoComplete="username webauthn"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            lang="en"
+          />
         </div>
-      )}
-
-      {pane === "recovery" && (
-        <div>
-          <h1>アカウントを作成しました</h1>
-          <div className="lead">復旧コードを安全な場所に保存してください。</div>
-          <div className="card">
-            <div className="rcode">{rc}</div>
-            <button
-              className="btn ghost"
-              onClick={async () => {
-                try {
-                  await navigator.clipboard.writeText(rc);
-                  setRcCopied(true);
-                  toast("コピーしました");
-                } catch {
-                  toast("コピーできませんでした。コードを長押しして保存してください");
-                }
-              }}
-            >
-              {rcCopied ? "コピーしました ✓" : "コピー"}
-            </button>
-            <label className="chk" style={{ marginTop: 14 }}>
-              <input
-                type="checkbox"
-                checked={rcSaved}
-                onChange={(e) => setRcSaved(e.target.checked)}
-              />
-              <span>復旧コードを保存しました</span>
-            </label>
-            <button
-              className="btn sig"
-              style={{ marginTop: 14 }}
-              onClick={onEnter}
-              disabled={!rcSaved}
-            >
-              はじめる
-            </button>
-          </div>
+        <div className={`hint ${handle.length >= 3 ? "ok" : ""}`}>
+          {handle ? (handle.length >= 3 ? `@${handle} で作成します` : "3文字以上にしてください") : ""}
         </div>
-      )}
-
-      {pane === "login" && (
-        <div>
-          {onBack && (
-            <button type="button" className="backlink" onClick={onBack}>
-              ← 戻る
-            </button>
-          )}
-          <h1>ログイン</h1>
-          <div className="card">
-            {knownHandles.length > 0 && (
-              <>
-                <label className="f">この端末で使ったID</label>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
-                  {knownHandles.map((h) => (
-                    <button
-                      key={h}
-                      type="button"
-                      className={h === cleanHandle(lId) ? "pill solid" : "pill line"}
-                      style={{ padding: "6px 14px", fontSize: 12 }}
-                      onClick={() => setLId(h)}
-                    >
-                      @{h}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-            <label className="f" htmlFor="login-id">ID</label>
-            <div className="idfield">
-              <span className="at">@</span>
-              <input
-                id="login-id"
-                value={lId}
-                onChange={(e) =>
-                  setLId(
-                    (e.nativeEvent as InputEvent).isComposing
-                      ? e.target.value
-                      : cleanHandle(e.target.value),
-                  )
-                }
-                onCompositionEnd={(e) => setLId(cleanHandle(e.currentTarget.value))}
-                onBlur={(e) => setLId(cleanHandle(e.currentTarget.value))}
-                placeholder="via_mi_id"
-                maxLength={20}
-                autoComplete="off"
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                lang="en"
-              />
-            </div>
-            <label className="f" htmlFor="login-pass">パスコード</label>
-            <input
-              id="login-pass"
-              value={lPass}
-              onChange={(e) => setLPass(e.target.value)}
-              type="password"
-              placeholder="••••••"
-              autoComplete="current-password"
-              onKeyDown={(e) => e.key === "Enter" && submitLogin()}
-            />
-            <div className="hint no">{lHint}</div>
-            <label className="chk">
-              <input
-                type="checkbox"
-                checked={lTrust}
-                onChange={(e) => setLTrust(e.target.checked)}
-              />
-              <span>
-                ログイン状態を保持する（共有PCではオフにしてください）
-              </span>
-            </label>
-            <button className="btn sig" disabled={lBusy} onClick={submitLogin}>
-              {lBusy ? "確認中…" : "ログイン"}
-            </button>
-          </div>
-          <div className="authswitch">
-            IDを作る → <button type="button" className="textlink" onClick={() => setPane("create")}>新規作成</button>　/
-            <button type="button" className="textlink" onClick={() => setPane("recover")}>パスコードを忘れた</button>
-          </div>
-        </div>
-      )}
-
-      {pane === "recover" && (
-        <div>
-          <h1>パスコードの再設定</h1>
-          <div className="card">
-            <label className="f" htmlFor="recover-id">ID</label>
-            <div className="idfield">
-              <span className="at">@</span>
-              <input
-                id="recover-id"
-                value={rId}
-                onChange={(e) =>
-                  setRId(
-                    (e.nativeEvent as InputEvent).isComposing
-                      ? e.target.value
-                      : cleanHandle(e.target.value),
-                  )
-                }
-                onCompositionEnd={(e) => setRId(cleanHandle(e.currentTarget.value))}
-                onBlur={(e) => setRId(cleanHandle(e.currentTarget.value))}
-                placeholder="via_mi_id"
-                maxLength={20}
-                autoComplete="off"
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                lang="en"
-              />
-            </div>
-            <label className="f" htmlFor="recover-code">復旧コード</label>
-            <input
-              id="recover-code"
-              value={rCode}
-              onChange={(e) => setRCode(e.target.value)}
-              placeholder="作成時に表示された12桁コード"
-              autoComplete="off"
-            />
-            <label className="f" htmlFor="recover-pass">新しいパスコード（10文字以上）</label>
-            <input
-              id="recover-pass"
-              value={rNew}
-              onChange={(e) => setRNew(e.target.value)}
-              type="password"
-              placeholder="••••••"
-              autoComplete="new-password"
-              onKeyDown={(e) => e.key === "Enter" && submitReset()}
-            />
-            <label className="f" htmlFor="recover-pass-confirm">新しいパスコード（確認）</label>
-            <input
-              id="recover-pass-confirm"
-              value={rNewConfirm}
-              onChange={(e) => setRNewConfirm(e.target.value)}
-              type="password"
-              placeholder="もう一度入力"
-              autoComplete="new-password"
-              onKeyDown={(e) => e.key === "Enter" && submitReset()}
-            />
-            <div className="hint no">{rHint}</div>
-            <button className="btn sig" disabled={rBusy} onClick={submitReset}>
-              {rBusy ? "再設定中…" : "再設定する"}
-            </button>
-          </div>
-          <div className="authswitch">
-            <button type="button" className="textlink" onClick={() => setPane("login")}>ログインに戻る</button>
-          </div>
-        </div>
-      )}
+        <p className="lead passkeyLead">パスワードは不要です。端末のFace IDなどを使います。</p>
+        <div className="hint no">{hint}</div>
+        <button
+          className="btn sig"
+          disabled={busy || handle.length < 3 || !supported}
+          onClick={() => run(() => onCreate(handle))}
+        >
+          {busy ? "作成中…" : "パスキーで作成"}
+        </button>
+        {!supported && <div className="hint no">この端末はパスキーに対応していません。</div>}
+      </div>
+      <div className="authswitch">
+        すでにIDがある → <button type="button" className="textlink" onClick={() => setPane("login")}>ログイン</button>
+      </div>
     </section>
   );
 }

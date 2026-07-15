@@ -79,19 +79,25 @@ test("report links prefill the target page", async ({ page }) => {
   await expect(page.getByLabel("対象ページURL")).toHaveAttribute("required", "");
 });
 
-test("account creation requires matching passcodes", async ({ page }) => {
+test("account creation only asks for an ID and passkey", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "無料でIDを作る", exact: true }).click();
 
   await page.getByLabel("ID", { exact: true }).fill("new_user");
-  await page.getByLabel("パスコード（10文字以上）", { exact: true }).fill("safe-pass-123");
-  const confirmation = page.getByLabel("パスコード（確認）", { exact: true });
-  const create = page.getByRole("button", { name: "作成する", exact: true });
-
-  await confirmation.fill("different-pass");
-  await expect(page.getByText("パスコードが一致しません", { exact: true })).toBeVisible();
-  await expect(create).toBeDisabled();
-
-  await confirmation.fill("safe-pass-123");
+  const create = page.getByRole("button", { name: "パスキーで作成", exact: true });
   await expect(create).toBeEnabled();
+  await expect(page.getByText("パスワードは不要です。端末のFace IDなどを使います。")).toBeVisible();
+  await expect(page.locator('input[type="password"]')).toHaveCount(0);
+});
+
+test("a verified contact can start passkey recovery", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "ログイン", exact: true }).click();
+  await page.getByRole("button", { name: "パスキーを使えない場合", exact: true }).click();
+
+  await expect(page.getByRole("heading", { name: "アカウントを復旧", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "メール", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "電話番号", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "確認メールを送る", exact: true })).toBeVisible();
+  await expect(page.locator('input[type="password"]')).toHaveCount(0);
 });

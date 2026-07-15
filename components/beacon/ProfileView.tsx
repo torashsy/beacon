@@ -21,7 +21,7 @@ import { PublicProfileCard } from "./PublicProfileCard";
  * プロフィール表示 + 編集タブ（リンク / カレンダー）。beacon.html の prof-view を移植し、
  * リンクの編集・セクション見出し・シェア(共有/QR) を追加拡張。
  * 共有はOS共有シート、非対応環境ではURLコピーにフォールバックする。
- * 書き込みは onSaveChannels / onSaveCal を通じてサーバーRPC（毎回パスコード）で行う。
+ * 書き込みは onSaveChannels / onSaveCal を通じて失効可能なセッションで認証する。
  */
 
 export function ProfileView({
@@ -30,7 +30,6 @@ export function ProfileView({
   onEdit,
   editing = false,
   focusSection,
-  onReissueRc,
   onSaveChannels,
   onSaveCal,
   onLoadCal,
@@ -41,7 +40,6 @@ export function ProfileView({
   onEdit: (section?: "profile" | "links" | "cal") => void;
   editing?: boolean;
   focusSection?: "links" | "cal";
-  onReissueRc: () => Promise<string>;
   onSaveChannels: (next: Channel[]) => Promise<boolean>;
   onSaveCal: (date: string, memo: string, pub: boolean) => Promise<boolean>;
   onLoadCal: () => void;
@@ -50,9 +48,6 @@ export function ProfileView({
   const [tab, setTab] = useState<"links" | "cal">(focusSection ?? "links");
   const editorSection = useRef<HTMLDivElement>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
-  const [reissuedRc, setReissuedRc] = useState<string | null>(null);
-  const [reissueBusy, setReissueBusy] = useState(false);
-  const [reissueSaved, setReissueSaved] = useState(false);
 
   const publicCal = Object.entries(me.cal)
     .filter(([, value]) => value.pub && value.memo)
@@ -89,24 +84,6 @@ export function ProfileView({
       toast("URLをコピーしました");
     } catch {
       toast("コピーできませんでした");
-    }
-  }
-
-  async function doReissueRc() {
-    if (
-      !window.confirm(
-        "新しい復旧コードを発行します。古い復旧コードは使えなくなります。よろしいですか？",
-      )
-    )
-      return;
-    setReissueBusy(true);
-    try {
-      setReissuedRc(await onReissueRc());
-      setReissueSaved(false);
-    } catch {
-      toast("復旧コードを発行できませんでした");
-    } finally {
-      setReissueBusy(false);
     }
   }
 
@@ -215,66 +192,6 @@ export function ProfileView({
           <CalendarPane me={me} onSaveCal={onSaveCal} toast={toast} />
         )}
       </div>
-
-      <button
-        className="btn ghost"
-        style={{ marginTop: 10 }}
-        disabled={reissueBusy}
-        onClick={doReissueRc}
-      >
-        {reissueBusy ? "発行中…" : "復旧コードを再発行"}
-      </button>
-
-      {reissuedRc && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(23,36,43,.55)",
-            zIndex: 60,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 24,
-          }}
-        >
-          <div
-            className="card"
-            style={{ width: "100%", maxWidth: 360 }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 style={{ margin: "0 0 10px" }}>新しい復旧コード</h2>
-            <div className="lead" style={{ margin: "0 0 12px" }}>
-              このコードを安全な場所に保存してください。
-            </div>
-            <div className="rcode">{reissuedRc}</div>
-            <button
-              className="btn ghost"
-              onClick={() => {
-                navigator.clipboard?.writeText(reissuedRc);
-                toast("コピーしました");
-              }}
-            >
-              コピー
-            </button>
-            <label className="chk" style={{ marginTop: 14 }}>
-              <input
-                type="checkbox"
-                checked={reissueSaved}
-                onChange={(e) => setReissueSaved(e.target.checked)}
-              />
-              <span>控えました。</span>
-            </label>
-            <button
-              className="btn sig"
-              disabled={!reissueSaved}
-              onClick={() => setReissuedRc(null)}
-            >
-              閉じる
-            </button>
-          </div>
-        </div>
-      )}
 
       {qrDataUrl && (
         <div

@@ -25,6 +25,7 @@ export interface Profile {
   bn_url: string;
   status?: string; // ひとこと近況（任意）
   status_at?: string | null; // 近況の更新時刻
+  verified?: boolean; // 復旧用のメールまたは電話番号を確認済み
 }
 
 /** カレンダーメモ 1 件 */
