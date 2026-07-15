@@ -1,4 +1,4 @@
-const base = (process.env.SMOKE_BASE_URL || "https://beacon-beige-gamma.vercel.app").replace(/\/$/, "");
+const base = (process.env.SMOKE_BASE_URL || "https://via-mi.com").replace(/\/$/, "");
 
 async function check(path, inspect) {
   const response = await fetch(`${base}${path}`, {
