@@ -6,7 +6,8 @@ create table if not exists contact_submissions (
   message text not null,
   page_url text default '',
   client_ip text default 'unknown',
-  status text not null default 'new' check (status in ('new','reviewing','closed')),
+  status text not null default 'new'
+    check (status in ('new','reviewing','resolved','rejected')),
   created_at timestamptz not null default now()
 );
 alter table contact_submissions enable row level security;

@@ -102,6 +102,14 @@ export default async function PublicPage({
         trackHandle={handle}
         actions={<FollowButton snapshot={snapshot} />}
       />
+      <div style={{ marginTop: 12, textAlign: "center" }}>
+        <Link
+          href={`/contact?category=report&page=${encodeURIComponent(`https://via-mi.com/@${handle}`)}`}
+          className="reportLink"
+        >
+          このページを通報
+        </Link>
+      </div>
       <LegalFooter />
     </main>
     <PublicBottomNav />

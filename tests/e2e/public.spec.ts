@@ -22,3 +22,12 @@ test("health endpoint and production metadata are valid", async ({ request }) =>
   expect(html).toContain('rel="canonical" href="https://example.test"');
   expect(html).not.toContain("fonts.googleapis.com");
 });
+
+test("report links prefill the target page", async ({ page }) => {
+  const target = "https://via-mi.com/@reported_user";
+  await page.goto(`/contact?category=report&page=${encodeURIComponent(target)}`);
+
+  await expect(page.getByLabel("種別")).toHaveValue("report");
+  await expect(page.getByLabel("対象ページURL")).toHaveValue(target);
+  await expect(page.getByLabel("対象ページURL")).toHaveAttribute("required", "");
+});
