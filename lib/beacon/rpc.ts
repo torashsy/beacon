@@ -217,31 +217,6 @@ export async function getPrivateCal(
   ) ?? []) as CalMemo[];
 }
 
-// ---- クリック数（本人だけが見られる簡易アナリティクス）----
-
-/** 公開ページで訪問者がリンクを踏んだら +1（fire-and-forget）。 */
-export async function bumpClick(
-  db: DB,
-  handle: string,
-  url: string,
-): Promise<void> {
-  await db.rpc("bump_click", { p_handle: handle, p_url: url });
-}
-
-/** 本人のクリック数を url→回数 の map で取得（要パスコード）。 */
-export async function getClicks(
-  db: DB,
-  handle: string,
-  pass: string,
-): Promise<Record<string, number>> {
-  const rows = (unwrap(
-    await db.rpc("get_clicks", { p_handle: handle, p_pass: pass }),
-  ) ?? []) as { url: string; n: number }[];
-  const map: Record<string, number> = {};
-  rows.forEach((r) => (map[r.url] = Number(r.n)));
-  return map;
-}
-
 // ---- 公開読み取り（列挙防止のため security definer RPC 経由。直接 select は不可）----
 
 export interface PublicPage {

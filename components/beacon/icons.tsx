@@ -16,20 +16,8 @@ export function TypeBadge({ type }: { type: string }) {
   );
 }
 
-/** リンクのサムネイル（img_url があれば画像、無ければ種別バッジ）。 */
-export function LinkThumb({ type, img }: { type: string; img?: string }) {
-  if (img) {
-    return (
-      <span className="ic-badge" style={{ padding: 0, overflow: "hidden" }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={img}
-          alt=""
-          style={{ width: "100%", height: "100%", objectFit: "cover" }}
-        />
-      </span>
-    );
-  }
+/** リンク種別のアイコン。 */
+export function LinkThumb({ type }: { type: string }) {
   return <TypeBadge type={type} />;
 }
 

@@ -8,7 +8,7 @@
 - ルート直下の `*-migration.sql` は、既存環境へ段階適用してきた履歴。新規環境へ
   `schema.sql` と重ねて全実行しない。
 
-## 現行beaconプロジェクト
+## 現行 via-mi プロジェクト
 
 2026-07-12時点で以下を適用・検証済み。
 
@@ -20,6 +20,10 @@
 - `public-launch-migration.sql`
 - `profile-color-migration.sql`
 - `create-avatar-upload` Edge Function
+
+次に適用する変更:
+
+- `remove-unused-launch-features.sql`（クリック計測とリンク画像機能を削除）
 
 検証は `node scripts/conn-test.mjs` を実行する。テスト用アカウントは最後に削除される。
 

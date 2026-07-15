@@ -90,7 +90,7 @@ export default async function Image({
           }}
         >
           <div style={{ fontSize: 64, fontWeight: 800, color: "#17242B" }}>
-            {`@${handle ?? "my_ideal"}`}
+            {`@${handle ?? "via_mi"}`}
           </div>
           {platforms.length > 0 && (
             <div

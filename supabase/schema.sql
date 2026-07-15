@@ -41,8 +41,7 @@ create table if not exists channels (
   label    text default '',
   descr    text default '',
   status   text default 'live' check (status in ('live','dead')),
-  position int  default 0,
-  img_url  text default ''                -- リンク個別サムネイル（Storage の公開URL）
+  position int  default 0
 );
 
 -- 公開カレンダー（pub=true のメモのみこのテーブルに置く。非公開メモは別テーブル）
@@ -346,16 +345,14 @@ begin
     where length(coalesce(c->>'url',''))   > 2000
        or length(coalesce(c->>'label','')) > 100
        or length(coalesce(c->>'desc',''))  > 300
-       or length(coalesce(c->>'img',''))   > 2000
   ) then
     raise exception 'field too long';
   end if;
   delete from channels where handle=lower(p_handle);
-  insert into channels(handle,type,url,label,descr,status,position,img_url)
+  insert into channels(handle,type,url,label,descr,status,position)
   select lower(p_handle), c->>'type', c->>'url',
          coalesce(c->>'label',''), coalesce(c->>'desc',''),
-         coalesce(c->>'status','live'), (row_number() over ())::int,
-         coalesce(c->>'img','')
+         coalesce(c->>'status','live'), (row_number() over ())::int
   from jsonb_array_elements(p_channels) c;
   update accounts set updated_at=now() where handle=lower(p_handle);
 end $$;
@@ -479,51 +476,8 @@ grant execute on function delete_account(text,text)                             
 grant execute on function create_session(text,text)                                   to anon;
 grant execute on function delete_session(text,text)                                   to anon;
 
--- ---- リンククリック数（本人だけが見られる簡易アナリティクス）----
-create table if not exists link_clicks (
-  handle text references accounts(handle) on delete cascade,
-  url    text not null,
-  n      bigint default 0,
-  primary key (handle, url)
-);
-alter table link_clicks enable row level security;
-revoke select on link_clicks from anon, authenticated;
-
--- bump_click は匿名・無制限に呼べる（公開ページ訪問者が踏むたび発火）。
--- url がその handle の実在する channels.url と一致する場合のみカウントする。
--- そうしないと、誰でも任意のURL文字列を送り続けて link_clicks の行数を
--- 無制限に増やしたり（handle,url が主キーなので url を変えるだけで増殖する）、
--- 偽のクリックを大量計上してクリック解析を偽装できてしまう。この制約により
--- 行数は「そのユーザーのリンク件数以下」（save_channels の50件上限と合わせ
--- て有限）に収まる。
-create or replace function bump_click(p_handle text, p_url text)
-returns void language plpgsql security definer as $$
-begin
-  if length(coalesce(p_url,'')) > 2000 then return; end if;
-  if not exists (
-    select 1 from channels where handle = lower(p_handle) and url = p_url
-  ) then
-    return;
-  end if;
-  insert into link_clicks(handle, url, n)
-    values (lower(p_handle), p_url, 1)
-    on conflict (handle, url) do update set n = link_clicks.n + 1;
-end $$;
-
-create or replace function get_clicks(p_handle text, p_pass text)
-returns table(url text, n bigint) language plpgsql security definer as $$
-begin
-  if not _check_pass(p_handle, p_pass) then raise exception 'auth'; end if;
-  return query
-    select link_clicks.url, link_clicks.n
-    from link_clicks where handle = lower(p_handle);
-end $$;
-
-grant execute on function bump_click(text, text) to anon;
-grant execute on function get_clicks(text, text) to anon;
-
 -- ---- Storage（画像用: avatars バケット）----
--- パス規約: avatars/{handle}/{av|bn|thumb}-{timestamp}.jpg
+-- パス規約: avatars/{handle}/{av|bn}-{timestamp}.jpg
 -- バケット作成と anon 書込ポリシーは storage スキーマ（supabase_storage_admin 所有）
 -- への操作で、SQL Editor から直接 insert/create policy すると環境によっては
 -- 権限エラーになる。そのためこの schema.sql には含めず、SETUP.md 手順3で

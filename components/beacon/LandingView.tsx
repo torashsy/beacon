@@ -6,7 +6,7 @@ import { LegalFooter } from "./LegalFooter";
 /** 未ログイン時のトップ。操作と完成イメージだけを見せる。 */
 
 const DEMO: PublicCardData = {
-  handle: "my_ideal_sample",
+  handle: "via_mi_sample",
   profile: {
     name: "みほん",
     bio: "連絡先はここにまとめています🌸",

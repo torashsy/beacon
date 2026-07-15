@@ -179,7 +179,7 @@ export function AuthView({
                 }
                 onCompositionEnd={(e) => setCId(cleanHandle(e.currentTarget.value))}
                 onBlur={(e) => setCId(cleanHandle(e.currentTarget.value))}
-                placeholder="my_ideal"
+                placeholder="via_mi_id"
                 maxLength={20}
                 autoComplete="off"
                 autoCapitalize="none"
@@ -291,7 +291,7 @@ export function AuthView({
                 }
                 onCompositionEnd={(e) => setLId(cleanHandle(e.currentTarget.value))}
                 onBlur={(e) => setLId(cleanHandle(e.currentTarget.value))}
-                placeholder="my_ideal"
+                placeholder="via_mi_id"
                 maxLength={20}
                 autoComplete="off"
                 autoCapitalize="none"
@@ -349,7 +349,7 @@ export function AuthView({
                 }
                 onCompositionEnd={(e) => setRId(cleanHandle(e.currentTarget.value))}
                 onBlur={(e) => setRId(cleanHandle(e.currentTarget.value))}
-                placeholder="my_ideal"
+                placeholder="via_mi_id"
                 maxLength={20}
                 autoComplete="off"
                 autoCapitalize="none"
