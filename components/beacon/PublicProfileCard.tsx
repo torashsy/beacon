@@ -3,7 +3,7 @@ import type { CalMemo, Channel, Profile } from "@/lib/beacon/types";
 import { grad, HEADING_TYPE, typeMeta } from "@/lib/beacon/constants";
 import { fmtMd } from "@/lib/beacon/format";
 import { safeUrl } from "@/lib/beacon/safe";
-import { LinkThumb, VerifiedBadge } from "./icons";
+import { LinkThumb } from "./icons";
 import { TrackedLink } from "./TrackedLink";
 
 /**
@@ -75,7 +75,6 @@ export function PublicProfileCard({
         <Avatar url={profile.av_url} emoji={profile.emoji} handle={handle} theme={profile.av_theme ?? 0} />
         <div className="xname">
           <span>{profile.name || `@${handle}`}</span>
-          <VerifiedBadge />
         </div>
         <div className="xid">@{handle}</div>
         {typeof data.followerCount === "number" && (

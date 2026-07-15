@@ -172,7 +172,6 @@ export function FollowsView({
             shown.map((f) => {
               const links = f.channels.filter((c) => c.type !== HEADING_TYPE);
               const live = links.filter((c) => c.status === "live").length;
-              const dead = links.filter((c) => c.status === "dead").length;
               const st = states[f.handle] ?? { state: "loading", addedLive: 0 };
               return (
                 <div
@@ -203,7 +202,7 @@ export function FollowsView({
                     <FollowBadge st={st} />
                     <div className="st">
                       <b>{live}件のリンク</b>
-                      {dead ? `・${dead}件非表示` : ""}・{ago(f.updated)}
+                      ・{ago(f.updated)}
                     </div>
                   </div>
                   {st.state === "new" || st.state === "changed" ? (
