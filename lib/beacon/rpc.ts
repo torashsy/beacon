@@ -73,6 +73,17 @@ export async function deleteSession(
   unwrap(await db.rpc("delete_session", { p_handle: handle, p_token: token }));
 }
 
+/** 現在の端末を除き、このアカウントの全セッションを失効させる。 */
+export async function revokeOtherSessions(
+  db: DB,
+  handle: string,
+  pass: string,
+): Promise<number> {
+  return Number(unwrap(
+    await db.rpc("revoke_other_sessions", { p_handle: handle, p_pass: pass }),
+  ) ?? 0);
+}
+
 /** 復旧コードでパスコード再設定。 */
 export async function resetPass(
   db: DB,

@@ -2,7 +2,7 @@ import type { Channel, Profile } from "@/lib/beacon/types";
 
 // クライアントアプリ内で共有する型と小さなユーティリティ。
 
-/** セッション。パスコードはメモリ保持のみ（方式a）。localStorage には保存しない。 */
+/** セッション。保持時の pass は失効可能なトークン、非保持時だけパスコード。 */
 export interface Session {
   handle: string;
   pass: string;

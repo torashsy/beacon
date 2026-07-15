@@ -10,6 +10,7 @@
  */
 
 const K_SESSION = "via-mi:session:v1";
+const SESSION_TOKEN_RE = /^bst_[0-9a-f]{64}$/;
 
 export interface StoredSession {
   handle: string;
@@ -22,7 +23,9 @@ export function loadStoredSession(): StoredSession | null {
     const raw = window.localStorage.getItem(K_SESSION);
     if (!raw) return null;
     const s = JSON.parse(raw) as StoredSession;
-    return s.handle && s.token ? s : null;
+    return /^[a-z0-9_]{3,20}$/.test(s.handle) && SESSION_TOKEN_RE.test(s.token)
+      ? s
+      : null;
   } catch {
     return null;
   }
@@ -49,5 +52,5 @@ export function clearStoredSession(): void {
 
 /** 渡された秘密情報がセッショントークンか（パスコードかを区別する）。 */
 export function isSessionToken(secret: string): boolean {
-  return secret.startsWith("bst_");
+  return SESSION_TOKEN_RE.test(secret);
 }

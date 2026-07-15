@@ -51,6 +51,7 @@ export function AuthView({
   // ---- 作成 ----
   const [cId, setCId] = useState(initialHandle);
   const [cPass, setCPass] = useState("");
+  const [cPassConfirm, setCPassConfirm] = useState("");
   const [cBusy, setCBusy] = useState(false);
   const cClean = cleanHandle(cId);
   const idHint =
@@ -70,6 +71,7 @@ export function AuthView({
   const canCreate =
     cClean.length >= 3 &&
     cPass.length >= 10 &&
+    cPass === cPassConfirm &&
     new TextEncoder().encode(cPass).length <= 72 &&
     !cBusy;
   // ログイン状態の保持（サーバー発行のセッショントークンを端末に保存）。
@@ -78,6 +80,7 @@ export function AuthView({
 
   const [rc, setRc] = useState("");
   const [rcCopied, setRcCopied] = useState(false);
+  const [rcSaved, setRcSaved] = useState(false);
 
   async function submitCreate() {
     if (!canCreate) return;
@@ -86,6 +89,7 @@ export function AuthView({
       const code = await onCreate(cClean, cPass, cTrust);
       setRc(code);
       setCPass("");
+      setCPassConfirm("");
       setPane("recovery");
     } catch (e) {
       toast(authErrorMessage(e));
@@ -122,6 +126,7 @@ export function AuthView({
   const [rId, setRId] = useState("");
   const [rCode, setRCode] = useState("");
   const [rNew, setRNew] = useState("");
+  const [rNewConfirm, setRNewConfirm] = useState("");
   const [rHint, setRHint] = useState("");
   const [rBusy, setRBusy] = useState(false);
   async function submitReset() {
@@ -138,11 +143,16 @@ export function AuthView({
       setRHint("新しいパスコードは72バイト以内にしてください");
       return;
     }
+    if (rNew !== rNewConfirm) {
+      setRHint("新しいパスコードが一致しません");
+      return;
+    }
     setRBusy(true);
     setRHint("");
     try {
       await onReset(h, rCode, rNew);
       setRNew("");
+      setRNewConfirm("");
       setRCode("");
       toast("再設定しました。ログインしてください");
       setLId(h);
@@ -165,10 +175,11 @@ export function AuthView({
           )}
           <h1>IDを作成</h1>
           <div className="card">
-            <label className="f">ID</label>
+            <label className="f" htmlFor="create-id">ID</label>
             <div className="idfield">
               <span className="at">@</span>
               <input
+                id="create-id"
                 value={cId}
                 onChange={(e) =>
                   setCId(
@@ -189,8 +200,9 @@ export function AuthView({
               />
             </div>
             <div className={`hint ${idHint.cls}`}>{idHint.t}</div>
-            <label className="f">パスコード（10文字以上）</label>
+            <label className="f" htmlFor="create-pass">パスコード（10文字以上）</label>
             <input
+              id="create-pass"
               value={cPass}
               onChange={(e) => setCPass(e.target.value)}
               type="password"
@@ -199,6 +211,19 @@ export function AuthView({
               onKeyDown={(e) => e.key === "Enter" && submitCreate()}
             />
             <div className={`hint ${passHint.cls}`}>{passHint.t}</div>
+            <label className="f" htmlFor="create-pass-confirm">パスコード（確認）</label>
+            <input
+              id="create-pass-confirm"
+              value={cPassConfirm}
+              onChange={(e) => setCPassConfirm(e.target.value)}
+              type="password"
+              placeholder="もう一度入力"
+              autoComplete="new-password"
+              onKeyDown={(e) => e.key === "Enter" && submitCreate()}
+            />
+            {cPassConfirm && cPass !== cPassConfirm && (
+              <div className="hint no">パスコードが一致しません</div>
+            )}
             <label className="chk">
               <input
                 type="checkbox"
@@ -231,18 +256,31 @@ export function AuthView({
             <div className="rcode">{rc}</div>
             <button
               className="btn ghost"
-              onClick={() => {
-                navigator.clipboard?.writeText(rc);
-                setRcCopied(true);
-                toast("コピーしました");
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(rc);
+                  setRcCopied(true);
+                  toast("コピーしました");
+                } catch {
+                  toast("コピーできませんでした。コードを長押しして保存してください");
+                }
               }}
             >
               {rcCopied ? "コピーしました ✓" : "コピー"}
             </button>
+            <label className="chk" style={{ marginTop: 14 }}>
+              <input
+                type="checkbox"
+                checked={rcSaved}
+                onChange={(e) => setRcSaved(e.target.checked)}
+              />
+              <span>復旧コードを保存しました</span>
+            </label>
             <button
               className="btn sig"
               style={{ marginTop: 14 }}
               onClick={onEnter}
+              disabled={!rcSaved}
             >
               はじめる
             </button>
@@ -277,10 +315,11 @@ export function AuthView({
                 </div>
               </>
             )}
-            <label className="f">ID</label>
+            <label className="f" htmlFor="login-id">ID</label>
             <div className="idfield">
               <span className="at">@</span>
               <input
+                id="login-id"
                 value={lId}
                 onChange={(e) =>
                   setLId(
@@ -300,8 +339,9 @@ export function AuthView({
                 lang="en"
               />
             </div>
-            <label className="f">パスコード</label>
+            <label className="f" htmlFor="login-pass">パスコード</label>
             <input
+              id="login-pass"
               value={lPass}
               onChange={(e) => setLPass(e.target.value)}
               type="password"
@@ -335,10 +375,11 @@ export function AuthView({
         <div>
           <h1>パスコードの再設定</h1>
           <div className="card">
-            <label className="f">ID</label>
+            <label className="f" htmlFor="recover-id">ID</label>
             <div className="idfield">
               <span className="at">@</span>
               <input
+                id="recover-id"
                 value={rId}
                 onChange={(e) =>
                   setRId(
@@ -358,19 +399,31 @@ export function AuthView({
                 lang="en"
               />
             </div>
-            <label className="f">復旧コード</label>
+            <label className="f" htmlFor="recover-code">復旧コード</label>
             <input
+              id="recover-code"
               value={rCode}
               onChange={(e) => setRCode(e.target.value)}
               placeholder="作成時に表示された12桁コード"
               autoComplete="off"
             />
-            <label className="f">新しいパスコード（10文字以上）</label>
+            <label className="f" htmlFor="recover-pass">新しいパスコード（10文字以上）</label>
             <input
+              id="recover-pass"
               value={rNew}
               onChange={(e) => setRNew(e.target.value)}
               type="password"
               placeholder="••••••"
+              autoComplete="new-password"
+              onKeyDown={(e) => e.key === "Enter" && submitReset()}
+            />
+            <label className="f" htmlFor="recover-pass-confirm">新しいパスコード（確認）</label>
+            <input
+              id="recover-pass-confirm"
+              value={rNewConfirm}
+              onChange={(e) => setRNewConfirm(e.target.value)}
+              type="password"
+              placeholder="もう一度入力"
               autoComplete="new-password"
               onKeyDown={(e) => e.key === "Enter" && submitReset()}
             />
