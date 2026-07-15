@@ -20,11 +20,8 @@
 - `public-launch-migration.sql`
 - `profile-color-migration.sql`
 - `auth-finalization-migration.sql`
+- `remove-unused-link-thumbnails.sql`
 - `create-avatar-upload` Edge Function
-
-次に適用する変更:
-
-- `remove-unused-link-thumbnails.sql`（未使用のリンク画像機能だけを削除）
 
 検証は `node scripts/conn-test.mjs` を実行する。テスト用アカウントは最後に削除される。
 

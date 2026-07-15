@@ -3,7 +3,7 @@
 alter table channels drop column if exists img_url;
 
 create or replace function save_channels(p_handle text, p_pass text, p_channels jsonb)
-returns void language plpgsql security definer set search_path = public as $$
+returns void language plpgsql security definer set search_path = public, extensions as $$
 begin
   if not _check_pass(p_handle,p_pass) then raise exception 'auth'; end if;
   if jsonb_typeof(p_channels) <> 'array' then raise exception 'invalid channels'; end if;
