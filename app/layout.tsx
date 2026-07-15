@@ -16,8 +16,11 @@ export const metadata: Metadata = {
   },
   title: "via-mi — あなたのSNS、全部ひとつに。",
   icons: {
-    icon: "/via-mi-icon.jpg",
-    apple: "/via-mi-icon.jpg",
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
   description:
     "X・Instagram・LINEなどの連絡先とイベント予定をひとつの公開ページに。メール不要、IDとパスコードだけ。",
