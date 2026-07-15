@@ -625,7 +625,7 @@ export function BeaconApp() {
         ["new", "changed", "deleted"].includes(status.state),
       );
       const owner = session?.handle ?? "guest";
-      const storageKey = `myideal:follow-notifications:v1:${owner}`;
+      const storageKey = `via-mi:follow-notifications:v1:${owner}`;
       const fingerprint = JSON.stringify(
         changed.map(([handle, status]) => ({
           handle,

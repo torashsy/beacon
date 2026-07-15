@@ -9,7 +9,7 @@
  * 方式だったため、起動時に一度だけこの方式へ移行して破棄する（BeaconApp参照）。
  */
 
-const K_SESSION = "beacon:session:v1";
+const K_SESSION = "via-mi:session:v1";
 
 export interface StoredSession {
   handle: string;
