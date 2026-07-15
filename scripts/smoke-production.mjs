@@ -25,4 +25,18 @@ await check("/contact", (_response, body) => {
   if (body.includes("my-ideal.example")) throw new Error("placeholder contact address detected");
 });
 
+async function checkCanonicalRedirect(url) {
+  const response = await fetch(url, {
+    redirect: "manual",
+    signal: AbortSignal.timeout(15_000),
+  });
+  const location = response.headers.get("location") ?? "";
+  if (![307, 308].includes(response.status) || !location.startsWith(`${base}/`)) {
+    throw new Error(`${url}: canonical redirect missing (${response.status} ${location})`);
+  }
+}
+
+await checkCanonicalRedirect("https://www.via-mi.com/");
+await checkCanonicalRedirect("https://beacon-beige-gamma.vercel.app/");
+
 console.log(`Production smoke checks passed: ${base}`);

@@ -13,6 +13,9 @@
 - `npm run lint && npm run typecheck && npm test && npm run build && npm run test:e2e`
 - 本番反映後に `npm run smoke:production`
 - Supabaseの管理用一時トークンは作業後に必ず失効させる。
+- 正規URLは `https://via-mi.com`。`www.via-mi.com` とVercel既定ドメインは正規URLへ転送する。
+- 画像アップロード用Edge Functionの `BEACON_ALLOWED_ORIGINS` は
+  `https://via-mi.com,https://www.via-mi.com` を維持する。
 
 ## 毎日の問い合わせ・通報確認
 

@@ -8,6 +8,22 @@ const supabaseHost = (() => {
 })();
 
 const nextConfig = {
+  async redirects() {
+    return [
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "www.via-mi.com" }],
+        destination: "https://via-mi.com/:path*",
+        permanent: true,
+      },
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "beacon-beige-gamma.vercel.app" }],
+        destination: "https://via-mi.com/:path*",
+        permanent: true,
+      },
+    ];
+  },
   images: {
     // Supabase Storage の公開URL（アバター/バナー）を next/image で使う場合に許可
     remotePatterns: supabaseHost
