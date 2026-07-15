@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "my-IDeal",
-    short_name: "my-IDeal",
+    name: "via-mi",
+    short_name: "via-mi",
     description: "SNSリンクと予定をひとつにまとめるプロフィール",
     start_url: "/",
     scope: "/",
@@ -12,9 +12,9 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: "#0284c7",
     icons: [
       {
-        src: "/icon.svg",
-        sizes: "any",
-        type: "image/svg+xml",
+        src: "/via-mi-icon.jpg",
+        sizes: "1254x1254",
+        type: "image/jpeg",
         purpose: "any",
       },
     ],

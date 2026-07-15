@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "利用規約 · my-IDeal",
+  title: "利用規約 · via-mi",
   robots: { index: false, follow: false },
 };
 
@@ -10,8 +10,8 @@ export default function TermsPage() {
   return (
     <main className="wrap" style={{ paddingTop: 24, paddingBottom: 60 }}>
       <div className="top">
-        <Link className="logo" href="/">
-          my-IDeal<span className="dot">.</span>
+        <Link className="logo" href="/" aria-label="via-mi ホーム">
+          via-mi
         </Link>
       </div>
       <h1>利用規約</h1>
@@ -20,7 +20,7 @@ export default function TermsPage() {
       <div className="card" style={{ fontSize: 13.5, lineHeight: 1.9 }}>
         <h2 style={{ margin: "0 0 8px" }}>1. サービス概要</h2>
         <p>
-          my-IDeal（以下「本サービス」）は、複数のSNS等の連絡先リンクと、公開カレンダーの予定を
+          via-mi（以下「本サービス」）は、複数のSNS等の連絡先リンクと、公開カレンダーの予定を
           ひとつの公開ページにまとめる個人向けサービスです。利用者は、相手から共有されたIDを
           完全一致で入力して公開ページを探せます。本サービスは以下を提供しません。
         </p>

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "プライバシーポリシー · my-IDeal",
+  title: "プライバシーポリシー · via-mi",
   robots: { index: false, follow: false },
 };
 
@@ -10,8 +10,8 @@ export default function PrivacyPage() {
   return (
     <main className="wrap" style={{ paddingTop: 24, paddingBottom: 60 }}>
       <div className="top">
-        <Link className="logo" href="/">
-          my-IDeal<span className="dot">.</span>
+        <Link className="logo" href="/" aria-label="via-mi ホーム">
+          via-mi
         </Link>
       </div>
       <h1>プライバシーポリシー</h1>

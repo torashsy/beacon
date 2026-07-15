@@ -80,7 +80,7 @@ export function ProfileView({
   async function share() {
     if (typeof navigator.share === "function") {
       try {
-        await navigator.share({ title: `@${handle} · my-IDeal`, url: pageUrl() });
+        await navigator.share({ title: `@${handle} · via-mi`, url: pageUrl() });
       } catch {
         /* キャンセルは無視 */
       }

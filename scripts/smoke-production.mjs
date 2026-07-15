@@ -12,11 +12,11 @@ async function check(path, inspect) {
 
 await check("/api/health", async (_response, body) => {
   const health = JSON.parse(body);
-  if (health.ok !== true || health.service !== "my-IDeal") throw new Error("invalid health response");
+  if (health.ok !== true || health.service !== "via-mi") throw new Error("invalid health response");
 });
 
 await check("/", (response, body) => {
-  if (!body.includes("my-IDeal")) throw new Error("home marker missing");
+  if (!body.includes("via-mi")) throw new Error("home marker missing");
   if (body.includes("http://localhost:3000")) throw new Error("localhost metadata detected");
   if (!response.headers.get("content-security-policy")) throw new Error("CSP header missing");
 });

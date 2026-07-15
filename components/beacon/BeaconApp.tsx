@@ -714,8 +714,8 @@ export function BeaconApp() {
     return (
       <div className="wrap">
         <div className="top">
-          <button type="button" className="logo logoButton" onClick={goHome} aria-label="ホームへ戻る">
-            my-IDeal<span className="dot">.</span>
+          <button type="button" className="logo logoButton" onClick={goHome} aria-label="via-mi ホーム">
+            via-mi
           </button>
         </div>
       </div>
@@ -732,8 +732,8 @@ export function BeaconApp() {
     <>
       <div className="wrap">
         <div className="top">
-          <button type="button" className="logo logoButton" onClick={goHome} aria-label="ホームへ戻る">
-            my-IDeal<span className="dot">.</span>
+          <button type="button" className="logo logoButton" onClick={goHome} aria-label="via-mi ホーム">
+            via-mi
           </button>
           {session && overlay === "none" && saveStatus !== "idle" && (
             <span

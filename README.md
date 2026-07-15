@@ -1,4 +1,4 @@
-# my-IDeal
+# via-mi
 
 X(Twitter)風のUIで、**複数リンク**と**カレンダーメモ**をひとつの公開ページ
 （`/@{handle}`）にまとめる発信ツール。Next.js (App Router) + Supabase。

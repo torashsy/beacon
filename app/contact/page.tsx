@@ -45,7 +45,7 @@ export default function ContactPage() {
   return (
     <main className="wrap" style={{ paddingTop: 24, paddingBottom: 60 }}>
       <div className="top">
-        <Link className="logo" href="/">my-IDeal<span className="dot">.</span></Link>
+        <Link className="logo" href="/" aria-label="via-mi ホーム">via-mi</Link>
       </div>
       <h1>お問い合わせ・通報</h1>
       <div className="lead">返信が必要な場合のみメールアドレスを入力してください。</div>

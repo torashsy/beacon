@@ -49,14 +49,14 @@ export async function generateMetadata({
   params: Promise<Params>;
 }): Promise<Metadata> {
   const handle = normalizeHandleParam((await params).handle);
-  if (!handle) return { title: "my-IDeal", robots: NOINDEX };
+  if (!handle) return { title: "via-mi", robots: NOINDEX };
 
   const page = await loadPage(handle);
-  if (!page) return { title: "my-IDeal", robots: NOINDEX };
+  if (!page) return { title: "via-mi", robots: NOINDEX };
   const { profile } = page;
 
-  const title = `${profile.name || handle} · my-IDeal`;
-  const description = profile.bio || "my-IDeal のプロフィール";
+  const title = `${profile.name || handle} · via-mi`;
+  const description = profile.bio || "via-mi のプロフィール";
   return {
     title,
     description,
@@ -86,8 +86,8 @@ export default async function PublicPage({
     <>
     <main className="wrap" style={{ paddingTop: 8, paddingBottom: 40 }}>
       <div className="top">
-        <Link className="logo" href="/" aria-label="ホームへ戻る">
-          my-IDeal<span className="dot">.</span>
+        <Link className="logo" href="/" aria-label="via-mi ホーム">
+          via-mi
         </Link>
         <PublicBackButton />
       </div>
