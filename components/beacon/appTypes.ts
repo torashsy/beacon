@@ -18,7 +18,6 @@ export interface Me {
   channels: Channel[]; // 各要素は React key 用に id を必ず持たせる
   cal: CalMap;
   calLoaded: boolean;
-  clicks: Record<string, number>; // url → クリック数（本人のみ）
 }
 
 export type View = "auth" | "profile" | "follows" | "howto" | "public";

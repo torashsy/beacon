@@ -34,7 +34,6 @@ export function ProfileView({
   onSaveChannels,
   onSaveCal,
   onLoadCal,
-  onUploadThumb,
   toast,
 }: {
   me: Me;
@@ -46,7 +45,6 @@ export function ProfileView({
   onSaveChannels: (next: Channel[]) => Promise<boolean>;
   onSaveCal: (date: string, memo: string, pub: boolean) => Promise<boolean>;
   onLoadCal: () => void;
-  onUploadThumb: (file: File) => Promise<string>;
   toast: ToastFn;
 }) {
   const [tab, setTab] = useState<"links" | "cal">(focusSection ?? "links");
@@ -210,7 +208,6 @@ export function ProfileView({
             me={me}
             startAdding={focusSection === "links"}
             onSaveChannels={onSaveChannels}
-            onUploadThumb={onUploadThumb}
             toast={toast}
           />
         ) : (
@@ -322,13 +319,11 @@ function LinksPane({
   me,
   startAdding = false,
   onSaveChannels,
-  onUploadThumb,
   toast,
 }: {
   me: Me;
   startAdding?: boolean;
   onSaveChannels: (next: Channel[]) => Promise<boolean>;
-  onUploadThumb: (file: File) => Promise<string>;
   toast: ToastFn;
 }) {
   const chans = me.channels;
@@ -339,9 +334,6 @@ function LinksPane({
   const [url, setUrl] = useState("");
   const [label, setLabel] = useState("");
   const [desc, setDesc] = useState("");
-  const [img, setImg] = useState(""); // 個別サムネイルURL
-  const [imgBusy, setImgBusy] = useState(false);
-  const thumbInput = useRef<HTMLInputElement>(null);
 
   const isHeading = type === HEADING_TYPE;
 
@@ -352,7 +344,6 @@ function LinksPane({
     setUrl("");
     setLabel("");
     setDesc("");
-    setImg("");
   }
 
   function startEdit(c: Channel) {
@@ -361,22 +352,7 @@ function LinksPane({
     setUrl(c.url);
     setLabel(c.label);
     setDesc(c.descr);
-    setImg(c.img_url ?? "");
     setFormOpen(true);
-  }
-
-  async function pickThumb(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    setImgBusy(true);
-    try {
-      setImg(await onUploadThumb(file));
-    } catch {
-      toast("画像をアップロードできませんでした");
-    } finally {
-      setImgBusy(false);
-    }
   }
 
   // URLを貼った場合は選択中の種類よりURL判定を優先し、アイコンも即時更新する。
@@ -435,7 +411,6 @@ function LinksPane({
       url: normalized?.url ?? "",
       label: lb,
       descr: isHeading ? "" : desc.trim(),
-      img_url: isHeading ? "" : img,
     };
     const next: Channel[] = editingId
       ? chans.map((c) => (c.id === editingId ? { ...c, ...fields } : c))
@@ -488,7 +463,7 @@ function LinksPane({
                     ¶
                   </span>
                 ) : (
-                  <LinkThumb type={c.type} img={c.img_url} />
+                  <LinkThumb type={c.type} />
                 )}
                 <div
                   className="meta"
@@ -628,39 +603,6 @@ function LinksPane({
                 placeholder="例: DMはこちらが早いです"
                 maxLength={40}
               />
-              <label className="f">リンク画像（任意）</label>
-              <div className="fieldHint linkImageHint">
-                サービスアイコンの代わりに表示する画像です。
-              </div>
-              <input
-                ref={thumbInput}
-                type="file"
-                accept="image/*"
-                hidden
-                onChange={pickThumb}
-              />
-              <div
-                style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 4 }}
-              >
-                <LinkThumb type={type} img={img} />
-                <button
-                  type="button"
-                  className="pill line"
-                  disabled={imgBusy}
-                  onClick={() => thumbInput.current?.click()}
-                >
-                  {imgBusy ? "アップロード中…" : img ? "画像を変更" : "画像を選ぶ"}
-                </button>
-                {img && (
-                  <button
-                    type="button"
-                    className="pill line"
-                    onClick={() => setImg("")}
-                  >
-                    削除
-                  </button>
-                )}
-              </div>
             </>
           )}
           <button className="btn sig" onClick={submit}>

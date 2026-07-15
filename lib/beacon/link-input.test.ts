@@ -21,7 +21,7 @@ describe("normalizeLinkInput", () => {
   });
 
   it("lets a pasted URL override the selected platform", () => {
-    expect(normalizeLinkInput("https://instagram.com/my_ideal", "x")).toMatchObject({
+    expect(normalizeLinkInput("https://instagram.com/via_mi", "x")).toMatchObject({
       type: "instagram",
       source: "url",
     });
@@ -39,7 +39,7 @@ describe("normalizeLinkInput", () => {
 
   it("rejects invalid IDs and distinguishes IDs from known URLs", () => {
     expect(normalizeLinkInput("bad/id", "x")).toBeNull();
-    expect(isExplicitUrlInput("instagram.com/my_ideal")).toBe(true);
+    expect(isExplicitUrlInput("instagram.com/via_mi")).toBe(true);
     expect(normalizeLinkInput("ideal-shop.booth.pm", "booth")).toMatchObject({
       type: "booth",
       source: "url",

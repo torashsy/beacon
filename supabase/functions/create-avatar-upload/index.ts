@@ -1,7 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const BUCKET = "avatars";
-const ALLOWED_KINDS = new Set(["av", "bn", "thumb"]);
+const ALLOWED_KINDS = new Set(["av", "bn"]);
 
 function corsHeaders(request: Request): Record<string, string> {
   const origin = request.headers.get("origin") ?? "";

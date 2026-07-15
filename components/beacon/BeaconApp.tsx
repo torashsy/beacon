@@ -7,7 +7,6 @@ import {
   createSession,
   deleteAccount as rpcDeleteAccount,
   deleteSession,
-  getClicks,
   getMyFollows,
   getPrivateCal,
   getPublicPage,
@@ -20,7 +19,7 @@ import {
   verifyLogin,
 } from "@/lib/beacon/rpc";
 import { uploadImage } from "@/lib/beacon/storage";
-import type { CalMemo, Channel } from "@/lib/beacon/types";
+import type { Channel } from "@/lib/beacon/types";
 import { normalizeRecoveryCode } from "@/lib/beacon/format";
 import { addHandle, loadHandles, removeHandle } from "@/lib/beacon/accounts";
 import {
@@ -57,10 +56,6 @@ import { ProfileView } from "./ProfileView";
 import { ProfileEdit, type EditResult } from "./ProfileEdit";
 import { FollowsView } from "./FollowsView";
 import { HowtoView } from "./HowtoView";
-import {
-  PublicProfileCard,
-  type PublicCardData,
-} from "./PublicProfileCard";
 
 /**
  * Beacon クライアントアプリ本体。beacon.html の SPA を Next.js のクライアント
@@ -76,7 +71,7 @@ import {
  */
 
 type NavTab = "profile" | "follows" | "help";
-type Overlay = "none" | "auth" | "public";
+type Overlay = "none" | "auth";
 
 function NavIcon({ name }: { name: NavTab }) {
   const path =
@@ -90,13 +85,6 @@ function NavIcon({ name }: { name: NavTab }) {
       <path d={path} />
     </svg>
   );
-}
-
-function publicMemos(cal: CalMap): CalMemo[] {
-  return Object.entries(cal)
-    .filter(([, v]) => v.pub && v.memo)
-    .map(([d, v]) => ({ d, memo: v.memo }))
-    .sort((a, b) => (a.d < b.d ? -1 : 1));
 }
 
 function writeErrorMessage(e: unknown): string {
@@ -130,7 +118,6 @@ export function BeaconApp() {
       }).length,
     [follows, followStates],
   );
-  const [preview, setPreview] = useState<PublicCardData | null>(null);
 
   function openEditor(target: "profile" | "links" | "cal" = "profile") {
     setEditTarget(target);
@@ -237,15 +224,10 @@ export function BeaconApp() {
       // 含まれるので、非公開分だけ追加取得する。失敗時は calLoaded=false で遅延ロードへ。
       const cal: CalMap = {};
       let calLoaded = false;
-      let clicks: Record<string, number> = {};
       (page?.cal ?? []).forEach((e) => (cal[e.d] = { memo: e.memo, pub: true }));
       try {
-        const [privList, clickMap] = await Promise.all([
-          getPrivateCal(db, handle, pass),
-          getClicks(db, handle, pass).catch(() => ({})),
-        ]);
+        const privList = await getPrivateCal(db, handle, pass);
         privList.forEach((e) => (cal[e.d] = { memo: e.memo, pub: false }));
-        clicks = clickMap;
         calLoaded = true;
       } catch {
         calLoaded = false;
@@ -256,7 +238,6 @@ export function BeaconApp() {
         channels: ensureIds(page?.channels ?? []),
         cal,
         calLoaded,
-        clicks,
       };
     },
     [db],
@@ -404,7 +385,6 @@ export function BeaconApp() {
     setMe(null);
     setFollows(loadFollows(null));
     setEditing(false);
-    setPreview(null);
     clearStoredSession();
     clearTrustedDevice(); // 旧方式の保存が残っていれば併せて解除
     try {
@@ -551,14 +531,6 @@ export function BeaconApp() {
     [db, session, me, toast, logout],
   );
 
-  const uploadThumb = useCallback(
-    async (file: File): Promise<string> => {
-      if (!session) throw new Error("no session");
-      return uploadImage(db, session.handle, session.pass, "thumb", file);
-    },
-    [db, session],
-  );
-
   /** 復旧コードの再発行（要パスコード）。古いコードは無効になり新しいものだけ使える。 */
   const reissueRc = useCallback(async (): Promise<string> => {
     if (!session) throw new Error("no session");
@@ -665,17 +637,6 @@ export function BeaconApp() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navTab]);
 
-  const followSelf = useCallback(() => {
-    if (!me || !session) return;
-    const next = addFollow(
-      toSnapshot(me.profile, me.channels, publicMemos(me.cal)),
-      session.handle,
-    );
-    setFollows(next);
-    pushFollowsToServer(next);
-    toast("フォローしました");
-  }, [me, session, toast, pushFollowsToServer]);
-
   const onUnfollow = useCallback(
     (handle: string) => {
       const next = removeFollow(handle, session?.handle ?? null);
@@ -721,10 +682,6 @@ export function BeaconApp() {
       </div>
     );
   }
-
-  const selfFollowed = session
-    ? follows.some((f) => f.handle === session.handle)
-    : false;
 
   const showNav = true;
 
@@ -783,28 +740,6 @@ export function BeaconApp() {
           />
         )}
 
-        {/* 全画面: 公開プレビュー */}
-        {overlay === "public" && preview && (
-          <section className="view">
-            <button type="button" className="backlink" onClick={() => setOverlay("none")}>
-              ← 戻る
-            </button>
-            <PublicProfileCard
-              data={preview}
-              actions={
-                <button
-                  className="pill solid followAction"
-                  disabled={selfFollowed}
-                  onClick={followSelf}
-                >
-                  {selfFollowed ? "フォロー中" : "フォローする"}
-                </button>
-              }
-            />
-            <div className="previewLabel">公開ページのプレビュー</div>
-          </section>
-        )}
-
         {/* 通常モード: プロフィール / フォロー中 / 使い方 */}
         {overlay === "none" && navTab === "profile" && (
           session && me ? (
@@ -825,7 +760,6 @@ export function BeaconApp() {
                   onSaveChannels={persistChannels}
                   onSaveCal={persistCal}
                   onLoadCal={loadCal}
-                  onUploadThumb={uploadThumb}
                   toast={toast}
                 />
               </div>
@@ -838,7 +772,6 @@ export function BeaconApp() {
                   onSaveChannels={persistChannels}
                   onSaveCal={persistCal}
                   onLoadCal={loadCal}
-                  onUploadThumb={uploadThumb}
                   toast={toast}
                 />
             )
