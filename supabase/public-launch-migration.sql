@@ -1,10 +1,18 @@
 -- Public launch: contact triage and account suspension controls.
 
 alter table contact_submissions
-  add column if not exists status text not null default 'new'
-    check (status in ('new', 'reviewing', 'resolved', 'rejected')),
+  add column if not exists status text not null default 'new',
   add column if not exists admin_note text not null default '',
   add column if not exists handled_at timestamptz;
+
+-- Older installations used `closed`, which prevents the launch workflow's
+-- resolved/rejected states. Replace that generated constraint idempotently.
+alter table contact_submissions
+  drop constraint if exists contact_submissions_status_check;
+update contact_submissions set status = 'resolved' where status = 'closed';
+alter table contact_submissions
+  add constraint contact_submissions_status_check
+  check (status in ('new', 'reviewing', 'resolved', 'rejected'));
 
 create table if not exists account_moderation (
   handle text primary key references accounts(handle) on delete cascade,
@@ -53,8 +61,9 @@ revoke all on function set_account_suspension(text,boolean,text)
   from public, anon, authenticated;
 grant execute on function set_account_suspension(text,boolean,text) to service_role;
 
+drop function if exists set_contact_status(bigint,text,text);
 create or replace function set_contact_status(
-  p_id bigint,
+  p_id uuid,
   p_status text,
   p_note text default ''
 )
@@ -71,9 +80,9 @@ begin
     where id=p_id;
 end $$;
 
-revoke all on function set_contact_status(bigint,text,text)
+revoke all on function set_contact_status(uuid,text,text)
   from public, anon, authenticated;
-grant execute on function set_contact_status(bigint,text,text) to service_role;
+grant execute on function set_contact_status(uuid,text,text) to service_role;
 
 create or replace function get_public_page(p_handle text)
 returns jsonb language sql security definer stable set search_path = public as $$

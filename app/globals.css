@@ -65,6 +65,24 @@ body {
   text-indent: -9999px;
   mix-blend-mode: multiply;
 }
+
+.reportLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 12px;
+  text-decoration: none;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.reportLink:hover,
+.reportLink:focus-visible {
+  background: rgba(15, 159, 207, 0.08);
+  color: var(--ink);
+}
 .logo .dot {
   color: var(--em2);
 }
