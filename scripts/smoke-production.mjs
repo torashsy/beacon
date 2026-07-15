@@ -22,7 +22,50 @@ await check("/", (response, body) => {
   if (!csp) throw new Error("CSP header missing");
   if (csp.includes("'unsafe-eval'")) throw new Error("development CSP detected");
   if (!csp.includes("upgrade-insecure-requests")) throw new Error("production CSP incomplete");
+  const requiredHeaders = {
+    "x-content-type-options": "nosniff",
+    "x-frame-options": "SAMEORIGIN",
+    "referrer-policy": "strict-origin-when-cross-origin",
+  };
+  for (const [name, value] of Object.entries(requiredHeaders)) {
+    if (response.headers.get(name) !== value) throw new Error(`${name} header invalid`);
+  }
+  if (!response.headers.get("strict-transport-security")?.includes("max-age=63072000")) {
+    throw new Error("HSTS header invalid");
+  }
 });
+
+await check("/manifest.webmanifest", async (response, body) => {
+  if (!response.headers.get("content-type")?.includes("application/manifest+json")) {
+    throw new Error("manifest content type invalid");
+  }
+  const manifest = JSON.parse(body);
+  if (manifest.id !== "/" || manifest.start_url !== "/" || manifest.display !== "standalone") {
+    throw new Error("manifest fields invalid");
+  }
+  const icons = new Set((manifest.icons ?? []).map((icon) => icon.src));
+  if (!icons.has("/icon-192.png") || !icons.has("/icon-512.png")) {
+    throw new Error("install icons missing");
+  }
+});
+
+await check("/sw.js", (response, body) => {
+  if (!response.headers.get("content-type")?.includes("application/javascript")) {
+    throw new Error("service worker content type invalid");
+  }
+  if (!body.includes("skipWaiting") || !body.includes("fetch(event.request)")) {
+    throw new Error("service worker update behavior invalid");
+  }
+  if (body.includes("caches.open")) throw new Error("stale app cache detected");
+});
+
+for (const icon of ["/icon-192.png", "/icon-512.png", "/apple-touch-icon.png"]) {
+  await check(icon, (response) => {
+    if (!response.headers.get("content-type")?.includes("image/png")) {
+      throw new Error(`${icon}: invalid content type`);
+    }
+  });
+}
 
 await check("/contact", (_response, body) => {
   if (body.includes("my-ideal.example")) throw new Error("placeholder contact address detected");
