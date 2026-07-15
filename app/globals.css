@@ -68,7 +68,7 @@ body {
 .logoButton {
   padding: 0;
   border: 0;
-  background: transparent;
+  background-color: transparent;
   cursor: pointer;
 }
 .tag {
