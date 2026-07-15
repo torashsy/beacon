@@ -1,8 +1,4 @@
--- Remove launch features that no longer have a user-facing purpose.
-
-drop function if exists bump_click(text, text);
-drop function if exists get_clicks(text, text);
-drop table if exists link_clicks;
+-- Remove the unused per-link thumbnail while keeping private click analytics.
 
 alter table channels drop column if exists img_url;
 

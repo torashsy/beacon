@@ -476,6 +476,46 @@ grant execute on function delete_account(text,text)                             
 grant execute on function create_session(text,text)                                   to anon;
 grant execute on function delete_session(text,text)                                   to anon;
 
+-- ---- リンククリック数（本人だけが見られる簡易アナリティクス）----
+create table if not exists link_clicks (
+  handle text references accounts(handle) on delete cascade,
+  url    text not null,
+  n      bigint default 0,
+  primary key (handle, url)
+);
+alter table link_clicks enable row level security;
+revoke select on link_clicks from anon, authenticated;
+
+-- 実在する公開リンクだけを集計し、任意URLによる行の増殖を防ぐ。
+create or replace function bump_click(p_handle text, p_url text)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if length(coalesce(p_url,'')) > 2000 then return; end if;
+  if not exists (
+    select 1 from channels where handle = lower(p_handle) and url = p_url
+  ) then
+    return;
+  end if;
+  insert into link_clicks(handle, url, n)
+    values (lower(p_handle), p_url, 1)
+    on conflict (handle, url) do update set n = link_clicks.n + 1;
+end $$;
+
+create or replace function get_clicks(p_handle text, p_pass text)
+returns table(url text, n bigint)
+language plpgsql security definer set search_path = public as $$
+begin
+  if not _check_pass(p_handle, p_pass) then raise exception 'auth'; end if;
+  return query
+    select link_clicks.url, link_clicks.n
+    from link_clicks where handle = lower(p_handle);
+end $$;
+
+revoke all on function bump_click(text,text) from public, authenticated;
+revoke all on function get_clicks(text,text) from public, authenticated;
+grant execute on function bump_click(text,text) to anon;
+grant execute on function get_clicks(text,text) to anon;
+
 -- ---- Storage（画像用: avatars バケット）----
 -- パス規約: avatars/{handle}/{av|bn}-{timestamp}.jpg
 -- バケット作成と anon 書込ポリシーは storage スキーマ（supabase_storage_admin 所有）
