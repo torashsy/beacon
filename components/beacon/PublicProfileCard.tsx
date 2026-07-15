@@ -4,6 +4,7 @@ import { grad, HEADING_TYPE, typeMeta } from "@/lib/beacon/constants";
 import { fmtMd } from "@/lib/beacon/format";
 import { safeUrl } from "@/lib/beacon/safe";
 import { LinkThumb } from "./icons";
+import { TrackedLink } from "./TrackedLink";
 
 /**
  * 公開プロフィールの見た目（X風カード）。beacon.html の renderPublicFor を移植。
@@ -40,6 +41,8 @@ export function PublicProfileCard({
   actions,
   actionsClassName,
   headerActions,
+  trackHandle,
+  clickCounts,
 }: {
   data: PublicCardData;
   /** フォローボタン等、カード右上のアクション。 */
@@ -47,6 +50,10 @@ export function PublicProfileCard({
   actionsClassName?: string;
   /** カバー画像上に置く共有等のアクション。 */
   headerActions?: ReactNode;
+  /** 公開ページだけで指定し、リンククリックを集計する。 */
+  trackHandle?: string;
+  /** 本人画面だけで指定するURL別クリック数。 */
+  clickCounts?: Record<string, number>;
 }) {
   const { handle, profile, channels, pubcal } = data;
   const hasLinks = channels.some((c) => c.type !== HEADING_TYPE && c.status === "live");
@@ -97,20 +104,25 @@ export function PublicProfileCard({
               return null;
             }
             return (
-              <a
+              <TrackedLink
                 key={key}
                 className="plink"
                 href={safeUrl(c.url)}
-                target="_blank"
-                rel="noopener noreferrer"
+                rawUrl={c.url}
+                trackHandle={trackHandle}
               >
                 <LinkThumb type={c.type} />
                 <div className="pmeta">
                   <div className="lb2">{c.label || typeMeta(c.type).lb}</div>
                   {c.descr && <div className="ds">{c.descr}</div>}
+                  {clickCounts && (
+                    <div className="clickCount">
+                      {(clickCounts[c.url] ?? 0).toLocaleString("ja-JP")} クリック
+                    </div>
+                  )}
                 </div>
                 <span className="go">→</span>
-              </a>
+              </TrackedLink>
             );
           })
         ) : (

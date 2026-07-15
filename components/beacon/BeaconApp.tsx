@@ -7,6 +7,7 @@ import {
   createSession,
   deleteAccount as rpcDeleteAccount,
   deleteSession,
+  getClicks,
   getMyFollows,
   getPrivateCal,
   getPublicPage,
@@ -224,6 +225,7 @@ export function BeaconApp() {
       // 含まれるので、非公開分だけ追加取得する。失敗時は calLoaded=false で遅延ロードへ。
       const cal: CalMap = {};
       let calLoaded = false;
+      const clicksPromise = getClicks(db, handle, pass).catch(() => ({}));
       (page?.cal ?? []).forEach((e) => (cal[e.d] = { memo: e.memo, pub: true }));
       try {
         const privList = await getPrivateCal(db, handle, pass);
@@ -238,6 +240,7 @@ export function BeaconApp() {
         channels: ensureIds(page?.channels ?? []),
         cal,
         calLoaded,
+        clicks: await clicksPromise,
       };
     },
     [db],

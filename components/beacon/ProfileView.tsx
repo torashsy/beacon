@@ -136,6 +136,7 @@ export function ProfileView({
             channels: me.channels,
             pubcal: publicCal,
           }}
+          clickCounts={me.clicks}
           headerActions={
             <>
               <button className="circleAction headerCircleAction" onClick={share} aria-label="共有">

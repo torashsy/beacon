@@ -99,6 +99,7 @@ export default async function PublicPage({
           channels,
           pubcal: cal,
         }}
+        trackHandle={handle}
         actions={<FollowButton snapshot={snapshot} />}
       />
       <LegalFooter />
