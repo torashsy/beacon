@@ -4,7 +4,7 @@
  * 別ハンドル＝完全に独立した公開ページ（/@work, /@hobby）。スキーマ変更は不要。
  */
 
-const K_HANDLES = "beacon:handles:v1";
+const K_HANDLES = "via-mi:handles:v1";
 
 export function loadHandles(): string[] {
   if (typeof window === "undefined") return [];

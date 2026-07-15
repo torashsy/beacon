@@ -11,7 +11,7 @@
  * ボックス）がある場合のみ有効にする。
  */
 
-const K_TRUST = "beacon:trust:v1";
+const K_TRUST = "via-mi:trust:v1";
 
 interface TrustBlob {
   handle: string;

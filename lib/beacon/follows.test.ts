@@ -58,13 +58,6 @@ describe("account-scoped follow cache", () => {
     expect(loadFollows("bob")).toHaveLength(1);
   });
 
-  it("migrates the legacy shared cache to guest only", () => {
-    storage.setItem("beacon:myfollows:v1", JSON.stringify([snapshot("legacy_target")]));
-
-    expect(loadFollows(null).map((item) => item.handle)).toEqual(["legacy_target"]);
-    expect(loadFollows("alice")).toEqual([]);
-    expect(storage.getItem("beacon:myfollows:v1")).toBeNull();
-  });
 });
 
 describe("follow update detection", () => {

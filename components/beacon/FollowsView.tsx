@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ago } from "@/lib/beacon/format";
 import { HEADING_TYPE } from "@/lib/beacon/constants";
 import type { FollowSnapshot, FollowStatus } from "@/lib/beacon/follows";
@@ -28,10 +29,12 @@ export function FollowsView({
   loggedIn: boolean;
   onLoginPrompt: () => void;
 }) {
+  const router = useRouter();
   const [q, setQ] = useState("");
   const [found, setFound] = useState<{ handle: string; page: PublicPage } | null>(null);
   const [searching, setSearching] = useState(false);
   const [searchMessage, setSearchMessage] = useState("");
+  const [openingHandle, setOpeningHandle] = useState<string | null>(null);
   const query = q.trim().toLowerCase();
   const shown = follows.filter(
     (f) =>
@@ -43,6 +46,15 @@ export function FollowsView({
     const st = states[f.handle]?.state;
     return st === "new" || st === "changed" || st === "deleted";
   }).length;
+
+  useEffect(() => {
+    for (const follow of follows) router.prefetch(`/@${follow.handle}`);
+  }, [follows, router]);
+
+  function openProfile(handle: string) {
+    setOpeningHandle(handle);
+    router.push(`/@${handle}`);
+  }
 
   async function searchById(e: React.FormEvent) {
     e.preventDefault();
@@ -64,7 +76,10 @@ export function FollowsView({
       }
       if (!response.ok) throw new Error("search failed");
       const page = (await response.json()) as PublicPage | null;
-      if (page) setFound({ handle, page });
+      if (page) {
+        router.prefetch(`/@${handle}`);
+        setFound({ handle, page });
+      }
       else setSearchMessage("このIDのユーザーは見つかりませんでした");
     } catch {
       setSearchMessage("検索できませんでした。通信状況をご確認ください");
@@ -113,11 +128,11 @@ export function FollowsView({
           className="card userSearchResult"
           role="link"
           tabIndex={0}
-          onClick={() => window.location.assign(`/@${found.handle}`)}
+          onClick={() => openProfile(found.handle)}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
-              window.location.assign(`/@${found.handle}`);
+              openProfile(found.handle);
             }
           }}
         >
@@ -162,15 +177,15 @@ export function FollowsView({
               return (
                 <div
                   key={f.handle}
-                  className="frow"
+                  className={`frow${openingHandle === f.handle ? " is-opening" : ""}`}
                   role="link"
                   tabIndex={0}
-                  onClick={() => window.location.assign(`/@${f.handle}`)}
+                  onClick={() => openProfile(f.handle)}
                   onKeyDown={(e) => {
                     if ((e.target as HTMLElement).closest("button")) return;
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
-                      window.location.assign(`/@${f.handle}`);
+                      openProfile(f.handle);
                     }
                   }}
                 >

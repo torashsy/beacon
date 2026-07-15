@@ -809,6 +809,11 @@ textarea {
 .frow:hover {
   background: var(--ink);
 }
+.frow.is-opening {
+  background: var(--eml);
+  opacity: 0.72;
+  transition: background 80ms ease, opacity 80ms ease;
+}
 .frow:last-child {
   border-bottom: none;
 }

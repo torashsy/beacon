@@ -7,10 +7,9 @@ import { HEADING_TYPE } from "./constants";
  * 本人専用RPCでサーバー同期する。横断一覧・検索APIは作らない。
  */
 
-const K_LEGACY_FOLLOWS = "beacon:myfollows:v1";
-const K_FOLLOWS_PREFIX = "myideal:follows:v2:";
+const K_FOLLOWS_PREFIX = "via-mi:follows:v1:";
 /** ログイン中ハンドルの控え（方式a: パスコードは保存せずハンドルのみ）。 */
-export const K_HANDLE = "beacon:handle:v1";
+export const K_HANDLE = "via-mi:handle:v1";
 
 export interface FollowSnapshot {
   handle: string;
@@ -65,15 +64,7 @@ export function loadFollows(owner?: string | null): FollowSnapshot[] {
   if (typeof window === "undefined") return [];
   try {
     const key = ownerKey(owner);
-    let raw = window.localStorage.getItem(key);
-    // 旧単一キャッシュは特定アカウントへ混ぜず、ゲスト領域へ一度だけ移す。
-    if (!owner && !raw) {
-      raw = window.localStorage.getItem(K_LEGACY_FOLLOWS);
-      if (raw) {
-        window.localStorage.setItem(key, raw);
-        window.localStorage.removeItem(K_LEGACY_FOLLOWS);
-      }
-    }
+    const raw = window.localStorage.getItem(key);
     return raw ? (JSON.parse(raw) as FollowSnapshot[]) : [];
   } catch {
     return [];
