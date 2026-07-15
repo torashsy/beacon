@@ -2,8 +2,8 @@ import { expect, test } from "@playwright/test";
 
 test("public entry points and legal pages are reachable", async ({ page }) => {
   await page.goto("/");
-  await expect(page).toHaveTitle(/my-IDeal/);
-  await expect(page.getByText("my-IDeal", { exact: false }).first()).toBeVisible();
+  await expect(page).toHaveTitle(/via-mi/);
+  await expect(page.getByLabel("via-mi ホーム").first()).toBeVisible();
 
   for (const path of ["/terms", "/privacy", "/contact"] as const) {
     const response = await page.goto(path);
@@ -15,7 +15,7 @@ test("public entry points and legal pages are reachable", async ({ page }) => {
 test("health endpoint and production metadata are valid", async ({ request }) => {
   const health = await request.get("/api/health");
   expect(health.ok()).toBeTruthy();
-  expect(await health.json()).toMatchObject({ ok: true, service: "my-IDeal" });
+  expect(await health.json()).toMatchObject({ ok: true, service: "via-mi" });
 
   const home = await request.get("/");
   const html = await home.text();

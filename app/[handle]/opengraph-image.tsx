@@ -13,7 +13,7 @@ import { getSiteUrl } from "@/lib/site";
 
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
-export const alt = "my-IDeal profile";
+export const alt = "via-mi profile";
 
 const siteHost = (() => {
   try {
@@ -127,7 +127,7 @@ export default async function Image({
             color: "#0284C7",
           }}
         >
-          <span>my-IDeal</span>
+          <span>via-mi</span>
           <span style={{ color: "#7DD3FC" }}>.</span>
           <span
             style={{ fontSize: 26, fontWeight: 600, color: "#17242B", marginLeft: 18 }}

@@ -7,14 +7,18 @@ const siteUrl = getSiteUrl();
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  applicationName: "my-IDeal",
+  applicationName: "via-mi",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "my-IDeal",
+    title: "via-mi",
   },
-  title: "my-IDeal — あなたのSNS、全部ひとつに。",
+  title: "via-mi — あなたのSNS、全部ひとつに。",
+  icons: {
+    icon: "/via-mi-icon.jpg",
+    apple: "/via-mi-icon.jpg",
+  },
   description:
     "X・Instagram・LINEなどの連絡先とイベント予定をひとつの公開ページに。メール不要、IDとパスコードだけ。",
   alternates: { canonical: "/" },

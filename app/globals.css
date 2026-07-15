@@ -1,5 +1,5 @@
 /*
- * my-IDeal デザイントークン + コンポーネントスタイル。
+ * via-mi デザイントークン + コンポーネントスタイル。
  * reference/beacon.html の <style> ブロックをそのまま移植し、各コンポーネントが
  * className でこれらを参照する（Next の標準構成に合わせグローバル1枚に集約）。
  */
@@ -48,11 +48,19 @@ body {
   padding: calc(14px + env(safe-area-inset-top)) 4px 10px;
 }
 .logo {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-weight: 800;
-  font-size: 21px;
-  color: var(--emd);
-  letter-spacing: -0.02em;
+  display: block;
+  flex: 0 0 132px;
+  width: 132px;
+  height: 42px;
+  overflow: hidden;
+  background-image: url("/via-mi-logo.jpg");
+  background-repeat: no-repeat;
+  background-size: 167px 251px;
+  background-position: -18px -96px;
+  color: transparent;
+  font-size: 0;
+  text-indent: -9999px;
+  mix-blend-mode: multiply;
 }
 .logo .dot {
   color: var(--em2);
@@ -1575,7 +1583,6 @@ textarea:focus-visible {
 
 @media (max-width: 380px) {
   .wrap { padding-left: 12px; padding-right: 12px; }
-  .logo { font-size: 19px; }
   .tag { padding-inline: 10px; font-size: 10.5px; }
   .card { padding: 15px; }
   .xpane { padding-inline: 12px; }
