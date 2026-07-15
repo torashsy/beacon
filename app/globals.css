@@ -17,6 +17,9 @@
   --ink: #f0f9ff;
   --radius: 14px;
   --shadow: 0 1px 3px rgba(15, 54, 78, 0.08);
+  --motion-quick: 100ms;
+  --motion-ui: 170ms;
+  --ease-ui: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 * {
   box-sizing: border-box;
@@ -122,12 +125,12 @@ h1 {
   font-weight: 500;
 }
 .view {
-  animation: fade 0.25s ease;
+  animation: view-in var(--motion-ui) var(--ease-ui);
 }
-@keyframes fade {
+@keyframes view-in {
   from {
-    opacity: 0;
-    transform: translateY(5px);
+    opacity: 0.72;
+    transform: translateY(3px);
   }
   to {
     opacity: 1;
@@ -291,6 +294,9 @@ h1 {
   background: none;
   font-family: inherit;
   position: relative;
+  transition: color var(--motion-ui) var(--ease-ui),
+    background-color var(--motion-quick) ease,
+    transform var(--motion-quick) var(--ease-ui);
 }
 .xtab:hover {
   background: var(--ink);
@@ -308,6 +314,11 @@ h1 {
   height: 4px;
   border-radius: 99px;
   background: var(--em);
+  animation: tab-underline var(--motion-ui) var(--ease-ui);
+}
+@keyframes tab-underline {
+  from { opacity: 0; transform: translateX(-50%) scaleX(0.45); }
+  to { opacity: 1; transform: translateX(-50%) scaleX(1); }
 }
 .xpane {
   padding: 16px 16px 18px;
@@ -591,8 +602,15 @@ textarea {
 .btn:active:not(:disabled),
 .pill:active:not(:disabled),
 .tag:active,
-.nav .ni:active {
-  transform: scale(0.98);
+.nav .ni:active,
+.circleAction:active,
+.homeQuickAction:active,
+.calnav:active,
+.unf:active,
+.publicBack:active,
+.backlink:active,
+.xtab:active {
+  transform: scale(0.96);
 }
 .btn:disabled {
   opacity: 0.45;
@@ -796,6 +814,19 @@ textarea {
   background: var(--eml);
   opacity: 0.72;
   transition: background 80ms ease, opacity 80ms ease;
+}
+.frow,
+.userSearchResult,
+.plink {
+  transition: background-color var(--motion-quick) ease,
+    opacity var(--motion-quick) ease,
+    transform var(--motion-quick) var(--ease-ui);
+}
+.frow:active,
+.userSearchResult:active,
+.plink:active {
+  transform: scale(0.992);
+  background: var(--ink);
 }
 .frow:last-child {
   border-bottom: none;
@@ -1462,8 +1493,24 @@ textarea {
   padding: 5px 4px;
   border-radius: 14px;
   touch-action: manipulation;
-  transition: color 0.15s, background 0.15s, transform 0.1s;
+  transition: color var(--motion-ui) var(--ease-ui),
+    transform var(--motion-quick) var(--ease-ui);
   text-decoration: none;
+  position: relative;
+  isolation: isolate;
+}
+.nav .ni::before {
+  content: "";
+  position: absolute;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--eml);
+  opacity: 0;
+  transform: scale(0.72);
+  transition: opacity var(--motion-ui) var(--ease-ui),
+    transform var(--motion-ui) var(--ease-ui);
+  z-index: -1;
 }
 .nav .ni .i {
   font-size: 20px;
@@ -1474,11 +1521,28 @@ textarea {
 }
 .nav .ni.on {
   color: var(--emd);
-  background: var(--eml);
+  background: transparent;
+}
+.nav .ni.on::before {
+  opacity: 1;
+  transform: scale(1);
+  animation: nav-halo var(--motion-ui) var(--ease-ui);
 }
 .nav .ni.on .i {
   filter: none;
   opacity: 1;
+}
+.nav .ni.on .navIcon {
+  animation: nav-pop 200ms var(--ease-ui);
+}
+@keyframes nav-pop {
+  0% { transform: scale(0.82); }
+  70% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+@keyframes nav-halo {
+  from { opacity: 0; transform: scale(0.68); }
+  to { opacity: 1; transform: scale(1); }
 }
 .toast {
   position: fixed;
@@ -1493,7 +1557,8 @@ textarea {
   font-size: 13px;
   opacity: 0;
   pointer-events: none;
-  transition: 0.3s;
+  transition: opacity var(--motion-ui) var(--ease-ui),
+    transform var(--motion-ui) var(--ease-ui);
   z-index: 50;
   width: max-content;
   max-width: calc(100% - 32px);
@@ -1558,6 +1623,14 @@ textarea {
   font: inherit;
   font-weight: 700;
   cursor: pointer;
+}
+
+:where(.circleAction, .homeQuickAction, .calnav, .unf, .publicBack, .backlink) {
+  transition: transform var(--motion-quick) var(--ease-ui),
+    background-color var(--motion-quick) ease,
+    border-color var(--motion-quick) ease,
+    color var(--motion-quick) ease,
+    opacity var(--motion-quick) ease;
 }
 
 button:focus-visible,
