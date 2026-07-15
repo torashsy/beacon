@@ -1,6 +1,8 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const SYNTHETIC_DOMAIN = "passkey.via-mi.invalid";
+// WebAuthnのaccount nameはAuthユーザーのメールとしてiOSに表示される。
+// UUIDではなく公開IDを使い、OSのパスキー確認画面を短く分かりやすくする。
+const SYNTHETIC_DOMAIN = "id.via-mi.com";
 
 function corsHeaders(request: Request): Record<string, string> {
   const origin = request.headers.get("origin") ?? "";
@@ -71,13 +73,17 @@ Deno.serve(async (request) => {
     return json(request, { error: message.includes("taken") ? "taken" : "not allowed" }, status);
   }
 
-  const email = `vm_${crypto.randomUUID().replaceAll("-", "")}@${SYNTHETIC_DOMAIN}`;
+  const email = `${handle}@${SYNTHETIC_DOMAIN}`;
   const { data, error } = await admin.auth.admin.generateLink({
     type: "signup",
     email,
     password: randomSecret(),
     options: {
-      data: { requested_handle: handle, via_mi_synthetic: true },
+      data: {
+        name: `@${handle}`,
+        requested_handle: handle,
+        via_mi_synthetic: true,
+      },
       redirectTo: "https://via-mi.com",
     },
   });

@@ -24,6 +24,7 @@
 - `auth-finalization-migration.sql`
 - `remove-unused-link-thumbnails.sql`
 - `passkey-auth-migration.sql`
+- `passkey-label-migration.sql`
 - `create-avatar-upload` Edge Function
 - `create-passkey-user` Edge Function（Verify JWT off）
 
