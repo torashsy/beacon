@@ -25,7 +25,7 @@
   --ease-ui: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-spring: cubic-bezier(0.22, 1.32, 0.36, 1);
   --ease-pull-follow: cubic-bezier(0.2, 0.75, 0.25, 1);
-  --ease-pull-settle: cubic-bezier(0.22, 1.08, 0.36, 1);
+  --ease-pull-settle: cubic-bezier(0.22, 1, 0.36, 1);
 }
 * {
   box-sizing: border-box;

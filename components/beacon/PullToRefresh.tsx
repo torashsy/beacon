@@ -82,8 +82,8 @@ export function PullToRefresh({
 
       refreshingRef.current = true;
       setRefreshing(true);
-      distanceRef.current = HOLD_DISTANCE;
-      setDistance(HOLD_DISTANCE);
+      distanceRef.current = 0;
+      setDistance(0);
       const started = performance.now();
       void Promise.resolve(onRefreshRef.current()).catch(() => {}).finally(() => {
         const remaining = Math.max(0, MIN_SPIN_TIME - (performance.now() - started));
@@ -115,7 +115,8 @@ export function PullToRefresh({
   const ready = distance >= REFRESH_DISTANCE;
   const progress = Math.min(distance / REFRESH_DISTANCE, 1);
   const phase = refreshing ? "refreshing" : ready ? "ready" : dragging ? "dragging" : "idle";
-  const indicatorOffset = Math.max(-38, Math.min(12, distance - 46));
+  const indicatorDistance = refreshing ? HOLD_DISTANCE : distance;
+  const indicatorOffset = Math.max(-38, Math.min(12, indicatorDistance - 46));
 
   return (
     <>

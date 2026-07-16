@@ -160,7 +160,6 @@ test("pulling down from the top offers a refresh", async ({ page }) => {
   await expect(page.locator(".pullRefresh")).not.toHaveClass(/show/);
   await expect(page.locator(".pullRefreshSurface")).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
 
-  await page.goto("/");
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.evaluate(() => {
     window.scrollTo(0, 0);
@@ -184,6 +183,12 @@ test("pulling down from the top offers a refresh", async ({ page }) => {
   await expect(page.locator(".pullRefresh")).toHaveAttribute("aria-label", "更新中");
   await expect(page.locator(".pullRefreshSpinner")).toBeVisible();
   await expect(page.locator(".pullRefreshSurface")).toHaveClass(/refreshing/);
+  await expect(page.locator(".pullRefreshSurface")).toHaveCSS(
+    "transform",
+    "matrix(1, 0, 0, 1, 0, 0)",
+    { timeout: 500 },
+  );
+  await expect(page.locator(".pullRefreshSpinner")).toBeVisible();
   const spinnerBefore = await page.locator(".pullRefreshSpinner").evaluate(
     (element) => getComputedStyle(element).transform,
   );
