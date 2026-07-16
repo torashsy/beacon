@@ -137,11 +137,11 @@ test("pulling down from the top offers a refresh", async ({ page }) => {
     "transition-timing-function",
     "cubic-bezier(0.2, 0.75, 0.25, 1)",
   );
-  const pulledTransform = await page.locator(".pullRefreshSurface").evaluate(
-    (element) => getComputedStyle(element).transform,
-  );
-  expect(pulledTransform).not.toBe("none");
-  expect(pulledTransform).not.toBe("matrix(1, 0, 0, 1, 0, 0)");
+  await expect.poll(
+    () => page.locator(".pullRefreshSurface").evaluate(
+      (element) => new DOMMatrix(getComputedStyle(element).transform).m42,
+    ),
+  ).toBeGreaterThan(0);
   const regularPullY = await page.locator(".pullRefreshSurface").evaluate(
     (element) => new DOMMatrix(getComputedStyle(element).transform).m42,
   );
@@ -160,7 +160,6 @@ test("pulling down from the top offers a refresh", async ({ page }) => {
   await expect(page.locator(".pullRefresh")).not.toHaveClass(/show/);
   await expect(page.locator(".pullRefreshSurface")).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
 
-  await page.goto("/");
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.evaluate(() => {
     window.scrollTo(0, 0);
@@ -184,6 +183,12 @@ test("pulling down from the top offers a refresh", async ({ page }) => {
   await expect(page.locator(".pullRefresh")).toHaveAttribute("aria-label", "更新中");
   await expect(page.locator(".pullRefreshSpinner")).toBeVisible();
   await expect(page.locator(".pullRefreshSurface")).toHaveClass(/refreshing/);
+  await expect(page.locator(".pullRefreshSurface")).toHaveCSS(
+    "transform",
+    "matrix(1, 0, 0, 1, 0, 0)",
+    { timeout: 500 },
+  );
+  await expect(page.locator(".pullRefreshSpinner")).toBeVisible();
   const spinnerBefore = await page.locator(".pullRefreshSpinner").evaluate(
     (element) => getComputedStyle(element).transform,
   );
