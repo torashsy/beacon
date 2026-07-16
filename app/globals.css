@@ -93,8 +93,17 @@ body {
 }
 .pullRefreshSpinner {
   animation: pullRefreshSpin .62s linear infinite;
+  will-change: transform;
+}
+.pullRefresh.ready .pullRefreshProgress {
+  animation: pullRefreshArmed .78s linear infinite;
+  will-change: transform;
 }
 @keyframes pullRefreshSpin { to { transform: rotate(360deg); } }
+@keyframes pullRefreshArmed {
+  from { transform: rotate(260deg) scale(1); }
+  to { transform: rotate(620deg) scale(1); }
+}
 .pullRefreshSurface {
   min-height: 100vh;
   transition: transform 360ms var(--ease-spring);
@@ -1912,6 +1921,11 @@ textarea:focus-visible {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+  .pullRefreshSpinner,
+  .pullRefresh.ready .pullRefreshProgress {
+    animation-duration: .9s !important;
+    animation-iteration-count: infinite !important;
   }
 }
 .emojis {
