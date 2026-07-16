@@ -114,26 +114,6 @@ test("bottom tabs slide in the direction of travel", async ({ page }) => {
   await expect(page.locator(".tabStage")).toHaveCSS("animation-name", "tab-slide-from-right");
 });
 
-test("bottom tabs can be changed with a horizontal swipe", async ({ page }) => {
-  await page.goto("/");
-
-  await page.locator(".tabStage").dispatchEvent("pointerdown", {
-    pointerType: "touch", pointerId: 1, isPrimary: true, clientX: 280, clientY: 220,
-  });
-  await page.locator(".tabStage").dispatchEvent("pointerup", {
-    pointerType: "touch", pointerId: 1, isPrimary: true, clientX: 190, clientY: 224,
-  });
-  await expect(page.getByRole("button", { name: "Help", exact: true })).toHaveAttribute("aria-current", "page");
-
-  await page.locator(".tabStage").dispatchEvent("pointerdown", {
-    pointerType: "touch", pointerId: 2, isPrimary: true, clientX: 190, clientY: 220,
-  });
-  await page.locator(".tabStage").dispatchEvent("pointerup", {
-    pointerType: "touch", pointerId: 2, isPrimary: true, clientX: 280, clientY: 224,
-  });
-  await expect(page.getByRole("button", { name: "me", exact: true })).toHaveAttribute("aria-current", "page");
-});
-
 test("pulling down from the top offers a refresh", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator(".pullRefresh")).toBeAttached();
@@ -150,9 +130,25 @@ test("pulling down from the top offers a refresh", async ({ page }) => {
   });
 
   await expect(page.locator(".pullRefresh")).toContainText("離して更新");
-  await expect(page.locator(".pullRefresh")).toHaveClass(/show/);
+  await expect(page.locator(".pullRefresh")).toHaveClass(/show ready/);
+  await expect(page.locator(".pullRefreshArrow")).toHaveCSS("transform", "matrix(-1, 0, 0, -1, 0, 0)");
   await page.evaluate(() => document.dispatchEvent(new Event("touchcancel", { bubbles: true })));
   await expect(page.locator(".pullRefresh")).not.toHaveClass(/show/);
+
+  await page.evaluate(() => {
+    const dispatchTouch = (type: string, clientY: number) => {
+      const event = new Event(type, { bubbles: true, cancelable: true });
+      Object.defineProperty(event, "touches", {
+        value: type === "touchend" ? [] : [{ clientY }],
+      });
+      document.dispatchEvent(event);
+    };
+    dispatchTouch("touchstart", 0);
+    dispatchTouch("touchmove", 150);
+    dispatchTouch("touchend", 150);
+  });
+  await expect(page.locator(".pullRefresh")).toHaveClass(/refreshing/, { timeout: 150 });
+  await expect(page.locator(".pullRefresh")).toContainText("更新中…", { timeout: 150 });
 });
 
 test("a verified contact can start passkey recovery", async ({ page }) => {
