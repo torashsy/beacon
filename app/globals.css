@@ -54,30 +54,53 @@ body {
   z-index: 80;
   display: flex;
   align-items: center;
-  gap: 6px;
-  min-height: 34px;
-  padding: 5px 12px;
+  gap: 7px;
+  min-height: 36px;
+  padding: 6px 13px 6px 9px;
   border: 1px solid var(--border);
   border-radius: 999px;
   background: rgba(255, 255, 255, .96);
   color: var(--muted);
-  box-shadow: 0 5px 18px rgba(15, 54, 78, .14);
+  box-shadow: 0 6px 20px rgba(15, 54, 78, .16);
   font-size: 11px;
   font-weight: 700;
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--motion-quick) var(--ease-state),
-    transform var(--motion-press) var(--ease-state);
+    transform 180ms var(--ease-ui),
+    border-color var(--motion-quick) var(--ease-state),
+    box-shadow var(--motion-quick) var(--ease-state);
+  will-change: transform, opacity;
 }
 .pullRefresh.show { opacity: 1; }
-.pullRefreshArrow { color: var(--emd); font-size: 15px; line-height: 1; }
+.pullRefresh.dragging { transition-duration: 60ms, 0ms, 90ms, 90ms; }
+.pullRefresh.ready {
+  border-color: rgba(56, 189, 248, .55);
+  box-shadow: 0 7px 22px rgba(2, 132, 199, .2);
+}
+.pullRefresh.refreshing {
+  color: var(--emd);
+  transition-duration: 120ms, 180ms, 90ms, 90ms;
+}
+.pullRefreshArrow {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  fill: none;
+  stroke: var(--emd);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transform-origin: center;
+}
 .pullRefreshSpinner {
-  width: 14px;
-  height: 14px;
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
   border: 2px solid var(--border);
   border-top-color: var(--emd);
   border-radius: 50%;
-  animation: pullRefreshSpin .7s linear infinite;
+  animation: pullRefreshSpin .62s linear infinite;
 }
 @keyframes pullRefreshSpin { to { transform: rotate(360deg); } }
 .top {
@@ -185,8 +208,6 @@ h1 {
 }
 .tabStage {
   min-width: 0;
-  touch-action: pan-y;
-  overscroll-behavior-x: contain;
 }
 .tabStage .view {
   animation: none;
