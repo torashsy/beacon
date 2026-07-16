@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
   createPasskeySession,
@@ -73,6 +80,11 @@ type Overlay = "none" | "auth";
 
 const NAV_ORDER: NavTab[] = ["follows", "profile", "help"];
 
+function blocksTabSwipe(target: EventTarget | null) {
+  return target instanceof Element
+    && Boolean(target.closest("button, a, input, textarea, select, [contenteditable='true']"));
+}
+
 function publicChannelsSignature(channels: Channel[]) {
   return JSON.stringify(channels.filter((channel) => channel.status === "live").map((channel) => ({
     type: channel.type,
@@ -120,6 +132,7 @@ export function BeaconApp() {
   const [recoveryHighlighted, setRecoveryHighlighted] = useState(false);
   const recoverySetupRef = useRef<HTMLDivElement | null>(null);
   const recoveryHighlightTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tabSwipeStart = useRef<{ x: number; y: number; at: number; pointerId: number } | null>(null);
   const [follows, setFollows] = useState<FollowSnapshot[]>([]);
   const [followStates, setFollowStates] = useState<
     Record<string, FollowStatus>
@@ -741,6 +754,32 @@ export function BeaconApp() {
     setOverlay("none");
   }
 
+  function startTabSwipe(event: ReactPointerEvent<HTMLDivElement>) {
+    if (editing || event.pointerType === "mouse" || !event.isPrimary || blocksTabSwipe(event.target)) return;
+    tabSwipeStart.current = {
+      x: event.clientX,
+      y: event.clientY,
+      at: performance.now(),
+      pointerId: event.pointerId,
+    };
+  }
+
+  function finishTabSwipe(event: ReactPointerEvent<HTMLDivElement>) {
+    const start = tabSwipeStart.current;
+    tabSwipeStart.current = null;
+    if (!start || start.pointerId !== event.pointerId) return;
+    const dx = event.clientX - start.x;
+    const dy = event.clientY - start.y;
+    if (
+      performance.now() - start.at > 650
+      || Math.abs(dx) < 44
+      || Math.abs(dx) < Math.abs(dy) * 1.25
+    ) return;
+    const current = NAV_ORDER.indexOf(navTab);
+    const next = current + (dx < 0 ? 1 : -1);
+    if (next >= 0 && next < NAV_ORDER.length) goNav(NAV_ORDER[next]);
+  }
+
   function goRecoverySetup() {
     goNav("help");
     setRecoveryFocusRequest((request) => request + 1);
@@ -846,7 +885,13 @@ export function BeaconApp() {
 
         {/* 通常モード: プロフィール / フォロー中 / 使い方 */}
         {overlay === "none" && (
-          <div key={navTab} className={`tabStage ${navDirection}`}>
+          <div
+            key={navTab}
+            className={`tabStage ${navDirection}`}
+            onPointerDown={startTabSwipe}
+            onPointerUp={finishTabSwipe}
+            onPointerCancel={() => { tabSwipeStart.current = null; }}
+          >
         {navTab === "profile" && (
           session && me ? (
             editing ? (
