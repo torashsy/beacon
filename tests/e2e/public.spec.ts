@@ -142,6 +142,20 @@ test("pulling down from the top offers a refresh", async ({ page }) => {
   );
   expect(pulledTransform).not.toBe("none");
   expect(pulledTransform).not.toBe("matrix(1, 0, 0, 1, 0, 0)");
+  const regularPullY = await page.locator(".pullRefreshSurface").evaluate(
+    (element) => new DOMMatrix(getComputedStyle(element).transform).m42,
+  );
+  await page.evaluate(() => {
+    const event = new Event("touchmove", { bubbles: true, cancelable: true });
+    Object.defineProperty(event, "touches", { value: [{ clientY: 600 }] });
+    document.dispatchEvent(event);
+  });
+  await page.waitForTimeout(100);
+  const deepPullY = await page.locator(".pullRefreshSurface").evaluate(
+    (element) => new DOMMatrix(getComputedStyle(element).transform).m42,
+  );
+  expect(deepPullY).toBeGreaterThan(regularPullY);
+  expect(deepPullY).toBeLessThan(118);
   await page.evaluate(() => document.dispatchEvent(new Event("touchcancel", { bubbles: true })));
   await expect(page.locator(".pullRefresh")).not.toHaveClass(/show/);
   await expect(page.locator(".pullRefreshSurface")).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
