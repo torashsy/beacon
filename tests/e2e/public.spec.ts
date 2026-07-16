@@ -114,6 +114,26 @@ test("bottom tabs slide in the direction of travel", async ({ page }) => {
   await expect(page.locator(".tabStage")).toHaveCSS("animation-name", "tab-slide-from-right");
 });
 
+test("bottom tabs can be changed with a horizontal swipe", async ({ page }) => {
+  await page.goto("/");
+
+  await page.locator(".tabStage").dispatchEvent("pointerdown", {
+    pointerType: "touch", pointerId: 1, isPrimary: true, clientX: 280, clientY: 220,
+  });
+  await page.locator(".tabStage").dispatchEvent("pointerup", {
+    pointerType: "touch", pointerId: 1, isPrimary: true, clientX: 190, clientY: 224,
+  });
+  await expect(page.getByRole("button", { name: "Help", exact: true })).toHaveAttribute("aria-current", "page");
+
+  await page.locator(".tabStage").dispatchEvent("pointerdown", {
+    pointerType: "touch", pointerId: 2, isPrimary: true, clientX: 190, clientY: 220,
+  });
+  await page.locator(".tabStage").dispatchEvent("pointerup", {
+    pointerType: "touch", pointerId: 2, isPrimary: true, clientX: 280, clientY: 224,
+  });
+  await expect(page.getByRole("button", { name: "me", exact: true })).toHaveAttribute("aria-current", "page");
+});
+
 test("pulling down from the top offers a refresh", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator(".pullRefresh")).toBeAttached();

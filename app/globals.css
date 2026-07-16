@@ -185,6 +185,8 @@ h1 {
 }
 .tabStage {
   min-width: 0;
+  touch-action: pan-y;
+  overscroll-behavior-x: contain;
 }
 .tabStage .view {
   animation: none;
