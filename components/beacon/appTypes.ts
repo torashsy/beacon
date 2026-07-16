@@ -22,6 +22,8 @@ export interface Me {
   passkeyLinked: boolean;
   recoveryVerified: boolean;
   recoveryKind: "email" | "phone" | "email+phone" | null;
+  recoveryEmailMasked: string | null;
+  recoveryPhoneMasked: string | null;
 }
 
 export type View = "auth" | "profile" | "follows" | "howto" | "public";

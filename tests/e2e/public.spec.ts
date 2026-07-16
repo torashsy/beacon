@@ -99,5 +99,9 @@ test("a verified contact can start passkey recovery", async ({ page }) => {
   await expect(page.getByRole("button", { name: "メール", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "電話番号", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "確認メールを送る", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "電話番号", exact: true }).click();
+  await expect(page.getByLabel("国番号", { exact: true })).toHaveValue("81");
+  await expect(page.getByLabel("電話番号", { exact: true })).toHaveAttribute("placeholder", "090 1234 5678");
+  await expect(page.getByRole("button", { name: "確認コードを送る", exact: true })).toBeDisabled();
   await expect(page.locator('input[type="password"]')).toHaveCount(0);
 });
