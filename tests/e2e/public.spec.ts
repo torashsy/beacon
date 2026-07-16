@@ -96,12 +96,8 @@ test("a verified contact can start passkey recovery", async ({ page }) => {
   await page.getByRole("button", { name: "パスキーを使えない場合", exact: true }).click();
 
   await expect(page.getByRole("heading", { name: "アカウントを復旧", exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "メール", exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "電話番号", exact: true })).toBeVisible();
+  await expect(page.getByLabel("メールアドレス", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "確認メールを送る", exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "電話番号", exact: true }).click();
-  await expect(page.getByLabel("国番号", { exact: true })).toHaveValue("81");
-  await expect(page.getByLabel("電話番号", { exact: true })).toHaveAttribute("placeholder", "090 1234 5678");
-  await expect(page.getByRole("button", { name: "確認コードを送る", exact: true })).toBeDisabled();
+  await expect(page.getByText("電話番号", { exact: true })).toHaveCount(0);
   await expect(page.locator('input[type="password"]')).toHaveCount(0);
 });

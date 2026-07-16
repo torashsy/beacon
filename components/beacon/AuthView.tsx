@@ -3,11 +3,8 @@
 import { useState } from "react";
 import { cleanHandle } from "@/lib/beacon/format";
 import { authErrorMessage, type ToastFn } from "./appTypes";
-import { normalizePhoneNumber } from "@/lib/beacon/phone";
-import { PhoneNumberFields } from "./PhoneNumberFields";
 
 type Pane = "create" | "login" | "legacy" | "recover";
-type RecoveryMethod = "email" | "phone";
 
 export function AuthView({
   initialHandle,
@@ -16,7 +13,6 @@ export function AuthView({
   onLogin,
   onLegacyMigrate,
   onRecoverySend,
-  onRecoveryVerify,
   onRecoveryComplete,
   recoverySessionReady = false,
   onBack,
@@ -27,8 +23,7 @@ export function AuthView({
   onCreate: (handle: string) => Promise<void>;
   onLogin: () => Promise<void>;
   onLegacyMigrate: (handle: string, passcode: string) => Promise<void>;
-  onRecoverySend: (method: RecoveryMethod, destination: string) => Promise<void>;
-  onRecoveryVerify: (method: RecoveryMethod, destination: string, code: string) => Promise<void>;
+  onRecoverySend: (destination: string) => Promise<void>;
   onRecoveryComplete: () => Promise<void>;
   recoverySessionReady?: boolean;
   onBack?: () => void;
@@ -37,16 +32,11 @@ export function AuthView({
   const [pane, setPane] = useState<Pane>(initialPane);
   const [handleInput, setHandleInput] = useState(initialHandle);
   const [legacyPasscode, setLegacyPasscode] = useState("");
-  const [recoveryMethod, setRecoveryMethod] = useState<RecoveryMethod>("email");
   const [recoveryDestination, setRecoveryDestination] = useState("");
-  const [recoveryCountryCode, setRecoveryCountryCode] = useState("81");
-  const [recoveryNationalNumber, setRecoveryNationalNumber] = useState("");
   const [recoveryPending, setRecoveryPending] = useState(false);
-  const [recoveryCode, setRecoveryCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [hint, setHint] = useState("");
   const handle = cleanHandle(handleInput);
-  const recoveryPhone = normalizePhoneNumber(recoveryCountryCode, recoveryNationalNumber);
   const supported = typeof window === "undefined" || "PublicKeyCredential" in window;
 
   async function run(action: () => Promise<void>) {
@@ -100,7 +90,7 @@ export function AuthView({
         <button type="button" className="backlink" onClick={() => setPane("login")}>← ログインに戻る</button>
         <h1>アカウントを復旧</h1>
         <div className="card">
-          <p className="lead">認証済みの連絡先で確認し、この端末に新しいパスキーを登録します。</p>
+          <p className="lead">認証済みのメールアドレスで確認し、この端末に新しいパスキーを登録します。</p>
           {recoverySessionReady ? (
             <>
               <div className="hint ok">メールアドレスを確認できました。</div>
@@ -111,72 +101,32 @@ export function AuthView({
             </>
           ) : (
             <>
-          <div className="methodTabs" role="tablist" aria-label="復旧方法">
-            <button type="button" className={recoveryMethod === "email" ? "on" : ""} onClick={() => { setRecoveryMethod("email"); setRecoveryPending(false); }}>メール</button>
-            <button type="button" className={recoveryMethod === "phone" ? "on" : ""} onClick={() => { setRecoveryMethod("phone"); setRecoveryPending(false); }}>電話番号</button>
-          </div>
           {!recoveryPending ? (
             <>
-              {recoveryMethod === "email" ? (
-                <>
-                  <label className="f" htmlFor="recover-destination">メールアドレス</label>
-                  <input
-                    id="recover-destination"
-                    type="email"
-                    value={recoveryDestination}
-                    onChange={(event) => setRecoveryDestination(event.target.value)}
-                    placeholder="you@example.com"
-                    autoComplete="email"
-                  />
-                </>
-              ) : (
-                <PhoneNumberFields
-                  idPrefix="recover-phone"
-                  countryCode={recoveryCountryCode}
-                  nationalNumber={recoveryNationalNumber}
-                  onCountryCodeChange={setRecoveryCountryCode}
-                  onNationalNumberChange={setRecoveryNationalNumber}
-                />
-              )}
-              <button
-                className="btn sig"
-                disabled={busy || !(recoveryMethod === "email" ? recoveryDestination.trim() : recoveryPhone)}
-                onClick={() => run(async () => {
-                  await onRecoverySend(
-                    recoveryMethod,
-                    recoveryMethod === "email" ? recoveryDestination.trim() : recoveryPhone,
-                  );
-                  setRecoveryPending(true);
-                })}
-              >
-                {busy ? "送信中…" : recoveryMethod === "email" ? "確認メールを送る" : "確認コードを送る"}
-              </button>
-            </>
-          ) : recoveryMethod === "email" ? (
-            <>
-              <div className="lead">メール内の確認リンクを開いてください。確認後、この画面に戻ります。</div>
-              <button className="textlink" type="button" onClick={() => { setRecoveryPending(false); }}>メールアドレスを入力し直す</button>
-            </>
-          ) : (
-            <>
-              <div className="lead">届いた確認コードを入力してください。</div>
-              <label className="f" htmlFor="recover-code">確認コード</label>
+              <label className="f" htmlFor="recover-destination">メールアドレス</label>
               <input
-                id="recover-code"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                value={recoveryCode}
-                onChange={(event) => setRecoveryCode(event.target.value.replace(/\D/g, "").slice(0, 8))}
-                placeholder="確認コード"
+                id="recover-destination"
+                type="email"
+                value={recoveryDestination}
+                onChange={(event) => setRecoveryDestination(event.target.value)}
+                placeholder="you@example.com"
+                autoComplete="email"
               />
               <button
                 className="btn sig"
-                disabled={busy || recoveryCode.length < 6 || !supported}
-                onClick={() => run(() => onRecoveryVerify(recoveryMethod, recoveryPhone, recoveryCode))}
+                disabled={busy || !recoveryDestination.trim()}
+                onClick={() => run(async () => {
+                  await onRecoverySend(recoveryDestination.trim());
+                  setRecoveryPending(true);
+                })}
               >
-                {busy ? "登録中…" : "新しいパスキーを登録"}
+                {busy ? "送信中…" : "確認メールを送る"}
               </button>
-              <button className="textlink" type="button" onClick={() => { setRecoveryPending(false); setRecoveryCode(""); }}>入力し直す</button>
+            </>
+          ) : (
+            <>
+              <div className="lead">メール内の確認リンクを開いてください。確認後、この画面に戻ります。</div>
+              <button className="textlink" type="button" onClick={() => { setRecoveryPending(false); }}>メールアドレスを入力し直す</button>
             </>
           )}
           <div className="hint no">{hint}</div>

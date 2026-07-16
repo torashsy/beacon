@@ -21,9 +21,8 @@ export interface Me {
   clicks: Record<string, number>; // URL → クリック数（本人だけが取得可能）
   passkeyLinked: boolean;
   recoveryVerified: boolean;
-  recoveryKind: "email" | "phone" | "email+phone" | null;
+  recoveryKind: "email" | null;
   recoveryEmailMasked: string | null;
-  recoveryPhoneMasked: string | null;
 }
 
 export type View = "auth" | "profile" | "follows" | "howto" | "public";
@@ -38,7 +37,6 @@ export function authErrorMessage(e: unknown): string {
   if (m.includes("not supported") || name === "NotSupportedError") return "この端末はパスキーに対応していません";
   if (m.includes("cancel") || m.includes("NotAllowedError") || name === "NotAllowedError") return "パスキーの操作を中止しました";
   if (m.includes("not allowed")) return "IDまたは現在のパスコードが違います";
-  if (m.includes("phone provider") || m.includes("Unsupported phone")) return "電話認証は現在利用できません。メールをお使いください";
   if (m.includes("otp_expired") || m.includes("Token has expired")) return "確認コードが違うか、期限が切れています";
   if (m.includes("locked")) return "試行回数が多すぎます。約15分後にお試しください";
   if (m.includes("bad recovery")) return "IDまたは復旧コードが違います";

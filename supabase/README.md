@@ -6,7 +6,6 @@
 - Storageバケットの制限は `storage-policies.sql` を実行する。
 - Edge Functionは `functions/create-avatar-upload` と `functions/create-passkey-user` をデプロイする。
 - AuthenticationでPasskeysを有効化し、EmailのSecure email changeを無効化する。
-- 電話番号での復旧を提供する場合は、別途SMSプロバイダーを設定する。
 - ルート直下の `*-migration.sql` は、既存環境へ段階適用してきた履歴。新規環境へ
   `schema.sql` と重ねて全実行しない。
 
@@ -26,6 +25,7 @@
 - `passkey-auth-migration.sql`
 - `passkey-label-migration.sql`
 - `recovery-contact-migration.sql`
+- `email-only-recovery-migration.sql`
 - `create-avatar-upload` Edge Function
 - `create-passkey-user` Edge Function（Verify JWT off）
 

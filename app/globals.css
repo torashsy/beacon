@@ -840,17 +840,6 @@ textarea {
 .recoveryAddActions button { margin-left: 0; padding: 2px 0; }
 .recoveryEditor { display: grid; gap: 10px; padding-top: 3px; }
 .recoveryPrivacyNote { font-size: 10px; }
-.methodTabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.methodTabs button { border: 1px solid var(--border); border-radius: 10px; padding: 8px; background: white; color: var(--muted); font: inherit; font-weight: 700; }
-.methodTabs button.on { border-color: var(--em); color: var(--emd); background: var(--soft); }
-.phoneFields { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 9px; }
-.phoneFields > div { min-width: 0; }
-.countryCodeField { position: relative; }
-.countryCodeField > span {
-  position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
-  color: var(--muted); font-weight: 700; pointer-events: none;
-}
-.countryCodeField input { padding-left: 27px; }
 .xname { display: flex; align-items: center; gap: 5px; }
 .verifiedBadge { width: 18px; height: 18px; border-radius: 50%; background: var(--em); display: inline-flex; align-items: center; justify-content: center; flex: 0 0 18px; }
 .verifiedBadge svg { width: 13px; height: 13px; fill: none; stroke: white; stroke-width: 2.3; }
