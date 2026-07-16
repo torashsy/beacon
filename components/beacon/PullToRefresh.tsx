@@ -6,7 +6,8 @@ const REFRESH_DISTANCE = 58;
 const HOLD_DISTANCE = 52;
 const PULL_ASYMPTOTE = 118;
 const PULL_RESISTANCE = 0.9;
-const MIN_SPIN_TIME = 700;
+const MIN_SPIN_TIME = 850;
+const RETURN_DURATION = 420;
 
 function isInteractive(target: EventTarget | null) {
   return target instanceof Element && Boolean(
@@ -27,10 +28,12 @@ export function PullToRefresh({
   const distanceRef = useRef(0);
   const refreshingRef = useRef(false);
   const settleTimer = useRef<number | null>(null);
+  const returnTimer = useRef<number | null>(null);
   const onRefreshRef = useRef(onRefresh);
   const [distance, setDistance] = useState(0);
   const [dragging, setDragging] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [returning, setReturning] = useState(false);
 
   useEffect(() => {
     onRefreshRef.current = onRefresh;
@@ -82,15 +85,21 @@ export function PullToRefresh({
 
       refreshingRef.current = true;
       setRefreshing(true);
-      distanceRef.current = 0;
-      setDistance(0);
+      distanceRef.current = HOLD_DISTANCE;
+      setDistance(HOLD_DISTANCE);
       const started = performance.now();
       void Promise.resolve(onRefreshRef.current()).catch(() => {}).finally(() => {
         const remaining = Math.max(0, MIN_SPIN_TIME - (performance.now() - started));
         settleTimer.current = window.setTimeout(() => {
-          refreshingRef.current = false;
-          setRefreshing(false);
-          reset();
+          setReturning(true);
+          distanceRef.current = 0;
+          setDistance(0);
+          returnTimer.current = window.setTimeout(() => {
+            refreshingRef.current = false;
+            setRefreshing(false);
+            setReturning(false);
+            reset();
+          }, RETURN_DURATION);
         }, remaining);
       });
     }
@@ -109,13 +118,14 @@ export function PullToRefresh({
       document.removeEventListener("touchend", onTouchEnd);
       document.removeEventListener("touchcancel", onTouchCancel);
       if (settleTimer.current) clearTimeout(settleTimer.current);
+      if (returnTimer.current) clearTimeout(returnTimer.current);
     };
   }, [enabled]);
 
   const ready = distance >= REFRESH_DISTANCE;
   const progress = Math.min(distance / REFRESH_DISTANCE, 1);
-  const phase = refreshing ? "refreshing" : ready ? "ready" : dragging ? "dragging" : "idle";
-  const indicatorDistance = refreshing ? HOLD_DISTANCE : distance;
+  const phase = returning ? "returning" : refreshing ? "refreshing" : ready ? "ready" : dragging ? "dragging" : "idle";
+  const indicatorDistance = refreshing && !returning ? HOLD_DISTANCE : distance;
   const indicatorOffset = Math.max(-38, Math.min(12, indicatorDistance - 46));
 
   return (
@@ -123,7 +133,7 @@ export function PullToRefresh({
       <div
         className={`pullRefresh ${distance > 0 || refreshing ? "show" : ""} ${phase}`}
         style={{
-          opacity: distance > 0 || refreshing ? Math.min(1, distance / 18) : undefined,
+          opacity: returning ? 0 : refreshing ? 1 : distance > 0 ? Math.min(1, distance / 18) : undefined,
           transform: `translate3d(-50%, ${indicatorOffset}px, 0)`,
         }}
         role="status"

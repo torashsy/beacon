@@ -81,6 +81,10 @@ body {
 .pullRefresh.refreshing {
   transition-duration: 120ms, 280ms, 90ms, 90ms;
 }
+.pullRefresh.returning {
+  transition-duration: 280ms, 420ms, 90ms, 90ms;
+  transition-timing-function: var(--ease-state), var(--ease-pull-settle), var(--ease-state), var(--ease-state);
+}
 .pullRefreshProgress,
 .pullRefreshSpinner {
   position: absolute;
@@ -118,6 +122,9 @@ body {
 }
 .pullRefreshSurface.refreshing {
   transition: transform 320ms var(--ease-pull-settle);
+}
+.pullRefreshSurface.returning {
+  transition: transform 420ms var(--ease-pull-settle);
 }
 .top {
   display: flex;
