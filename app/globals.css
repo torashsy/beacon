@@ -24,6 +24,8 @@
   --ease-state: cubic-bezier(0.2, 0, 0, 1);
   --ease-ui: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-spring: cubic-bezier(0.22, 1.32, 0.36, 1);
+  --ease-pull-follow: cubic-bezier(0.2, 0.75, 0.25, 1);
+  --ease-pull-settle: cubic-bezier(0.22, 1.08, 0.36, 1);
 }
 * {
   box-sizing: border-box;
@@ -106,15 +108,16 @@ body {
 }
 .pullRefreshSurface {
   min-height: 100vh;
-  transition: transform 360ms var(--ease-spring);
+  transition: transform 380ms var(--ease-pull-settle);
+  backface-visibility: hidden;
   will-change: transform;
 }
 .pullRefreshSurface.dragging,
 .pullRefreshSurface.ready {
-  transition: none;
+  transition: transform 56ms var(--ease-pull-follow);
 }
 .pullRefreshSurface.refreshing {
-  transition: transform 300ms var(--ease-spring);
+  transition: transform 320ms var(--ease-pull-settle);
 }
 .top {
   display: flex;
