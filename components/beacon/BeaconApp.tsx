@@ -100,6 +100,10 @@ export function BeaconApp() {
   const [overlay, setOverlay] = useState<Overlay>("none");
   const [editing, setEditing] = useState(false);
   const [editTarget, setEditTarget] = useState<"profile" | "links" | "cal">("profile");
+  const [recoveryFocusRequest, setRecoveryFocusRequest] = useState(0);
+  const [recoveryHighlighted, setRecoveryHighlighted] = useState(false);
+  const recoverySetupRef = useRef<HTMLDivElement | null>(null);
+  const recoveryHighlightTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [follows, setFollows] = useState<FollowSnapshot[]>([]);
   const [followStates, setFollowStates] = useState<
     Record<string, FollowStatus>
@@ -745,6 +749,26 @@ export function BeaconApp() {
     setOverlay("none");
   }
 
+  function goRecoverySetup() {
+    goNav("help");
+    setRecoveryFocusRequest((request) => request + 1);
+  }
+
+  useEffect(() => {
+    if (!recoveryFocusRequest || navTab !== "help") return;
+    const frame = window.requestAnimationFrame(() => {
+      recoverySetupRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      setRecoveryHighlighted(true);
+      if (recoveryHighlightTimer.current) clearTimeout(recoveryHighlightTimer.current);
+      recoveryHighlightTimer.current = setTimeout(() => setRecoveryHighlighted(false), 1600);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [navTab, recoveryFocusRequest]);
+
+  useEffect(() => () => {
+    if (recoveryHighlightTimer.current) clearTimeout(recoveryHighlightTimer.current);
+  }, []);
+
   function goHome() {
     goNav("profile");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -804,9 +828,9 @@ export function BeaconApp() {
         </div>
 
         {session && me && !me.recoveryVerified && overlay === "none" && (
-          <button type="button" className="recoveryBanner" onClick={() => goNav("help")}>
+          <button type="button" className="recoveryBanner" onClick={goRecoverySetup}>
             <span>未認証</span>
-            復旧用のメールまたは電話番号を追加してください
+            <span className="recoveryBannerText">復旧用の連絡先を設定</span>
             <b aria-hidden="true">›</b>
           </button>
         )}
@@ -891,18 +915,23 @@ export function BeaconApp() {
               {session ? (
                 <div style={{ display: "grid", gap: 14 }}>
                   {me && (
-                    <RecoverySetup
-                      verified={me.recoveryVerified}
-                      kind={me.recoveryKind}
-                      onReauthenticate={reauthenticatePasskey}
-                      onVerified={(status) => setMe((current) => current ? {
-                        ...current,
-                        recoveryVerified: status.recovery_verified,
-                        recoveryKind: status.recovery_kind,
-                        profile: { ...current.profile, verified: status.recovery_verified },
-                      } : current)}
-                      toast={toast}
-                    />
+                    <div
+                      ref={recoverySetupRef}
+                      className={`recoveryTarget ${recoveryHighlighted ? "highlighted" : ""}`}
+                    >
+                      <RecoverySetup
+                        verified={me.recoveryVerified}
+                        kind={me.recoveryKind}
+                        onReauthenticate={reauthenticatePasskey}
+                        onVerified={(status) => setMe((current) => current ? {
+                          ...current,
+                          recoveryVerified: status.recovery_verified,
+                          recoveryKind: status.recovery_kind,
+                          profile: { ...current.profile, verified: status.recovery_verified },
+                        } : current)}
+                        toast={toast}
+                      />
+                    </div>
                   )}
                   <button className="btn ghost" onClick={doRevokeOtherSessions}>
                     他の端末をログアウト

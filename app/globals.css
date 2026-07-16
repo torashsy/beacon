@@ -804,12 +804,22 @@ textarea {
 .authSimple .passkeyLead { margin: 2px 0; }
 .authSimple .legacyLink { margin-top: 20px; font-size: 11px; opacity: .72; }
 .recoveryBanner {
-  width: 100%; border: 1px solid #f6c86c; border-radius: 13px; background: #fff8e8;
-  color: #6f4c08; padding: 10px 12px; margin: 0 0 12px; display: flex;
-  align-items: center; gap: 8px; text-align: left; font: inherit; font-size: 12px; cursor: pointer;
+  width: 100%; min-height: 38px; border: 1px solid #eadfca; border-radius: 11px; background: #fffdf8;
+  color: #786c58; padding: 7px 10px; margin: 0 0 12px; display: flex;
+  align-items: center; gap: 7px; text-align: left; font: inherit; font-size: 11.5px; cursor: pointer;
 }
-.recoveryBanner span { background: #e89b13; color: white; border-radius: 999px; padding: 3px 7px; font-weight: 800; }
-.recoveryBanner b { margin-left: auto; font-size: 20px; }
+.recoveryBanner > span:first-child {
+  flex: 0 0 auto; white-space: nowrap; border: 1px solid #e9bd68; border-radius: 999px;
+  color: #9a6811; padding: 2px 6px; font-size: 10px; font-weight: 700;
+}
+.recoveryBannerText { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.recoveryBanner b { flex: 0 0 auto; margin-left: auto; color: #a39680; font-size: 17px; font-weight: 600; }
+.recoveryTarget { scroll-margin-top: 12px; border-radius: 16px; }
+.recoveryTarget.highlighted { animation: recoveryTargetPulse 1.6s ease-out; }
+@keyframes recoveryTargetPulse {
+  0%, 30% { box-shadow: 0 0 0 4px rgba(43, 180, 229, .2); }
+  100% { box-shadow: 0 0 0 0 rgba(43, 180, 229, 0); }
+}
 .recoveryCard { display: grid; gap: 12px; padding: 14px; border: 1px solid #f1cf89; border-radius: 15px; background: #fffaf0; }
 .recoveryCard.verified { border-color: #9ddbc4; background: #f0fbf7; }
 .recoveryState { font-weight: 800; color: #147a58; }
