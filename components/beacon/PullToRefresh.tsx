@@ -4,7 +4,8 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 
 const REFRESH_DISTANCE = 58;
 const HOLD_DISTANCE = 52;
-const MAX_DISTANCE = 96;
+const PULL_ASYMPTOTE = 118;
+const PULL_RESISTANCE = 0.9;
 const MIN_SPIN_TIME = 700;
 
 function isInteractive(target: EventTarget | null) {
@@ -61,9 +62,10 @@ export function PullToRefresh({
       }
 
       event.preventDefault();
-      // Native SNS apps use increasing resistance: the content follows the finger,
-      // but travels less as the pull grows.
-      const resisted = Math.min(MAX_DISTANCE, delta * 0.5 - Math.max(0, delta - 120) * 0.18);
+      // Approach the visual limit gradually instead of clamping at a hard stop.
+      // This is the same rubber-band shape used by native overscroll interactions.
+      const resisted = (delta * PULL_ASYMPTOTE * PULL_RESISTANCE)
+        / (PULL_ASYMPTOTE + delta * PULL_RESISTANCE);
       distanceRef.current = Math.max(0, resisted);
       setDistance(distanceRef.current);
     }
