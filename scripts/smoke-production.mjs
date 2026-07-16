@@ -56,6 +56,9 @@ await check("/sw.js", (response, body) => {
   if (!body.includes("skipWaiting") || !body.includes("fetch(event.request)")) {
     throw new Error("service worker update behavior invalid");
   }
+  if (!body.includes("showNotification") || !body.includes("notificationclick")) {
+    throw new Error("push notification behavior missing");
+  }
   if (body.includes("caches.open")) throw new Error("stale app cache detected");
 });
 

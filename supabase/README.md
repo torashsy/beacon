@@ -26,8 +26,10 @@
 - `passkey-label-migration.sql`
 - `recovery-contact-migration.sql`
 - `email-only-recovery-migration.sql`
+- `push-notifications-migration.sql`
 - `create-avatar-upload` Edge Function
 - `create-passkey-user` Edge Function（Verify JWT off）
+- `send-follow-update` Edge Function（Verify JWT off、VAPID秘密鍵を使用）
 
 検証は `node scripts/conn-test.mjs` を実行する。テスト用アカウントは最後に削除される。
 

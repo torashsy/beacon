@@ -56,6 +56,8 @@ import { FollowsView } from "./FollowsView";
 import { HowtoView } from "./HowtoView";
 import { RecoverySetup } from "./RecoverySetup";
 import { PullToRefresh } from "./PullToRefresh";
+import { PushNotificationSetting } from "./PushNotificationSetting";
+import { notifyFollowers, removeCurrentDevicePushSubscription } from "@/lib/beacon/push";
 
 /**
  * Beacon クライアントアプリ本体。beacon.html の SPA を Next.js のクライアント
@@ -67,6 +69,15 @@ import { PullToRefresh } from "./PullToRefresh";
 
 type NavTab = "profile" | "follows" | "help";
 type Overlay = "none" | "auth";
+
+function publicChannelsSignature(channels: Channel[]) {
+  return JSON.stringify(channels.filter((channel) => channel.status === "live").map((channel) => ({
+    type: channel.type,
+    url: channel.url,
+    label: channel.label,
+    descr: channel.descr,
+  })));
+}
 
 function NavIcon({ name }: { name: NavTab }) {
   const path =
@@ -153,6 +164,11 @@ export function BeaconApp() {
   const refreshLatest = useCallback(() => {
     window.location.reload();
   }, []);
+
+  const pushFollowUpdate = useCallback(() => {
+    if (!session) return;
+    void notifyFollowers(db, session.handle, session.pass).catch(() => {});
+  }, [db, session]);
 
   const calLoading = useRef(false);
 
@@ -430,7 +446,9 @@ export function BeaconApp() {
     const last = session?.handle ?? "";
     // サーバー側のセッションも失効させる（ベストエフォート）
     if (session && isSessionToken(session.pass)) {
-      void deleteSession(db, session.handle, session.pass).catch(() => {});
+      void removeCurrentDevicePushSubscription(db, session.handle, session.pass)
+        .finally(() => deleteSession(db, session.handle, session.pass))
+        .catch(() => {});
     }
     setSession(null);
     setMe(null);
@@ -489,14 +507,16 @@ export function BeaconApp() {
         rpcSaveChannels(db, session.handle, session.pass, next),
       );
       if (!ok) setMe((m) => (m ? { ...m, channels: prev } : m));
+      else if (publicChannelsSignature(prev) !== publicChannelsSignature(next)) pushFollowUpdate();
       return ok;
     },
-    [db, session, me, runWrite],
+    [db, session, me, runWrite, pushFollowUpdate],
   );
 
   const persistCal = useCallback(
     async (date: string, memo: string, pub: boolean): Promise<boolean> => {
       if (!session) return false;
+      const wasPublic = Boolean(me?.cal[date]?.pub);
       const ok = await runWrite(() =>
         rpcSaveCal(db, session.handle, session.pass, date, memo, pub),
       );
@@ -508,10 +528,11 @@ export function BeaconApp() {
           else delete cal[date];
           return { ...m, cal };
         });
+        if (pub || wasPublic) pushFollowUpdate();
       }
       return ok;
     },
-    [db, session, runWrite],
+    [db, session, me, runWrite, pushFollowUpdate],
   );
 
   const loadCal = useCallback(async () => {
@@ -565,6 +586,7 @@ export function BeaconApp() {
         };
         await updateProfile(db, session.handle, session.pass, nextProfile);
         setMe((m) => (m ? { ...m, profile: nextProfile } : m));
+        pushFollowUpdate();
         setEditing(false);
         setSaveStatus("saved");
         if (saveStatusTimer.current) clearTimeout(saveStatusTimer.current);
@@ -580,7 +602,7 @@ export function BeaconApp() {
         }
       }
     },
-    [db, session, me, toast, logout],
+    [db, session, me, toast, logout, pushFollowUpdate],
   );
 
   const doDeleteAccount = useCallback(async () => {
@@ -896,6 +918,11 @@ export function BeaconApp() {
                       />
                     </div>
                   )}
+                  <PushNotificationSetting
+                    handle={session.handle}
+                    secret={session.pass}
+                    toast={toast}
+                  />
                   <button className="textDangerButton" onClick={doDeleteAccount}>
                     アカウントを削除
                   </button>

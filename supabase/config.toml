@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.create-passkey-user]
 verify_jwt = false
+
+[functions.send-follow-update]
+verify_jwt = false
