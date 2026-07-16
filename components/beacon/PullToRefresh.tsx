@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
-const REFRESH_DISTANCE = 54;
-const SETTLE_DISTANCE = 42;
-const MAX_DISTANCE = 84;
-const RELEASE_DELAY = 170;
+const REFRESH_DISTANCE = 58;
+const HOLD_DISTANCE = 52;
+const MAX_DISTANCE = 96;
+const MIN_SPIN_TIME = 360;
 
 function isInteractive(target: EventTarget | null) {
   return target instanceof Element && Boolean(
@@ -16,17 +16,24 @@ function isInteractive(target: EventTarget | null) {
 export function PullToRefresh({
   enabled,
   onRefresh,
+  children,
 }: {
   enabled: boolean;
   onRefresh: () => Promise<void> | void;
+  children: ReactNode;
 }) {
   const startY = useRef<number | null>(null);
   const distanceRef = useRef(0);
   const refreshingRef = useRef(false);
-  const releaseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const settleTimer = useRef<number | null>(null);
+  const onRefreshRef = useRef(onRefresh);
   const [distance, setDistance] = useState(0);
   const [dragging, setDragging] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    onRefreshRef.current = onRefresh;
+  }, [onRefresh]);
 
   useEffect(() => {
     function reset() {
@@ -34,12 +41,6 @@ export function PullToRefresh({
       distanceRef.current = 0;
       setDragging(false);
       setDistance(0);
-    }
-
-    function finishRefresh() {
-      refreshingRef.current = false;
-      setRefreshing(false);
-      reset();
     }
 
     function onTouchStart(event: TouchEvent) {
@@ -58,10 +59,13 @@ export function PullToRefresh({
         setDistance(0);
         return;
       }
+
       event.preventDefault();
-      const next = Math.min(delta * 0.42, MAX_DISTANCE);
-      distanceRef.current = next;
-      setDistance(next);
+      // Native SNS apps use increasing resistance: the content follows the finger,
+      // but travels less as the pull grows.
+      const resisted = Math.min(MAX_DISTANCE, delta * 0.5 - Math.max(0, delta - 120) * 0.18);
+      distanceRef.current = Math.max(0, resisted);
+      setDistance(distanceRef.current);
     }
 
     function onTouchEnd() {
@@ -76,13 +80,17 @@ export function PullToRefresh({
 
       refreshingRef.current = true;
       setRefreshing(true);
-      distanceRef.current = SETTLE_DISTANCE;
-      setDistance(SETTLE_DISTANCE);
-      releaseTimer.current = setTimeout(() => {
-        void Promise.resolve(onRefresh())
-          .then(() => new Promise((resolve) => setTimeout(resolve, 320)))
-          .finally(finishRefresh);
-      }, RELEASE_DELAY);
+      distanceRef.current = HOLD_DISTANCE;
+      setDistance(HOLD_DISTANCE);
+      const started = performance.now();
+      void Promise.resolve(onRefreshRef.current()).catch(() => {}).finally(() => {
+        const remaining = Math.max(0, MIN_SPIN_TIME - (performance.now() - started));
+        settleTimer.current = window.setTimeout(() => {
+          refreshingRef.current = false;
+          setRefreshing(false);
+          reset();
+        }, remaining);
+      });
     }
 
     function onTouchCancel() {
@@ -98,34 +106,43 @@ export function PullToRefresh({
       document.removeEventListener("touchmove", onTouchMove);
       document.removeEventListener("touchend", onTouchEnd);
       document.removeEventListener("touchcancel", onTouchCancel);
-      if (releaseTimer.current) clearTimeout(releaseTimer.current);
+      if (settleTimer.current) clearTimeout(settleTimer.current);
     };
-  }, [enabled, onRefresh]);
+  }, [enabled]);
 
   const ready = distance >= REFRESH_DISTANCE;
   const progress = Math.min(distance / REFRESH_DISTANCE, 1);
-  const stateClass = refreshing ? "refreshing" : ready ? "ready" : dragging ? "dragging" : "";
+  const phase = refreshing ? "refreshing" : ready ? "ready" : dragging ? "dragging" : "idle";
+  const indicatorOffset = Math.max(-38, Math.min(12, distance - 46));
 
   return (
-    <div
-      className={`pullRefresh ${distance > 0 || refreshing ? "show" : ""} ${stateClass}`}
-      style={{ transform: `translate3d(-50%, ${distance - 64}px, 0)` }}
-      role="status"
-      aria-live="polite"
-    >
-      {refreshing ? (
-        <span className="pullRefreshSpinner" aria-hidden="true" />
-      ) : (
-        <svg
-          className="pullRefreshArrow"
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-          style={{ transform: `rotate(${progress * 180}deg) scale(${0.82 + progress * 0.18})` }}
-        >
-          <path d="M12 4v14M7 13l5 5 5-5" />
-        </svg>
-      )}
-      <span>{refreshing ? "更新中…" : ready ? "離して更新" : "引っ張って更新"}</span>
-    </div>
+    <>
+      <div
+        className={`pullRefresh ${distance > 0 || refreshing ? "show" : ""} ${phase}`}
+        style={{
+          opacity: distance > 0 || refreshing ? Math.min(1, distance / 18) : undefined,
+          transform: `translate3d(-50%, ${indicatorOffset}px, 0)`,
+        }}
+        role="status"
+        aria-live="polite"
+        aria-label={refreshing ? "更新中" : ready ? "離して更新" : "引っ張って更新"}
+      >
+        {refreshing ? (
+          <span className="pullRefreshSpinner" aria-hidden="true" />
+        ) : (
+          <span
+            className="pullRefreshProgress"
+            aria-hidden="true"
+            style={{ transform: `rotate(${progress * 260}deg) scale(${0.72 + progress * 0.28})` }}
+          />
+        )}
+      </div>
+      <div
+        className={`pullRefreshSurface ${phase}`}
+        style={{ transform: `translate3d(0, ${distance}px, 0)` }}
+      >
+        {children}
+      </div>
+    </>
   );
 }

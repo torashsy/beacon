@@ -129,26 +129,43 @@ test("pulling down from the top offers a refresh", async ({ page }) => {
     dispatchTouch("touchmove", 150);
   });
 
-  await expect(page.locator(".pullRefresh")).toContainText("離して更新");
   await expect(page.locator(".pullRefresh")).toHaveClass(/show ready/);
-  await expect(page.locator(".pullRefreshArrow")).toHaveCSS("transform", "matrix(-1, 0, 0, -1, 0, 0)");
+  await expect(page.locator(".pullRefresh")).toHaveAttribute("aria-label", "離して更新");
+  await expect(page.locator(".pullRefreshProgress")).toBeVisible();
+  const pulledTransform = await page.locator(".pullRefreshSurface").evaluate(
+    (element) => getComputedStyle(element).transform,
+  );
+  expect(pulledTransform).not.toBe("none");
+  expect(pulledTransform).not.toBe("matrix(1, 0, 0, 1, 0, 0)");
   await page.evaluate(() => document.dispatchEvent(new Event("touchcancel", { bubbles: true })));
   await expect(page.locator(".pullRefresh")).not.toHaveClass(/show/);
+  await expect(page.locator(".pullRefreshSurface")).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
 
+  await page.goto("/");
   await page.evaluate(() => {
-    const dispatchTouch = (type: string, clientY: number) => {
-      const event = new Event(type, { bubbles: true, cancelable: true });
-      Object.defineProperty(event, "touches", {
-        value: type === "touchend" ? [] : [{ clientY }],
-      });
-      document.dispatchEvent(event);
-    };
-    dispatchTouch("touchstart", 0);
-    dispatchTouch("touchmove", 150);
-    dispatchTouch("touchend", 150);
+    window.scrollTo(0, 0);
+    const event = new Event("touchstart", { bubbles: true, cancelable: true });
+    Object.defineProperty(event, "touches", { value: [{ clientY: 0 }] });
+    document.dispatchEvent(event);
   });
-  await expect(page.locator(".pullRefresh")).toHaveClass(/refreshing/, { timeout: 150 });
-  await expect(page.locator(".pullRefresh")).toContainText("更新中…", { timeout: 150 });
+  await expect(page.locator(".pullRefresh")).toHaveClass(/dragging/);
+  await page.evaluate(() => {
+    const event = new Event("touchmove", { bubbles: true, cancelable: true });
+    Object.defineProperty(event, "touches", { value: [{ clientY: 150 }] });
+    document.dispatchEvent(event);
+  });
+  await expect(page.locator(".pullRefresh")).toHaveClass(/ready/);
+  await page.evaluate(() => {
+    const event = new Event("touchend", { bubbles: true, cancelable: true });
+    Object.defineProperty(event, "touches", { value: [] });
+    document.dispatchEvent(event);
+  });
+  await expect(page.locator(".pullRefresh")).toHaveClass(/refreshing/, { timeout: 300 });
+  await expect(page.locator(".pullRefresh")).toHaveAttribute("aria-label", "更新中");
+  await expect(page.locator(".pullRefreshSpinner")).toBeVisible();
+  await expect(page.locator(".pullRefreshSurface")).toHaveClass(/refreshing/);
+  await expect(page.locator(".pullRefresh")).not.toHaveClass(/show/, { timeout: 1200 });
+  await expect(page.locator(".pullRefreshSurface")).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
 });
 
 test("a verified contact can start passkey recovery", async ({ page }) => {

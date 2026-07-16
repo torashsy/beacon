@@ -23,6 +23,7 @@
   --motion-slide: 170ms;
   --ease-state: cubic-bezier(0.2, 0, 0, 1);
   --ease-ui: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.22, 1.32, 0.36, 1);
 }
 * {
   box-sizing: border-box;
@@ -54,55 +55,58 @@ body {
   z-index: 80;
   display: flex;
   align-items: center;
-  gap: 7px;
-  min-height: 36px;
-  padding: 6px 13px 6px 9px;
+  width: 36px;
+  height: 36px;
   border: 1px solid var(--border);
   border-radius: 999px;
   background: rgba(255, 255, 255, .96);
-  color: var(--muted);
   box-shadow: 0 6px 20px rgba(15, 54, 78, .16);
-  font-size: 11px;
-  font-weight: 700;
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--motion-quick) var(--ease-state),
-    transform 180ms var(--ease-ui),
+    transform 260ms var(--ease-spring),
     border-color var(--motion-quick) var(--ease-state),
     box-shadow var(--motion-quick) var(--ease-state);
   will-change: transform, opacity;
 }
 .pullRefresh.show { opacity: 1; }
-.pullRefresh.dragging { transition-duration: 60ms, 0ms, 90ms, 90ms; }
+.pullRefresh.dragging,
+.pullRefresh.ready { transition-duration: 60ms, 0ms, 90ms, 90ms; }
 .pullRefresh.ready {
   border-color: rgba(56, 189, 248, .55);
   box-shadow: 0 7px 22px rgba(2, 132, 199, .2);
 }
 .pullRefresh.refreshing {
-  color: var(--emd);
-  transition-duration: 120ms, 180ms, 90ms, 90ms;
+  transition-duration: 120ms, 280ms, 90ms, 90ms;
 }
-.pullRefreshArrow {
+.pullRefreshProgress,
+.pullRefreshSpinner {
+  position: absolute;
+  inset: 8px;
   width: 18px;
   height: 18px;
-  flex: 0 0 18px;
-  fill: none;
-  stroke: var(--emd);
-  stroke-width: 2.2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+  border: 2px solid rgba(2, 132, 199, .2);
+  border-top-color: var(--emd);
+  border-right-color: var(--emd);
+  border-radius: 50%;
   transform-origin: center;
 }
 .pullRefreshSpinner {
-  width: 17px;
-  height: 17px;
-  flex: 0 0 17px;
-  border: 2px solid var(--border);
-  border-top-color: var(--emd);
-  border-radius: 50%;
   animation: pullRefreshSpin .62s linear infinite;
 }
 @keyframes pullRefreshSpin { to { transform: rotate(360deg); } }
+.pullRefreshSurface {
+  min-height: 100vh;
+  transition: transform 360ms var(--ease-spring);
+  will-change: transform;
+}
+.pullRefreshSurface.dragging,
+.pullRefreshSurface.ready {
+  transition: none;
+}
+.pullRefreshSurface.refreshing {
+  transition: transform 300ms var(--ease-spring);
+}
 .top {
   display: flex;
   align-items: center;

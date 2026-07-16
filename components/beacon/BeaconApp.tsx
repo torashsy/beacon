@@ -165,10 +165,6 @@ export function BeaconApp() {
     toastTimer.current = setTimeout(() => setToastOn(false), 2400);
   }, []);
 
-  const refreshLatest = useCallback(() => {
-    window.location.reload();
-  }, []);
-
   const pushFollowUpdate = useCallback(() => {
     if (!session) return;
     void notifyFollowers(db, session.handle, session.pass).catch(() => {});
@@ -694,6 +690,20 @@ export function BeaconApp() {
     [db, session, toast],
   );
 
+  const refreshLatest = useCallback(async () => {
+    try {
+      await Promise.all([
+        session
+          ? loadMe(session.handle, session.pass).then((latest) => setMe(latest))
+          : Promise.resolve(),
+        follows.length ? checkFollows(follows) : Promise.resolve(),
+        session ? syncFollowsFromServer(session.handle, session.pass) : Promise.resolve(),
+      ]);
+    } catch {
+      toast("更新できませんでした");
+    }
+  }, [session, loadMe, follows, checkFollows, syncFollowsFromServer, toast]);
+
   // 起動時とフォローの顔ぶれ変更時に再チェック（他人がサーバー側で変えた分を検知）
   const followKey = follows.map((f) => f.handle).join(",");
   useEffect(() => {
@@ -782,8 +792,8 @@ export function BeaconApp() {
 
   return (
     <>
-      <PullToRefresh enabled={overlay === "none" && !editing} onRefresh={refreshLatest} />
-      <div className="wrap">
+      <PullToRefresh enabled={overlay === "none" && !editing} onRefresh={refreshLatest}>
+        <div className="wrap">
         <div className="top">
           <button type="button" className="logo logoButton" onClick={goHome} aria-label="via-mi ホーム">
             via-mi
@@ -944,7 +954,8 @@ export function BeaconApp() {
         )}
           </div>
         )}
-      </div>
+        </div>
+      </PullToRefresh>
 
       {showNav && (
         <nav className="nav" aria-label="メインナビゲーション">
