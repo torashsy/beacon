@@ -64,7 +64,7 @@ export function AuthView({
         <h1>ログイン</h1>
         <div className="card">
           <div className="passkeyMark" aria-hidden="true">🔑</div>
-          <p className="lead">Face ID・指紋認証・端末のロック解除でログインします。</p>
+          <p className="lead">端末に保存したパスキーでログインします。</p>
           <div className="hint no">{hint}</div>
           <button className="btn sig" disabled={busy || !supported} onClick={() => run(onLogin)}>
             {busy ? "確認中…" : "パスキーでログイン"}
@@ -207,7 +207,7 @@ export function AuthView({
         <div className={`hint ${handle.length >= 3 ? "ok" : ""}`}>
           {handle ? (handle.length >= 3 ? `@${handle} で作成します` : "3文字以上にしてください") : ""}
         </div>
-        <p className="lead passkeyLead">パスワードは不要です。端末のFace IDなどを使います。</p>
+        <p className="lead passkeyLead">パスワードは不要です。画面の案内に沿ってパスキーを保存します。</p>
         <div className="hint no">{hint}</div>
         <button
           className="btn sig"

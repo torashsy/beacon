@@ -86,8 +86,18 @@ test("account creation only asks for an ID and passkey", async ({ page }) => {
   await page.getByLabel("ID", { exact: true }).fill("new_user");
   const create = page.getByRole("button", { name: "パスキーで作成", exact: true });
   await expect(create).toBeEnabled();
-  await expect(page.getByText("パスワードは不要です。端末のFace IDなどを使います。")).toBeVisible();
+  await expect(page.getByText("パスワードは不要です。画面の案内に沿ってパスキーを保存します。")).toBeVisible();
   await expect(page.locator('input[type="password"]')).toHaveCount(0);
+});
+
+test("help explains the main flow in plain language", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Help", exact: true }).click();
+
+  await expect(page.getByRole("heading", { name: "via-miの使い方", exact: true })).toBeVisible();
+  await expect(page.getByText("me → リンクを追加 / 予定を追加", { exact: true })).toBeVisible();
+  await expect(page.getByText("Follow → ID検索", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "ログインできないとき", exact: true })).toBeVisible();
 });
 
 test("a verified contact can start passkey recovery", async ({ page }) => {

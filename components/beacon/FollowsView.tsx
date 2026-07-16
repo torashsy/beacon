@@ -121,7 +121,7 @@ export function FollowsView({
           {searching ? "検索中" : "ID検索"}
         </button>
       </form>
-      <div className="searchHint">フォローしていない人は、IDの完全一致で検索できます。</div>
+      <div className="searchHint">相手のIDをそのまま入力して検索できます。</div>
       {searchMessage && <div className="searchMessage">{searchMessage}</div>}
       {found && (
         <div
