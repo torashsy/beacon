@@ -100,6 +100,27 @@ test("help explains the main flow in plain language", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "ログインできないとき", exact: true })).toHaveCount(0);
 });
 
+test("pulling down from the top offers a refresh", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator(".pullRefresh")).toBeAttached();
+  await page.evaluate(() => {
+    const dispatchTouch = (type: string, clientY: number) => {
+      const event = new Event(type, { bubbles: true, cancelable: true });
+      Object.defineProperty(event, "touches", {
+        value: type === "touchcancel" ? [] : [{ clientY }],
+      });
+      document.dispatchEvent(event);
+    };
+    dispatchTouch("touchstart", 0);
+    dispatchTouch("touchmove", 150);
+  });
+
+  await expect(page.locator(".pullRefresh")).toContainText("離して更新");
+  await expect(page.locator(".pullRefresh")).toHaveClass(/show/);
+  await page.evaluate(() => document.dispatchEvent(new Event("touchcancel", { bubbles: true })));
+  await expect(page.locator(".pullRefresh")).not.toHaveClass(/show/);
+});
+
 test("a verified contact can start passkey recovery", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "ログイン", exact: true }).click();

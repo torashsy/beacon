@@ -55,6 +55,7 @@ import { ProfileEdit, type EditResult } from "./ProfileEdit";
 import { FollowsView } from "./FollowsView";
 import { HowtoView } from "./HowtoView";
 import { RecoverySetup } from "./RecoverySetup";
+import { PullToRefresh } from "./PullToRefresh";
 
 /**
  * Beacon クライアントアプリ本体。beacon.html の SPA を Next.js のクライアント
@@ -147,6 +148,10 @@ export function BeaconApp() {
     setToastOn(true);
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToastOn(false), 2400);
+  }, []);
+
+  const refreshLatest = useCallback(() => {
+    window.location.reload();
   }, []);
 
   const calLoading = useRef(false);
@@ -747,6 +752,7 @@ export function BeaconApp() {
 
   return (
     <>
+      <PullToRefresh enabled={overlay === "none" && !editing} onRefresh={refreshLatest} />
       <div className="wrap">
         <div className="top">
           <button type="button" className="logo logoButton" onClick={goHome} aria-label="via-mi ホーム">
