@@ -20,6 +20,7 @@ import {
   verifyAppSession,
 } from "@/lib/beacon/rpc";
 import { uploadImage } from "@/lib/beacon/storage";
+import { registerPasskeyForHandle } from "@/lib/beacon/passkey";
 import type { Channel } from "@/lib/beacon/types";
 import {
   clearTrustedDevice,
@@ -231,6 +232,8 @@ export function BeaconApp() {
         passkey_linked: false,
         recovery_verified: false,
         recovery_kind: null,
+        recovery_email_masked: null,
+        recovery_phone_masked: null,
       }));
       (page?.cal ?? []).forEach((e) => (cal[e.d] = { memo: e.memo, pub: true }));
       try {
@@ -251,6 +254,8 @@ export function BeaconApp() {
         passkeyLinked: security.passkey_linked,
         recoveryVerified: security.recovery_verified,
         recoveryKind: security.recovery_kind,
+        recoveryEmailMasked: security.recovery_email_masked,
+        recoveryPhoneMasked: security.recovery_phone_masked,
       };
     },
     [db],
@@ -351,8 +356,7 @@ export function BeaconApp() {
       const verified = await db.auth.verifyOtp({ token_hash: tokenHash, type: "signup" });
       if (verified.error) throw verified.error;
       try {
-        const registered = await db.auth.registerPasskey();
-        if (registered.error) throw registered.error;
+        await registerPasskeyForHandle(db, handle);
         const appSession = await finalizePasskeyAccount(db, handle, legacySecret);
         await db.auth.signOut({ scope: "local" });
         await finishAppLogin(appSession.handle, appSession.token, true);
@@ -406,9 +410,8 @@ export function BeaconApp() {
     const sessionResult = await db.auth.getSession();
     if (!sessionResult.data.session) throw new Error("auth");
     try {
-      const registered = await db.auth.registerPasskey();
-      if (registered.error) throw registered.error;
       const appSession = await createPasskeySession(db);
+      await registerPasskeyForHandle(db, appSession.handle);
       await db.auth.signOut({ scope: "local" });
       setRecoverySessionReady(false);
       window.history.replaceState({}, "", "/");
@@ -429,9 +432,8 @@ export function BeaconApp() {
       : await db.auth.verifyOtp({ phone: destination, token: code, type: "sms" });
     if (verified.error) throw verified.error;
     try {
-      const registered = await db.auth.registerPasskey();
-      if (registered.error) throw registered.error;
       const appSession = await createPasskeySession(db);
+      await registerPasskeyForHandle(db, appSession.handle);
       await db.auth.signOut({ scope: "local" });
       await finishAppLogin(appSession.handle, appSession.token, true);
       toast("アカウントを復旧しました");
@@ -921,12 +923,15 @@ export function BeaconApp() {
                     >
                       <RecoverySetup
                         verified={me.recoveryVerified}
-                        kind={me.recoveryKind}
+                        emailMasked={me.recoveryEmailMasked}
+                        phoneMasked={me.recoveryPhoneMasked}
                         onReauthenticate={reauthenticatePasskey}
                         onVerified={(status) => setMe((current) => current ? {
                           ...current,
                           recoveryVerified: status.recovery_verified,
                           recoveryKind: status.recovery_kind,
+                          recoveryEmailMasked: status.recovery_email_masked,
+                          recoveryPhoneMasked: status.recovery_phone_masked,
                           profile: { ...current.profile, verified: status.recovery_verified },
                         } : current)}
                         toast={toast}

@@ -36,6 +36,8 @@ export interface AccountSecurity {
   passkey_linked: boolean;
   recovery_verified: boolean;
   recovery_kind: "email" | "phone" | "email+phone" | null;
+  recovery_email_masked: string | null;
+  recovery_phone_masked: string | null;
 }
 
 /** Supabase Authのパスキー登録後にアプリ用アカウントとセッションを確定する。 */
@@ -70,11 +72,13 @@ export async function getAccountSecurity(
   return unwrap(await db.rpc("get_account_security", { p_handle: handle, p_secret: secret })) as AccountSecurity;
 }
 
-export async function syncRecoveryStatus(db: DB): Promise<Pick<AccountSecurity, "recovery_verified" | "recovery_kind">> {
-  return unwrap(await db.rpc("sync_recovery_status")) as Pick<
-    AccountSecurity,
-    "recovery_verified" | "recovery_kind"
-  >;
+export type RecoveryStatus = Pick<
+  AccountSecurity,
+  "recovery_verified" | "recovery_kind" | "recovery_email_masked" | "recovery_phone_masked"
+>;
+
+export async function syncRecoveryStatus(db: DB): Promise<RecoveryStatus> {
+  return unwrap(await db.rpc("sync_recovery_status")) as RecoveryStatus;
 }
 
 /** 旧アカウント互換用。新規登録では使用しない。 */

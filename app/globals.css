@@ -824,9 +824,33 @@ textarea {
 .recoveryCard.verified { border-color: #9ddbc4; background: #f0fbf7; }
 .recoveryState { font-weight: 800; color: #147a58; }
 .recoveryState.warning { color: #a36300; }
+.verifiedContacts { display: grid; gap: 8px; }
+.verifiedContactRow {
+  display: flex; align-items: center; gap: 10px; padding: 10px 11px;
+  border: 1px solid rgba(20, 122, 88, .16); border-radius: 12px; background: rgba(255, 255, 255, .72);
+}
+.verifiedContactRow > div { min-width: 0; display: grid; gap: 2px; }
+.verifiedContactRow span { color: var(--muted); font-size: 10px; font-weight: 700; }
+.verifiedContactRow strong { overflow: hidden; text-overflow: ellipsis; font-size: 13px; white-space: nowrap; }
+.verifiedContactRow button, .recoveryAddActions button {
+  flex: 0 0 auto; margin-left: auto; border: 0; background: transparent; color: var(--emd);
+  padding: 6px; font: inherit; font-size: 11px; font-weight: 800; cursor: pointer;
+}
+.recoveryAddActions { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.recoveryAddActions button { margin-left: 0; padding: 2px 0; }
+.recoveryEditor { display: grid; gap: 10px; padding-top: 3px; }
+.recoveryPrivacyNote { font-size: 10px; }
 .methodTabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .methodTabs button { border: 1px solid var(--border); border-radius: 10px; padding: 8px; background: white; color: var(--muted); font: inherit; font-weight: 700; }
 .methodTabs button.on { border-color: var(--em); color: var(--emd); background: var(--soft); }
+.phoneFields { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 9px; }
+.phoneFields > div { min-width: 0; }
+.countryCodeField { position: relative; }
+.countryCodeField > span {
+  position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+  color: var(--muted); font-weight: 700; pointer-events: none;
+}
+.countryCodeField input { padding-left: 27px; }
 .xname { display: flex; align-items: center; gap: 5px; }
 .verifiedBadge { width: 18px; height: 18px; border-radius: 50%; background: var(--em); display: inline-flex; align-items: center; justify-content: center; flex: 0 0 18px; }
 .verifiedBadge svg { width: 13px; height: 13px; fill: none; stroke: white; stroke-width: 2.3; }

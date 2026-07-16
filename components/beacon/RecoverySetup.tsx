@@ -2,31 +2,60 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { syncRecoveryStatus, type AccountSecurity } from "@/lib/beacon/rpc";
+import { syncRecoveryStatus, type RecoveryStatus } from "@/lib/beacon/rpc";
 import type { ToastFn } from "./appTypes";
+import { normalizePhoneNumber } from "@/lib/beacon/phone";
+import { PhoneNumberFields } from "./PhoneNumberFields";
 
 type Method = "email" | "phone";
 
 export function RecoverySetup({
   verified,
-  kind,
+  emailMasked,
+  phoneMasked,
   onReauthenticate,
   onVerified,
   toast,
 }: {
   verified: boolean;
-  kind: AccountSecurity["recovery_kind"];
+  emailMasked: string | null;
+  phoneMasked: string | null;
   onReauthenticate: () => Promise<void>;
-  onVerified: (status: Pick<AccountSecurity, "recovery_verified" | "recovery_kind">) => void;
+  onVerified: (status: RecoveryStatus) => void;
   toast: ToastFn;
 }) {
   const db = useMemo(() => createClient(), []);
   const [method, setMethod] = useState<Method>("email");
+  const [editingMethod, setEditingMethod] = useState<Method | null>(verified ? null : "email");
   const [destination, setDestination] = useState("");
+  const [countryCode, setCountryCode] = useState("81");
+  const [nationalNumber, setNationalNumber] = useState("");
   const [pending, setPending] = useState<{ method: Method; destination: string } | null>(null);
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const normalizedPhone = normalizePhoneNumber(countryCode, nationalNumber);
+
+  const stopEditing = useCallback(() => {
+    setEditingMethod(null);
+    setPending(null);
+    setDestination("");
+    setCountryCode("81");
+    setNationalNumber("");
+    setCode("");
+    setError("");
+  }, []);
+
+  const beginEditing = useCallback((nextMethod: Method) => {
+    setMethod(nextMethod);
+    setEditingMethod(nextMethod);
+    setPending(null);
+    setDestination("");
+    setCountryCode("81");
+    setNationalNumber("");
+    setCode("");
+    setError("");
+  }, []);
 
   const syncConfirmedContact = useCallback(async () => {
     const current = await db.auth.getSession();
@@ -35,6 +64,7 @@ export function RecoverySetup({
       const status = await syncRecoveryStatus(db);
       if (status.recovery_verified) {
         onVerified(status);
+        stopEditing();
         toast("復旧手段を認証しました");
         return true;
       }
@@ -42,27 +72,28 @@ export function RecoverySetup({
     } finally {
       await db.auth.signOut({ scope: "local" }).catch(() => {});
     }
-  }, [db, onVerified, toast]);
+  }, [db, onVerified, stopEditing, toast]);
 
   useEffect(() => {
     void syncConfirmedContact();
   }, [syncConfirmedContact]);
 
   async function sendCode() {
-    const value = destination.trim();
+    if (!editingMethod) return;
+    const value = editingMethod === "email" ? destination.trim() : normalizedPhone;
     if (!value) return;
     setBusy(true);
     setError("");
     try {
       await onReauthenticate();
-      const result = method === "email"
+      const result = editingMethod === "email"
         ? await db.auth.updateUser({ email: value }, { emailRedirectTo: "https://via-mi.com/?tab=settings" })
         : await db.auth.updateUser({ phone: value });
       if (result.error) throw result.error;
       await db.auth.signOut({ scope: "local" });
-      setPending({ method, destination: value });
+      setPending({ method: editingMethod, destination: value });
       setCode("");
-      toast(method === "email" ? "確認メールを送信しました" : "確認コードを送信しました");
+      toast(editingMethod === "email" ? "確認メールを送信しました" : "確認コードを送信しました");
     } catch (cause) {
       const message = String((cause as { message?: string })?.message ?? cause);
       setError(message.includes("phone provider") || message.includes("Unsupported phone")
@@ -79,15 +110,15 @@ export function RecoverySetup({
     setBusy(true);
     setError("");
     try {
-      const result = pending.method === "email"
-        ? await db.auth.verifyOtp({ email: pending.destination, token: code.trim(), type: "email_change" })
-        : await db.auth.verifyOtp({ phone: pending.destination, token: code.trim(), type: "phone_change" });
+      const result = await db.auth.verifyOtp({
+        phone: pending.destination,
+        token: code.trim(),
+        type: "phone_change",
+      });
       if (result.error) throw result.error;
       const status = await syncRecoveryStatus(db);
       onVerified(status);
-      setPending(null);
-      setDestination("");
-      setCode("");
+      stopEditing();
       toast("復旧手段を認証しました");
       await db.auth.signOut({ scope: "local" });
     } catch {
@@ -97,49 +128,47 @@ export function RecoverySetup({
     }
   }
 
-  if (verified) {
-    return (
-      <div className="recoveryCard verified">
-        <div className="recoveryState"><span aria-hidden="true">✓</span> 復旧手段を認証済み</div>
-        <div className="lead">{kind === "phone" ? "電話番号" : kind === "email+phone" ? "メール・電話番号" : "メールアドレス"}で復旧できます。</div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="recoveryCard">
-      <div className="recoveryState warning">復旧手段が未認証です</div>
-      <div className="lead">パスキーを失った場合に備えて、あとから復旧できる連絡先を追加してください。</div>
-      <div className="methodTabs" role="tablist" aria-label="認証方法">
-        <button type="button" className={method === "email" ? "on" : ""} onClick={() => setMethod("email")}>メール</button>
-        <button type="button" className={method === "phone" ? "on" : ""} onClick={() => setMethod("phone")}>電話番号</button>
-      </div>
-      {!pending ? (
+  const editor = editingMethod && (
+    <div className="recoveryEditor">
+      {editingMethod === "email" ? (
         <>
-          <label className="f" htmlFor="recovery-destination">{method === "email" ? "メールアドレス" : "電話番号（国番号付き）"}</label>
+          <label className="f" htmlFor="recovery-destination">新しいメールアドレス</label>
           <input
             id="recovery-destination"
-            type={method === "email" ? "email" : "tel"}
+            type="email"
             value={destination}
             onChange={(event) => setDestination(event.target.value)}
-            placeholder={method === "email" ? "you@example.com" : "+819012345678"}
-            autoComplete={method === "email" ? "email" : "tel"}
+            placeholder="you@example.com"
+            autoComplete="email"
           />
-          <button className="btn sig" disabled={busy || !destination.trim()} onClick={sendCode}>
-            {busy ? "送信中…" : method === "email" ? "確認メールを送る" : "確認コードを送る"}
-          </button>
         </>
+      ) : (
+        <PhoneNumberFields
+          idPrefix="recovery-phone"
+          countryCode={countryCode}
+          nationalNumber={nationalNumber}
+          onCountryCodeChange={setCountryCode}
+          onNationalNumberChange={setNationalNumber}
+        />
+      )}
+      {!pending ? (
+        <button
+          className="btn sig"
+          disabled={busy || !(editingMethod === "email" ? destination.trim() : normalizedPhone)}
+          onClick={sendCode}
+        >
+          {busy ? "送信中…" : editingMethod === "email" ? "確認メールを送る" : "確認コードを送る"}
+        </button>
       ) : pending.method === "email" ? (
         <>
-          <div className="lead">メール内の確認リンクを開いてください。確認後、この画面に戻ると反映されます。</div>
+          <div className="lead">新しいメールアドレスに届いた確認リンクを開いてください。</div>
           <button className="btn ghost" type="button" disabled={busy} onClick={() => void syncConfirmedContact()}>
             認証状態を確認
           </button>
-          <button className="textlink" type="button" onClick={() => setPending(null)}>メールアドレスを入力し直す</button>
         </>
       ) : (
         <>
-          <div className="lead">{pending.destination} に届いた確認コードを入力してください。</div>
+          <div className="lead">新しい電話番号に届いた確認コードを入力してください。</div>
           <label className="f" htmlFor="recovery-code">確認コード</label>
           <input
             id="recovery-code"
@@ -152,10 +181,52 @@ export function RecoverySetup({
           <button className="btn sig" disabled={busy || code.length < 6} onClick={verifyCode}>
             {busy ? "確認中…" : "認証する"}
           </button>
-          <button className="textlink" type="button" onClick={() => setPending(null)}>入力し直す</button>
         </>
       )}
+      {verified && <button className="textlink" type="button" onClick={stopEditing}>キャンセル</button>}
       {error && <div className="hint no">{error}</div>}
+    </div>
+  );
+
+  if (verified) {
+    return (
+      <div className="recoveryCard verified">
+        <div className="recoveryState"><span aria-hidden="true">✓</span> 復旧手段を認証済み</div>
+        <div className="verifiedContacts">
+          {emailMasked && (
+            <div className="verifiedContactRow">
+              <div><span>メール</span><strong>{emailMasked}</strong></div>
+              <button type="button" onClick={() => beginEditing("email")}>変更</button>
+            </div>
+          )}
+          {phoneMasked && (
+            <div className="verifiedContactRow">
+              <div><span>電話番号</span><strong>{phoneMasked}</strong></div>
+              <button type="button" onClick={() => beginEditing("phone")}>変更</button>
+            </div>
+          )}
+        </div>
+        {!editingMethod && (
+          <div className="recoveryAddActions">
+            {!emailMasked && <button type="button" onClick={() => beginEditing("email")}>メールを追加</button>}
+            {!phoneMasked && <button type="button" onClick={() => beginEditing("phone")}>電話番号を追加</button>}
+          </div>
+        )}
+        {editor}
+        <div className="lead recoveryPrivacyNote">連絡先は本人の設定画面にだけ表示されます。</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="recoveryCard">
+      <div className="recoveryState warning">復旧手段が未認証です</div>
+      <div className="lead">パスキーを失った場合に備えて、あとから復旧できる連絡先を追加してください。</div>
+      <div className="methodTabs" role="tablist" aria-label="認証方法">
+        <button type="button" className={method === "email" ? "on" : ""} onClick={() => beginEditing("email")}>メール</button>
+        <button type="button" className={method === "phone" ? "on" : ""} onClick={() => beginEditing("phone")}>電話番号</button>
+      </div>
+      {editor}
     </div>
   );
 }

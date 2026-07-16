@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { cleanHandle } from "@/lib/beacon/format";
 import { authErrorMessage, type ToastFn } from "./appTypes";
+import { normalizePhoneNumber } from "@/lib/beacon/phone";
+import { PhoneNumberFields } from "./PhoneNumberFields";
 
 type Pane = "create" | "login" | "legacy" | "recover";
 type RecoveryMethod = "email" | "phone";
@@ -37,11 +39,14 @@ export function AuthView({
   const [legacyPasscode, setLegacyPasscode] = useState("");
   const [recoveryMethod, setRecoveryMethod] = useState<RecoveryMethod>("email");
   const [recoveryDestination, setRecoveryDestination] = useState("");
+  const [recoveryCountryCode, setRecoveryCountryCode] = useState("81");
+  const [recoveryNationalNumber, setRecoveryNationalNumber] = useState("");
   const [recoveryPending, setRecoveryPending] = useState(false);
   const [recoveryCode, setRecoveryCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [hint, setHint] = useState("");
   const handle = cleanHandle(handleInput);
+  const recoveryPhone = normalizePhoneNumber(recoveryCountryCode, recoveryNationalNumber);
   const supported = typeof window === "undefined" || "PublicKeyCredential" in window;
 
   async function run(action: () => Promise<void>) {
@@ -112,20 +117,35 @@ export function AuthView({
           </div>
           {!recoveryPending ? (
             <>
-              <label className="f" htmlFor="recover-destination">{recoveryMethod === "email" ? "メールアドレス" : "電話番号（国番号付き）"}</label>
-              <input
-                id="recover-destination"
-                type={recoveryMethod === "email" ? "email" : "tel"}
-                value={recoveryDestination}
-                onChange={(event) => setRecoveryDestination(event.target.value)}
-                placeholder={recoveryMethod === "email" ? "you@example.com" : "+819012345678"}
-                autoComplete={recoveryMethod === "email" ? "email" : "tel"}
-              />
+              {recoveryMethod === "email" ? (
+                <>
+                  <label className="f" htmlFor="recover-destination">メールアドレス</label>
+                  <input
+                    id="recover-destination"
+                    type="email"
+                    value={recoveryDestination}
+                    onChange={(event) => setRecoveryDestination(event.target.value)}
+                    placeholder="you@example.com"
+                    autoComplete="email"
+                  />
+                </>
+              ) : (
+                <PhoneNumberFields
+                  idPrefix="recover-phone"
+                  countryCode={recoveryCountryCode}
+                  nationalNumber={recoveryNationalNumber}
+                  onCountryCodeChange={setRecoveryCountryCode}
+                  onNationalNumberChange={setRecoveryNationalNumber}
+                />
+              )}
               <button
                 className="btn sig"
-                disabled={busy || !recoveryDestination.trim()}
+                disabled={busy || !(recoveryMethod === "email" ? recoveryDestination.trim() : recoveryPhone)}
                 onClick={() => run(async () => {
-                  await onRecoverySend(recoveryMethod, recoveryDestination.trim());
+                  await onRecoverySend(
+                    recoveryMethod,
+                    recoveryMethod === "email" ? recoveryDestination.trim() : recoveryPhone,
+                  );
                   setRecoveryPending(true);
                 })}
               >
@@ -152,7 +172,7 @@ export function AuthView({
               <button
                 className="btn sig"
                 disabled={busy || recoveryCode.length < 6 || !supported}
-                onClick={() => run(() => onRecoveryVerify(recoveryMethod, recoveryDestination.trim(), recoveryCode))}
+                onClick={() => run(() => onRecoveryVerify(recoveryMethod, recoveryPhone, recoveryCode))}
               >
                 {busy ? "登録中…" : "新しいパスキーを登録"}
               </button>
