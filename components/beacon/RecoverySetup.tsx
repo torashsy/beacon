@@ -129,7 +129,6 @@ export function RecoverySetup({
           <div className="recoveryAddActions"><button type="button" onClick={beginEditing}>メールを追加</button></div>
         )}
         {editor}
-        <div className="lead recoveryPrivacyNote">メールアドレスは本人の設定画面にだけ表示されます。</div>
       </div>
     );
   }
