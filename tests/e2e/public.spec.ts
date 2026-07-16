@@ -132,11 +132,7 @@ test("pulling down from the top offers a refresh", async ({ page }) => {
   await expect(page.locator(".pullRefresh")).toHaveClass(/show ready/);
   await expect(page.locator(".pullRefresh")).toHaveAttribute("aria-label", "離して更新");
   await expect(page.locator(".pullRefreshProgress")).toBeVisible();
-  await expect(page.locator(".pullRefreshSurface")).toHaveCSS("transition-duration", "0.056s");
-  await expect(page.locator(".pullRefreshSurface")).toHaveCSS(
-    "transition-timing-function",
-    "cubic-bezier(0.2, 0.75, 0.25, 1)",
-  );
+  await expect(page.locator(".pullRefreshSurface")).toHaveCSS("transition-property", "none");
   await expect.poll(
     () => page.locator(".pullRefreshSurface").evaluate(
       (element) => new DOMMatrix(getComputedStyle(element).transform).m42,

@@ -24,7 +24,6 @@
   --ease-state: cubic-bezier(0.2, 0, 0, 1);
   --ease-ui: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-spring: cubic-bezier(0.22, 1.32, 0.36, 1);
-  --ease-pull-follow: cubic-bezier(0.2, 0.75, 0.25, 1);
   --ease-pull-settle: cubic-bezier(0.22, 1, 0.36, 1);
 }
 * {
@@ -118,7 +117,7 @@ body {
 }
 .pullRefreshSurface.dragging,
 .pullRefreshSurface.ready {
-  transition: transform 56ms var(--ease-pull-follow);
+  transition: none;
 }
 .pullRefreshSurface.refreshing {
   transition: transform 320ms var(--ease-pull-settle);
