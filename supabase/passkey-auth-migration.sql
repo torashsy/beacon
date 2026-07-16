@@ -161,7 +161,8 @@ begin
   select
     email_confirmed_at is not null
       and coalesce(email, '') <> ''
-      and email not like '%@passkey.via-mi.invalid',
+      and email not like '%@passkey.via-mi.invalid'
+      and email not like '%@id.via-mi.com',
     phone_confirmed_at is not null and coalesce(phone, '') <> ''
   into email_ok, phone_ok from auth.users where id = uid;
   if email_ok and phone_ok then kind := 'email+phone';
