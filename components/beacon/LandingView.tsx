@@ -39,7 +39,7 @@ export function LandingView({
 }) {
   return (
     <section className="view">
-      <h1>あなたのSNS、全部ひとつに。</h1>
+      <h1 className="landingTitle">あなたのSNS、全部ひとつに。</h1>
       <button className="btn sig" onClick={onCreate}>
         無料でIDを作る
       </button>
