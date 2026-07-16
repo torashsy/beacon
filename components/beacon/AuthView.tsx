@@ -6,15 +6,6 @@ import { authErrorMessage, type ToastFn } from "./appTypes";
 
 type Pane = "create" | "login" | "recover";
 
-function PasskeyIcon() {
-  return (
-    <svg className="passkeyIcon" viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="8.5" cy="10.5" r="4.5" />
-      <path d="M12 10.5h9M18 10.5v3M15 10.5v2" />
-    </svg>
-  );
-}
-
 export function AuthView({
   initialHandle,
   initialPane,
@@ -69,13 +60,14 @@ export function AuthView({
         {back}
         <h1>ログイン</h1>
         <div className="card">
-          <div className="passkeyMark"><PasskeyIcon /></div>
-          <p className="lead">端末に保存したパスキーでログインします。</p>
-          {hint && <div className="hint no">{hint}</div>}
-          <button className="btn sig" disabled={busy || !supported} onClick={() => run(onLogin)}>
-            {busy ? "確認中…" : "パスキーでログイン"}
-          </button>
-          {!supported && <div className="hint no">この端末はパスキーに対応していません。</div>}
+          <div className="authAction">
+            <p className="lead">端末に保存したパスキーでログインします。</p>
+            {hint && <div className="hint no">{hint}</div>}
+            <button className="btn sig" disabled={busy || !supported} onClick={() => run(onLogin)}>
+              {busy ? "確認中…" : "パスキーでログイン"}
+            </button>
+            {!supported && <div className="hint no">この端末はパスキーに対応していません。</div>}
+          </div>
         </div>
         <div className="authswitch">
           IDを作る → <button type="button" className="textlink" onClick={() => setPane("create")}>新規作成</button>
@@ -166,16 +158,18 @@ export function AuthView({
         <div className={`hint ${handle.length >= 3 ? "ok" : ""}`}>
           {handle ? (handle.length >= 3 ? `@${handle} で作成します` : "3文字以上にしてください") : ""}
         </div>
-        <p className="lead passkeyLead">パスワードは不要です。画面の案内に沿ってパスキーを保存します。</p>
-        {hint && <div className="hint no">{hint}</div>}
-        <button
-          className="btn sig"
-          disabled={busy || handle.length < 3 || !supported}
-          onClick={() => run(() => onCreate(handle))}
-        >
-          {busy ? "作成中…" : "パスキーで作成"}
-        </button>
-        {!supported && <div className="hint no">この端末はパスキーに対応していません。</div>}
+        <div className="authAction">
+          <p className="lead">この端末にパスキーを保存します。次回からパスワードなしでログインできます。</p>
+          {hint && <div className="hint no">{hint}</div>}
+          <button
+            className="btn sig"
+            disabled={busy || handle.length < 3 || !supported}
+            onClick={() => run(() => onCreate(handle))}
+          >
+            {busy ? "作成中…" : "パスキーで作成"}
+          </button>
+          {!supported && <div className="hint no">この端末はパスキーに対応していません。</div>}
+        </div>
       </div>
       <div className="authswitch">
         すでにIDがある → <button type="button" className="textlink" onClick={() => setPane("login")}>ログイン</button>

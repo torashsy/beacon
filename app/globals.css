@@ -800,9 +800,8 @@ textarea {
 }
 
 .authSimple .card { display: grid; gap: 12px; }
-.authSimple .passkeyMark { display: grid; place-items: center; color: var(--emd); }
-.authSimple .passkeyIcon { width: 44px; height: 44px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.authSimple .passkeyLead { margin: 2px 0; }
+.authSimple .authAction { display: grid; gap: 8px; }
+.authSimple .authAction .lead { margin: 0 4px; }
 .authSimple .recoveryLink { margin-top: 20px; font-size: 11px; opacity: .72; }
 .recoveryBanner {
   width: 100%; min-height: 38px; border: 1px solid #eadfca; border-radius: 11px; background: #fffdf8;
