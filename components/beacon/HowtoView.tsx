@@ -38,10 +38,6 @@ export function HowtoView() {
           </article>
         ))}
       </div>
-      <div className="guideSupport">
-        <h2>ログインできないとき</h2>
-        <p>ログイン画面の「パスキーを使えない場合」から、認証済みメールアドレスで復旧できます。</p>
-      </div>
     </section>
   );
 }
