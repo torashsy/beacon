@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 const REFRESH_DISTANCE = 58;
 const HOLD_DISTANCE = 52;
 const MAX_DISTANCE = 96;
-const MIN_SPIN_TIME = 360;
+const MIN_SPIN_TIME = 700;
 
 function isInteractive(target: EventTarget | null) {
   return target instanceof Element && Boolean(

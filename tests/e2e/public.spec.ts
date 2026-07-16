@@ -142,6 +142,7 @@ test("pulling down from the top offers a refresh", async ({ page }) => {
   await expect(page.locator(".pullRefreshSurface")).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
 
   await page.goto("/");
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.evaluate(() => {
     window.scrollTo(0, 0);
     const event = new Event("touchstart", { bubbles: true, cancelable: true });
@@ -164,6 +165,14 @@ test("pulling down from the top offers a refresh", async ({ page }) => {
   await expect(page.locator(".pullRefresh")).toHaveAttribute("aria-label", "更新中");
   await expect(page.locator(".pullRefreshSpinner")).toBeVisible();
   await expect(page.locator(".pullRefreshSurface")).toHaveClass(/refreshing/);
+  const spinnerBefore = await page.locator(".pullRefreshSpinner").evaluate(
+    (element) => getComputedStyle(element).transform,
+  );
+  await page.waitForTimeout(180);
+  const spinnerAfter = await page.locator(".pullRefreshSpinner").evaluate(
+    (element) => getComputedStyle(element).transform,
+  );
+  expect(spinnerAfter).not.toBe(spinnerBefore);
   await expect(page.locator(".pullRefresh")).not.toHaveClass(/show/, { timeout: 1200 });
   await expect(page.locator(".pullRefreshSurface")).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
 });
