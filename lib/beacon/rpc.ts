@@ -35,9 +35,8 @@ export interface PasskeyAppSession {
 export interface AccountSecurity {
   passkey_linked: boolean;
   recovery_verified: boolean;
-  recovery_kind: "email" | "phone" | "email+phone" | null;
+  recovery_kind: "email" | null;
   recovery_email_masked: string | null;
-  recovery_phone_masked: string | null;
 }
 
 /** Supabase Authのパスキー登録後にアプリ用アカウントとセッションを確定する。 */
@@ -74,7 +73,7 @@ export async function getAccountSecurity(
 
 export type RecoveryStatus = Pick<
   AccountSecurity,
-  "recovery_verified" | "recovery_kind" | "recovery_email_masked" | "recovery_phone_masked"
+  "recovery_verified" | "recovery_kind" | "recovery_email_masked"
 >;
 
 export async function syncRecoveryStatus(db: DB): Promise<RecoveryStatus> {

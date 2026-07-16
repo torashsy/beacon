@@ -233,7 +233,6 @@ export function BeaconApp() {
         recovery_verified: false,
         recovery_kind: null,
         recovery_email_masked: null,
-        recovery_phone_masked: null,
       }));
       (page?.cal ?? []).forEach((e) => (cal[e.d] = { memo: e.memo, pub: true }));
       try {
@@ -255,7 +254,6 @@ export function BeaconApp() {
         recoveryVerified: security.recovery_verified,
         recoveryKind: security.recovery_kind,
         recoveryEmailMasked: security.recovery_email_masked,
-        recoveryPhoneMasked: security.recovery_phone_masked,
       };
     },
     [db],
@@ -389,19 +387,14 @@ export function BeaconApp() {
     }
   }, [db, finishAppLogin]);
 
-  const sendRecoveryCode = useCallback(async (method: "email" | "phone", destination: string) => {
-    const result = method === "email"
-      ? await db.auth.signInWithOtp({
-          email: destination,
-          options: {
-            shouldCreateUser: false,
-            emailRedirectTo: "https://via-mi.com/?recover=1",
-          },
-        })
-      : await db.auth.signInWithOtp({
-          phone: destination,
-          options: { shouldCreateUser: false },
-        });
+  const sendRecoveryCode = useCallback(async (destination: string) => {
+    const result = await db.auth.signInWithOtp({
+      email: destination,
+      options: {
+        shouldCreateUser: false,
+        emailRedirectTo: "https://via-mi.com/?recover=1",
+      },
+    });
     if (result.error) throw result.error;
     toast("確認コードを送信しました");
   }, [db, toast]);
@@ -415,26 +408,6 @@ export function BeaconApp() {
       await db.auth.signOut({ scope: "local" });
       setRecoverySessionReady(false);
       window.history.replaceState({}, "", "/");
-      await finishAppLogin(appSession.handle, appSession.token, true);
-      toast("アカウントを復旧しました");
-    } finally {
-      await db.auth.signOut({ scope: "local" }).catch(() => {});
-    }
-  }, [db, finishAppLogin, toast]);
-
-  const recoverWithCode = useCallback(async (
-    method: "email" | "phone",
-    destination: string,
-    code: string,
-  ) => {
-    const verified = method === "email"
-      ? await db.auth.verifyOtp({ email: destination, token: code, type: "email" })
-      : await db.auth.verifyOtp({ phone: destination, token: code, type: "sms" });
-    if (verified.error) throw verified.error;
-    try {
-      const appSession = await createPasskeySession(db);
-      await registerPasskeyForHandle(db, appSession.handle);
-      await db.auth.signOut({ scope: "local" });
       await finishAppLogin(appSession.handle, appSession.token, true);
       toast("アカウントを復旧しました");
     } finally {
@@ -847,7 +820,6 @@ export function BeaconApp() {
             onLogin={doPasskeyLogin}
             onLegacyMigrate={doLegacyMigrate}
             onRecoverySend={sendRecoveryCode}
-            onRecoveryVerify={recoverWithCode}
             onRecoveryComplete={completeRecovery}
             recoverySessionReady={recoverySessionReady}
             onBack={() => setOverlay("none")}
@@ -924,14 +896,12 @@ export function BeaconApp() {
                       <RecoverySetup
                         verified={me.recoveryVerified}
                         emailMasked={me.recoveryEmailMasked}
-                        phoneMasked={me.recoveryPhoneMasked}
                         onReauthenticate={reauthenticatePasskey}
                         onVerified={(status) => setMe((current) => current ? {
                           ...current,
                           recoveryVerified: status.recovery_verified,
                           recoveryKind: status.recovery_kind,
                           recoveryEmailMasked: status.recovery_email_masked,
-                          recoveryPhoneMasked: status.recovery_phone_masked,
                           profile: { ...current.profile, verified: status.recovery_verified },
                         } : current)}
                         toast={toast}
