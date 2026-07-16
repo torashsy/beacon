@@ -137,11 +137,11 @@ test("pulling down from the top offers a refresh", async ({ page }) => {
     "transition-timing-function",
     "cubic-bezier(0.2, 0.75, 0.25, 1)",
   );
-  const pulledTransform = await page.locator(".pullRefreshSurface").evaluate(
-    (element) => getComputedStyle(element).transform,
-  );
-  expect(pulledTransform).not.toBe("none");
-  expect(pulledTransform).not.toBe("matrix(1, 0, 0, 1, 0, 0)");
+  await expect.poll(
+    () => page.locator(".pullRefreshSurface").evaluate(
+      (element) => new DOMMatrix(getComputedStyle(element).transform).m42,
+    ),
+  ).toBeGreaterThan(0);
   const regularPullY = await page.locator(".pullRefreshSurface").evaluate(
     (element) => new DOMMatrix(getComputedStyle(element).transform).m42,
   );
