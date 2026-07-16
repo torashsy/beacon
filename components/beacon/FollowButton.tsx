@@ -58,6 +58,7 @@ export function FollowButton({ snapshot }: { snapshot: FollowSnapshot }) {
     <button
       className={`pill followAction ${followed ? "line" : "solid"}`}
       onClick={toggle}
+      aria-pressed={followed}
       // ハイドレーション完了までは押下不可（SSRと初期状態を一致させる）
       disabled={!ready}
     >

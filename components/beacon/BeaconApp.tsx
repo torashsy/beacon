@@ -706,6 +706,7 @@ export function BeaconApp() {
   );
 
   function goNav(v: NavTab) {
+    if (v !== navTab) window.scrollTo({ top: 0, behavior: "auto" });
     setNavTab(v);
     setEditing(false);
     setOverlay("none");
@@ -733,7 +734,7 @@ export function BeaconApp() {
 
   function goHome() {
     goNav("profile");
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: "auto" });
   }
 
   if (booting) {
