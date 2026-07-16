@@ -10,7 +10,7 @@ import {
  * supabase/schema.sql の RPC 群を型付きで呼ぶ薄いラッパー。
  * 設計原則:
  *   - Supabase Authがパスキーを検証し、書込RPCは毎回失効可能なアプリセッション
- *     （'bst_' 始まり）を検証する。旧アカウント移行時だけ従来パスコードを受け付ける。
+ *     （'bst_' 始まり）を検証する。
  *   - 横断検索・一覧・レコメンドAPIは絶対に作らない（異性紹介事業の回避）。
  *
  * エラーは Postgres の raise exception がそのまま code/message で返る。
@@ -43,12 +43,11 @@ export interface AccountSecurity {
 export async function finalizePasskeyAccount(
   db: DB,
   handle: string,
-  legacySecret?: string,
 ): Promise<PasskeyAppSession> {
   return unwrap(
     await db.rpc("finalize_passkey_account", {
       p_handle: handle,
-      p_legacy_secret: legacySecret || null,
+      p_legacy_secret: null,
     }),
   ) as PasskeyAppSession;
 }

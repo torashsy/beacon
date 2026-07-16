@@ -341,9 +341,9 @@ export function BeaconApp() {
   );
 
   const bootstrapPasskey = useCallback(
-    async (handle: string, legacySecret?: string) => {
+    async (handle: string) => {
       const { data, error } = await db.functions.invoke("create-passkey-user", {
-        body: { handle, legacySecret: legacySecret || undefined },
+        body: { handle },
       });
       const tokenHash = (data as { tokenHash?: string; error?: string } | null)?.tokenHash;
       if (error || !tokenHash) {
@@ -354,7 +354,7 @@ export function BeaconApp() {
       if (verified.error) throw verified.error;
       try {
         await registerPasskeyForHandle(db, handle);
-        const appSession = await finalizePasskeyAccount(db, handle, legacySecret);
+        const appSession = await finalizePasskeyAccount(db, handle);
         await db.auth.signOut({ scope: "local" });
         await finishAppLogin(appSession.handle, appSession.token, true);
       } finally {
@@ -367,11 +367,6 @@ export function BeaconApp() {
   const doCreate = useCallback(async (handle: string) => {
     await bootstrapPasskey(handle);
     toast("IDを作成しました");
-  }, [bootstrapPasskey, toast]);
-
-  const doLegacyMigrate = useCallback(async (handle: string, passcode: string) => {
-    await bootstrapPasskey(handle, passcode);
-    toast("パスキーへ移行しました");
   }, [bootstrapPasskey, toast]);
 
   const doPasskeyLogin = useCallback(async () => {
@@ -805,7 +800,6 @@ export function BeaconApp() {
             initialPane={authInitialPane}
             onCreate={doCreate}
             onLogin={doPasskeyLogin}
-            onLegacyMigrate={doLegacyMigrate}
             onRecoverySend={sendRecoveryCode}
             onRecoveryComplete={completeRecovery}
             recoverySessionReady={recoverySessionReady}

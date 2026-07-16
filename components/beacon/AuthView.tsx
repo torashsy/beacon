@@ -4,14 +4,22 @@ import { useState } from "react";
 import { cleanHandle } from "@/lib/beacon/format";
 import { authErrorMessage, type ToastFn } from "./appTypes";
 
-type Pane = "create" | "login" | "legacy" | "recover";
+type Pane = "create" | "login" | "recover";
+
+function PasskeyIcon() {
+  return (
+    <svg className="passkeyIcon" viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="8.5" cy="10.5" r="4.5" />
+      <path d="M12 10.5h9M18 10.5v3M15 10.5v2" />
+    </svg>
+  );
+}
 
 export function AuthView({
   initialHandle,
   initialPane,
   onCreate,
   onLogin,
-  onLegacyMigrate,
   onRecoverySend,
   onRecoveryComplete,
   recoverySessionReady = false,
@@ -22,7 +30,6 @@ export function AuthView({
   initialPane: "create" | "login" | "recover";
   onCreate: (handle: string) => Promise<void>;
   onLogin: () => Promise<void>;
-  onLegacyMigrate: (handle: string, passcode: string) => Promise<void>;
   onRecoverySend: (destination: string) => Promise<void>;
   onRecoveryComplete: () => Promise<void>;
   recoverySessionReady?: boolean;
@@ -31,7 +38,6 @@ export function AuthView({
 }) {
   const [pane, setPane] = useState<Pane>(initialPane);
   const [handleInput, setHandleInput] = useState(initialHandle);
-  const [legacyPasscode, setLegacyPasscode] = useState("");
   const [recoveryDestination, setRecoveryDestination] = useState("");
   const [recoveryPending, setRecoveryPending] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -63,9 +69,9 @@ export function AuthView({
         {back}
         <h1>ログイン</h1>
         <div className="card">
-          <div className="passkeyMark" aria-hidden="true">🔑</div>
+          <div className="passkeyMark"><PasskeyIcon /></div>
           <p className="lead">端末に保存したパスキーでログインします。</p>
-          <div className="hint no">{hint}</div>
+          {hint && <div className="hint no">{hint}</div>}
           <button className="btn sig" disabled={busy || !supported} onClick={() => run(onLogin)}>
             {busy ? "確認中…" : "パスキーでログイン"}
           </button>
@@ -74,10 +80,7 @@ export function AuthView({
         <div className="authswitch">
           IDを作る → <button type="button" className="textlink" onClick={() => setPane("create")}>新規作成</button>
         </div>
-        <div className="authswitch legacyLink">
-          <button type="button" className="textlink" onClick={() => setPane("legacy")}>以前のIDをパスキーへ移行</button>
-        </div>
-        <div className="authswitch legacyLink">
+        <div className="authswitch recoveryLink">
           <button type="button" className="textlink" onClick={() => setPane("recover")}>パスキーを使えない場合</button>
         </div>
       </section>
@@ -137,50 +140,6 @@ export function AuthView({
     );
   }
 
-  if (pane === "legacy") {
-    return (
-      <section className="view authSimple">
-        <button type="button" className="backlink" onClick={() => setPane("login")}>← ログインに戻る</button>
-        <h1>以前のIDを移行</h1>
-        <div className="card">
-          <label className="f" htmlFor="legacy-id">ID</label>
-          <div className="idfield">
-            <span className="at">@</span>
-            <input
-              id="legacy-id"
-              value={handleInput}
-              onChange={(event) => setHandleInput(event.target.value)}
-              onCompositionEnd={(event) => setHandleInput(cleanHandle(event.currentTarget.value))}
-              onBlur={(event) => setHandleInput(cleanHandle(event.currentTarget.value))}
-              maxLength={20}
-              autoComplete="username"
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck={false}
-              lang="en"
-            />
-          </div>
-          <label className="f" htmlFor="legacy-pass">現在のパスコード</label>
-          <input
-            id="legacy-pass"
-            type="password"
-            value={legacyPasscode}
-            onChange={(event) => setLegacyPasscode(event.target.value)}
-            autoComplete="current-password"
-          />
-          <div className="hint no">{hint}</div>
-          <button
-            className="btn sig"
-            disabled={busy || handle.length < 3 || !legacyPasscode || !supported}
-            onClick={() => run(() => onLegacyMigrate(handle, legacyPasscode))}
-          >
-            {busy ? "移行中…" : "パスキーへ移行"}
-          </button>
-        </div>
-      </section>
-    );
-  }
-
   return (
     <section className="view authSimple">
       {back}
@@ -208,7 +167,7 @@ export function AuthView({
           {handle ? (handle.length >= 3 ? `@${handle} で作成します` : "3文字以上にしてください") : ""}
         </div>
         <p className="lead passkeyLead">パスワードは不要です。画面の案内に沿ってパスキーを保存します。</p>
-        <div className="hint no">{hint}</div>
+        {hint && <div className="hint no">{hint}</div>}
         <button
           className="btn sig"
           disabled={busy || handle.length < 3 || !supported}
