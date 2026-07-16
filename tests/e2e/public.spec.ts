@@ -183,11 +183,11 @@ test("pulling down from the top offers a refresh", async ({ page }) => {
   await expect(page.locator(".pullRefresh")).toHaveAttribute("aria-label", "更新中");
   await expect(page.locator(".pullRefreshSpinner")).toBeVisible();
   await expect(page.locator(".pullRefreshSurface")).toHaveClass(/refreshing/);
-  await expect(page.locator(".pullRefreshSurface")).toHaveCSS(
-    "transform",
-    "matrix(1, 0, 0, 1, 0, 0)",
-    { timeout: 500 },
-  );
+  await expect.poll(
+    () => page.locator(".pullRefreshSurface").evaluate(
+      (element) => new DOMMatrix(getComputedStyle(element).transform).m42,
+    ),
+  ).toBeGreaterThan(0);
   await expect(page.locator(".pullRefreshSpinner")).toBeVisible();
   const spinnerBefore = await page.locator(".pullRefreshSpinner").evaluate(
     (element) => getComputedStyle(element).transform,
@@ -197,8 +197,10 @@ test("pulling down from the top offers a refresh", async ({ page }) => {
     (element) => getComputedStyle(element).transform,
   );
   expect(spinnerAfter).not.toBe(spinnerBefore);
-  await expect(page.locator(".pullRefresh")).not.toHaveClass(/show/, { timeout: 1200 });
+  await expect(page.locator(".pullRefresh")).toHaveClass(/returning/, { timeout: 1200 });
+  await expect(page.locator(".pullRefreshSurface")).toHaveClass(/returning/);
   await expect(page.locator(".pullRefreshSurface")).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
+  await expect(page.locator(".pullRefresh")).not.toHaveClass(/show/, { timeout: 700 });
 });
 
 test("a verified contact can start passkey recovery", async ({ page }) => {
