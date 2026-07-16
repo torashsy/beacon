@@ -86,7 +86,7 @@ test("account creation only asks for an ID and passkey", async ({ page }) => {
   await page.getByLabel("ID", { exact: true }).fill("new_user");
   const create = page.getByRole("button", { name: "パスキーで作成", exact: true });
   await expect(create).toBeEnabled();
-  await expect(page.getByText("パスワードは不要です。画面の案内に沿ってパスキーを保存します。")).toBeVisible();
+  await expect(page.getByText("この端末にパスキーを保存します。次回からパスワードなしでログインできます。")).toBeVisible();
   await expect(page.locator('input[type="password"]')).toHaveCount(0);
 });
 
@@ -103,7 +103,7 @@ test("help explains the main flow in plain language", async ({ page }) => {
 test("a verified contact can start passkey recovery", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "ログイン", exact: true }).click();
-  await expect(page.locator(".passkeyIcon")).toBeVisible();
+  await expect(page.locator(".passkeyIcon")).toHaveCount(0);
   await expect(page.getByText("以前のIDをパスキーへ移行", { exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "パスキーを使えない場合", exact: true }).click();
 
