@@ -20,6 +20,7 @@
   --motion-press: 60ms;
   --motion-quick: 90ms;
   --motion-ui: 150ms;
+  --motion-slide: 170ms;
   --ease-state: cubic-bezier(0.2, 0, 0, 1);
   --ease-ui: cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -182,6 +183,21 @@ h1 {
 .view {
   animation: view-in var(--motion-ui) var(--ease-ui);
 }
+.tabStage {
+  min-width: 0;
+}
+.tabStage .view {
+  animation: none;
+}
+.tabStage.none {
+  animation: view-in var(--motion-ui) var(--ease-ui);
+}
+.tabStage.from-left {
+  animation: tab-slide-from-left var(--motion-slide) var(--ease-ui);
+}
+.tabStage.from-right {
+  animation: tab-slide-from-right var(--motion-slide) var(--ease-ui);
+}
 @keyframes view-in {
   from {
     opacity: 0.86;
@@ -190,6 +206,26 @@ h1 {
   to {
     opacity: 1;
     transform: none;
+  }
+}
+@keyframes tab-slide-from-left {
+  from {
+    opacity: 0.9;
+    transform: translate3d(-14px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+@keyframes tab-slide-from-right {
+  from {
+    opacity: 0.9;
+    transform: translate3d(14px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
   }
 }
 .xcard {

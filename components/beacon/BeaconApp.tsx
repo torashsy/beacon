@@ -68,7 +68,10 @@ import { notifyFollowers, removeCurrentDevicePushSubscription } from "@/lib/beac
  */
 
 type NavTab = "profile" | "follows" | "help";
+type NavDirection = "none" | "from-left" | "from-right";
 type Overlay = "none" | "auth";
+
+const NAV_ORDER: NavTab[] = ["follows", "profile", "help"];
 
 function publicChannelsSignature(channels: Channel[]) {
   return JSON.stringify(channels.filter((channel) => channel.status === "live").map((channel) => ({
@@ -108,6 +111,7 @@ export function BeaconApp() {
   const [session, setSession] = useState<Session | null>(null);
   const [me, setMe] = useState<Me | null>(null);
   const [navTab, setNavTab] = useState<NavTab>("profile");
+  const [navDirection, setNavDirection] = useState<NavDirection>("none");
   // 全画面オーバーレイ（ナビを隠す）: 認証フォーム / 公開プレビュー
   const [overlay, setOverlay] = useState<Overlay>("none");
   const [editing, setEditing] = useState(false);
@@ -728,7 +732,10 @@ export function BeaconApp() {
   );
 
   function goNav(v: NavTab) {
-    if (v !== navTab) window.scrollTo({ top: 0, behavior: "auto" });
+    if (v !== navTab) {
+      setNavDirection(NAV_ORDER.indexOf(v) > NAV_ORDER.indexOf(navTab) ? "from-right" : "from-left");
+      window.scrollTo({ top: 0, behavior: "auto" });
+    }
     setNavTab(v);
     setEditing(false);
     setOverlay("none");
@@ -838,7 +845,9 @@ export function BeaconApp() {
         )}
 
         {/* 通常モード: プロフィール / フォロー中 / 使い方 */}
-        {overlay === "none" && navTab === "profile" && (
+        {overlay === "none" && (
+          <div key={navTab} className={`tabStage ${navDirection}`}>
+        {navTab === "profile" && (
           session && me ? (
             editing ? (
               <div className="editMode">
@@ -878,7 +887,7 @@ export function BeaconApp() {
           )
         )}
 
-        {overlay === "none" && navTab === "follows" && (
+        {navTab === "follows" && (
           <FollowsView
             follows={follows}
             states={followStates}
@@ -889,9 +898,9 @@ export function BeaconApp() {
           />
         )}
 
-        {overlay === "none" && navTab === "help" && <HowtoView />}
+        {navTab === "help" && <HowtoView />}
 
-        {overlay === "none" && navTab === "help" && (
+        {navTab === "help" && (
           <section className="view">
             <div className="card">
               <h2 style={{ margin: "0 0 8px" }}>設定</h2>
@@ -932,6 +941,8 @@ export function BeaconApp() {
               )}
             </div>
           </section>
+        )}
+          </div>
         )}
       </div>
 

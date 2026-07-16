@@ -102,6 +102,18 @@ test("help explains the main flow in plain language", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "ログインできないとき", exact: true })).toHaveCount(0);
 });
 
+test("bottom tabs slide in the direction of travel", async ({ page }) => {
+  await page.goto("/");
+
+  await page.getByRole("button", { name: "Follow", exact: true }).click();
+  await expect(page.locator(".tabStage")).toHaveClass(/from-left/);
+  await expect(page.locator(".tabStage")).toHaveCSS("animation-name", "tab-slide-from-left");
+
+  await page.getByRole("button", { name: "Help", exact: true }).click();
+  await expect(page.locator(".tabStage")).toHaveClass(/from-right/);
+  await expect(page.locator(".tabStage")).toHaveCSS("animation-name", "tab-slide-from-right");
+});
+
 test("pulling down from the top offers a refresh", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator(".pullRefresh")).toBeAttached();
