@@ -17,12 +17,14 @@
   --ink: #f0f9ff;
   --radius: 14px;
   --shadow: 0 1px 3px rgba(15, 54, 78, 0.08);
-  --motion-press: 60ms;
-  --motion-quick: 90ms;
-  --motion-ui: 150ms;
-  --motion-slide: 170ms;
+  --motion-press: 70ms;
+  --motion-release: 180ms;
+  --motion-quick: 110ms;
+  --motion-ui: 220ms;
+  --motion-slide: 240ms;
   --ease-state: cubic-bezier(0.2, 0, 0, 1);
-  --ease-ui: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-ui: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --ease-ios-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-spring: cubic-bezier(0.22, 1.32, 0.36, 1);
   --ease-pull-settle: cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -43,6 +45,8 @@ body {
   padding-bottom: calc(92px + env(safe-area-inset-bottom));
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior-x: none;
 }
 .wrap {
   max-width: 520px;
@@ -226,7 +230,7 @@ h1 {
   font-weight: 500;
 }
 .view {
-  animation: view-in var(--motion-ui) var(--ease-ui);
+  animation: view-in var(--motion-ui) var(--ease-ios-out);
 }
 .tabStage {
   min-width: 0;
@@ -235,18 +239,18 @@ h1 {
   animation: none;
 }
 .tabStage.none {
-  animation: view-in var(--motion-ui) var(--ease-ui);
+  animation: view-in var(--motion-ui) var(--ease-ios-out);
 }
 .tabStage.from-left {
-  animation: tab-slide-from-left var(--motion-slide) var(--ease-ui);
+  animation: tab-slide-from-left var(--motion-slide) var(--ease-ios-out);
 }
 .tabStage.from-right {
-  animation: tab-slide-from-right var(--motion-slide) var(--ease-ui);
+  animation: tab-slide-from-right var(--motion-slide) var(--ease-ios-out);
 }
 @keyframes view-in {
   from {
-    opacity: 0.86;
-    transform: translateY(3px);
+    opacity: 0.72;
+    transform: translateY(2px);
   }
   to {
     opacity: 1;
@@ -255,8 +259,8 @@ h1 {
 }
 @keyframes tab-slide-from-left {
   from {
-    opacity: 0.9;
-    transform: translate3d(-14px, 0, 0);
+    opacity: 0.7;
+    transform: translate3d(-10px, 0, 0);
   }
   to {
     opacity: 1;
@@ -265,8 +269,8 @@ h1 {
 }
 @keyframes tab-slide-from-right {
   from {
-    opacity: 0.9;
-    transform: translate3d(14px, 0, 0);
+    opacity: 0.7;
+    transform: translate3d(10px, 0, 0);
   }
   to {
     opacity: 1;
@@ -661,17 +665,28 @@ textarea {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(23, 36, 43, .55);
-  animation: scrim-in var(--motion-ui) var(--ease-ui);
+  background: rgba(23, 36, 43, .46);
+  overscroll-behavior: contain;
+  animation: scrim-in var(--motion-ui) var(--ease-state);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
 }
-.modalScrim > * { animation: modal-in var(--motion-ui) var(--ease-ui); }
+.modalScrim > * {
+  max-height: calc(100dvh - 48px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  animation: modal-in 300ms var(--ease-ios-out);
+}
 @keyframes scrim-in { from { opacity: 0; } }
 @keyframes modal-in {
-  from { opacity: 0; transform: translateY(6px) scale(.98); }
+  from { opacity: 0; transform: translateY(14px) scale(.965); }
   to { opacity: 1; transform: none; }
 }
 .qrModal { width: 100%; max-width: 320px; text-align: center; }
 .qrModal img { width: 100%; border-radius: 12px; }
+.cropScrim { z-index: 70; background: rgba(23, 36, 43, .62); }
+.cropModal { width: 100%; max-width: 380px; text-align: center; }
 .textDangerButton {
   padding: 0;
   border: 0;
@@ -772,10 +787,13 @@ textarea {
 .publicBack:active,
 .backlink:active,
 .xtab:active {
-  transform: scale(0.97);
+  transform: scale(0.985);
+  opacity: .62;
 }
-.logoButton:active,
-.editbar .x:active { transform: scale(.97); }
+.circleAction:active,
+.calnav:active,
+.editbar .x:active { transform: scale(.94); }
+.logoButton:active { transform: scale(.985); opacity: .58; }
 .nav .ni:active .navIcon { transform: scale(.9); }
 .btn:disabled {
   opacity: 0.45;
@@ -1764,7 +1782,8 @@ textarea {
   border-radius: 14px;
   touch-action: manipulation;
   transition: color var(--motion-ui) var(--ease-ui),
-    transform var(--motion-quick) var(--ease-ui);
+    opacity var(--motion-release) var(--ease-state),
+    transform var(--motion-press) var(--ease-state);
   text-decoration: none;
   position: relative;
   isolation: isolate;
@@ -1778,8 +1797,8 @@ textarea {
   background: var(--eml);
   opacity: 0;
   transform: scale(0.72);
-  transition: opacity var(--motion-ui) var(--ease-ui),
-    transform var(--motion-ui) var(--ease-ui);
+  transition: opacity var(--motion-ui) var(--ease-state),
+    transform var(--motion-ui) var(--ease-ios-out);
   z-index: -1;
 }
 .nav .ni .i {
@@ -1803,7 +1822,7 @@ textarea {
   opacity: 1;
 }
 .nav .ni.on .navIcon {
-  animation: nav-pop var(--motion-ui) var(--ease-ui);
+  animation: nav-pop var(--motion-ui) var(--ease-ios-out);
 }
 @keyframes nav-pop {
   from { opacity: .68; transform: scale(.9); }
@@ -1826,8 +1845,8 @@ textarea {
   font-size: 13px;
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--motion-ui) var(--ease-ui),
-    transform var(--motion-ui) var(--ease-ui);
+  transition: opacity var(--motion-ui) var(--ease-state),
+    transform 320ms var(--ease-ios-out);
   z-index: 50;
   width: max-content;
   max-width: calc(100% - 32px);
@@ -1875,7 +1894,7 @@ textarea {
   stroke-width: 1.9;
   stroke-linecap: round;
   stroke-linejoin: round;
-  transition: transform var(--motion-press) var(--ease-ui),
+  transition: transform var(--motion-press) var(--ease-state),
     opacity var(--motion-quick) var(--ease-state);
 }
 .previewLabel {
@@ -1901,11 +1920,38 @@ textarea {
 .textDangerButton:active { opacity: .62; }
 
 :where(.circleAction, .homeQuickAction, .calnav, .unf, .publicBack, .backlink, .tag, .logoButton, .editbar .x) {
-  transition: transform var(--motion-press) var(--ease-ui),
+  transition: transform var(--motion-press) var(--ease-state),
     background-color var(--motion-quick) var(--ease-state),
     border-color var(--motion-quick) var(--ease-state),
     color var(--motion-quick) var(--ease-state),
     opacity var(--motion-quick) var(--ease-state);
+}
+
+/* iOS has no sticky hover state after a tap. Keep hover-only lift effects on pointer devices. */
+@media (hover: none) {
+  .pill.solid:hover:not(:disabled),
+  .btn.sig:hover:not(:disabled) {
+    background: var(--em);
+    transform: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .modalScrim:has(.iconChoiceModal) {
+    align-items: flex-end;
+    padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+  }
+  .modalScrim > .iconChoiceModal {
+    width: 100%;
+    max-width: 520px;
+    border-radius: 22px;
+    animation-name: sheet-in;
+    animation-duration: 360ms;
+  }
+  @keyframes sheet-in {
+    from { opacity: .82; transform: translate3d(0, 36px, 0) scale(.985); }
+    to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+  }
 }
 
 button:focus-visible,

@@ -194,29 +194,18 @@ export function ProfileView({
       </div>
 
       {qrDataUrl && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(23,36,43,.55)",
-            zIndex: 60,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 24,
-          }}
-          onClick={() => setQrDataUrl(null)}
-        >
+        <div className="modalScrim" onClick={() => setQrDataUrl(null)}>
           <div
-            className="card"
-            style={{ textAlign: "center", width: "100%", maxWidth: 320 }}
+            className="card qrModal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="QRコード"
             onClick={(e) => e.stopPropagation()}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={qrDataUrl}
               alt={`@${handle} のQRコード`}
-              style={{ width: "100%", borderRadius: 12 }}
             />
             <div className="xid" style={{ marginTop: 8 }}>
               @{handle}

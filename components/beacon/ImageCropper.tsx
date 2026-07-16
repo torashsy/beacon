@@ -179,18 +179,14 @@ export function ImageCropper({
 
   return (
     <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(23,36,43,.7)",
-        zIndex: 70,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 24,
-      }}
+      className="modalScrim cropScrim"
     >
-      <div className="card" style={{ width: "100%", maxWidth: 380, textAlign: "center" }}>
+      <div
+        className="card cropModal"
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+      >
         <div style={{ fontWeight: 800, fontSize: 15, marginBottom: 12 }}>{title}</div>
         <div
           ref={frameRef}
