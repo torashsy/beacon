@@ -29,6 +29,8 @@ export function PullToRefresh({
   const refreshingRef = useRef(false);
   const settleTimer = useRef<number | null>(null);
   const returnTimer = useRef<number | null>(null);
+  const moveFrame = useRef<number | null>(null);
+  const pendingDistance = useRef(0);
   const onRefreshRef = useRef(onRefresh);
   const [distance, setDistance] = useState(0);
   const [dragging, setDragging] = useState(false);
@@ -40,9 +42,27 @@ export function PullToRefresh({
   }, [onRefresh]);
 
   useEffect(() => {
+    function cancelMoveFrame() {
+      if (moveFrame.current === null) return;
+      cancelAnimationFrame(moveFrame.current);
+      moveFrame.current = null;
+    }
+
+    function renderDistance(nextDistance: number) {
+      distanceRef.current = nextDistance;
+      pendingDistance.current = nextDistance;
+      if (moveFrame.current !== null) return;
+      moveFrame.current = requestAnimationFrame(() => {
+        moveFrame.current = null;
+        setDistance(pendingDistance.current);
+      });
+    }
+
     function reset() {
+      cancelMoveFrame();
       startY.current = null;
       distanceRef.current = 0;
+      pendingDistance.current = 0;
       setDragging(false);
       setDistance(0);
     }
@@ -59,8 +79,7 @@ export function PullToRefresh({
       if (currentY === undefined) return;
       const delta = currentY - startY.current;
       if (delta <= 0) {
-        distanceRef.current = 0;
-        setDistance(0);
+        renderDistance(0);
         return;
       }
 
@@ -69,13 +88,13 @@ export function PullToRefresh({
       // This is the same rubber-band shape used by native overscroll interactions.
       const resisted = (delta * PULL_ASYMPTOTE * PULL_RESISTANCE)
         / (PULL_ASYMPTOTE + delta * PULL_RESISTANCE);
-      distanceRef.current = Math.max(0, resisted);
-      setDistance(distanceRef.current);
+      renderDistance(Math.max(0, resisted));
     }
 
     function onTouchEnd() {
       if (startY.current === null) return;
       const shouldRefresh = distanceRef.current >= REFRESH_DISTANCE;
+      cancelMoveFrame();
       startY.current = null;
       setDragging(false);
       if (!shouldRefresh) {
@@ -117,6 +136,7 @@ export function PullToRefresh({
       document.removeEventListener("touchmove", onTouchMove);
       document.removeEventListener("touchend", onTouchEnd);
       document.removeEventListener("touchcancel", onTouchCancel);
+      cancelMoveFrame();
       if (settleTimer.current) clearTimeout(settleTimer.current);
       if (returnTimer.current) clearTimeout(returnTimer.current);
     };
