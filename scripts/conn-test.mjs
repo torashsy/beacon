@@ -34,6 +34,8 @@ const pass = "correct-horse-1";
 const today = new Date().toISOString().slice(0, 10);
 const d2 = "2026-08-15";
 let rc = "";
+let sessionToken = "";
+let pushEndpoint = "";
 let failures = 0;
 const fail = (label, e) => {
   failures++;
@@ -169,6 +171,23 @@ try {
     if (!ok) failures++;
   } catch (e) { fail("get_private_cal", e); }
 
+  // Web Push購読は本人用RPCでのみ登録・削除でき、テーブルは直接読めない
+  try {
+    pushEndpoint = `https://example.com/push/${handle}`;
+    await rpc("save_push_subscription", {
+      p_handle: handle,
+      p_secret: pass,
+      p_endpoint: pushEndpoint,
+      p_p256dh: "A".repeat(88),
+      p_auth: "B".repeat(24),
+      p_user_agent: "conn-test",
+    });
+    const { data } = await db.from("push_subscriptions").select("endpoint").eq("endpoint", pushEndpoint);
+    const hidden = !data || data.length === 0;
+    log(hidden, "push subscription private / toggle RPC");
+    if (!hidden) failures++;
+  } catch (e) { fail("push subscription", e); }
+
   // 13. reset_pass（復旧コードで再設定）
   try {
     await rpc("reset_pass", { p_handle: handle, p_rc: rc, p_new: "new-correct-horse-2" });
@@ -176,6 +195,32 @@ try {
     log(ok === true, "reset_pass → 新パスでログイン", `→ ${ok}`);
     if (ok !== true) failures++;
   } catch (e) { fail("reset_pass", e); }
+
+  try {
+    sessionToken = await rpc("create_session", {
+      p_handle: handle,
+      p_pass: "new-correct-horse-2",
+    });
+    const response = await fetch(`${url}/functions/v1/send-follow-update`, {
+      method: "POST",
+      headers: {
+        apikey: key,
+        authorization: `Bearer ${key}`,
+        "content-type": "application/json",
+        origin: "http://localhost:3000",
+      },
+      body: JSON.stringify({ handle, secret: sessionToken }),
+    });
+    const result = await response.json();
+    const ok = response.ok && result.sent === 0;
+    log(ok, "send-follow-update authenticated", `status=${response.status}, sent=${result.sent ?? "?"}, error=${result.error ?? ""}`);
+    if (!ok) failures++;
+    await rpc("delete_push_subscription", {
+      p_handle: handle,
+      p_secret: sessionToken,
+      p_endpoint: pushEndpoint,
+    });
+  } catch (e) { fail("send-follow-update", e); }
 
   // 14. Storage: 匿名INSERTは拒否され、認証済みEdge Function経由だけ成功する
   try {
@@ -191,10 +236,6 @@ try {
     log(blocked, "Storage anonymous INSERT blocked", anonymous.error?.message ?? "unexpected success");
     if (!blocked) failures++;
 
-    const sessionToken = await rpc("create_session", {
-      p_handle: handle,
-      p_pass: "new-correct-horse-2",
-    });
     const response = await fetch(`${url}/functions/v1/create-avatar-upload`, {
       method: "POST",
       headers: {

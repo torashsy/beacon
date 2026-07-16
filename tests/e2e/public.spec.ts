@@ -55,6 +55,8 @@ test("PWA metadata, icons, and update worker are installable", async ({ request 
   const workerSource = await worker.text();
   expect(workerSource).toContain("skipWaiting");
   expect(workerSource).toContain("fetch(event.request)");
+  expect(workerSource).toContain("notificationclick");
+  expect(workerSource).toContain("showNotification");
   expect(workerSource).not.toContain("caches.open");
 });
 

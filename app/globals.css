@@ -886,6 +886,42 @@ textarea {
 }
 .recoveryCard { display: grid; gap: 12px; padding: 14px; border: 1px solid #f1cf89; border-radius: 15px; background: #fffaf0; }
 .recoveryCard.verified { border-color: #9ddbc4; background: #f0fbf7; }
+.pushSetting {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  background: var(--surface);
+}
+.pushSettingText { min-width: 0; display: grid; gap: 2px; }
+.pushSettingText strong { font-size: 13px; }
+.pushSettingText span { color: var(--muted); font-size: 11.5px; line-height: 1.55; }
+.switchButton {
+  flex: 0 0 48px;
+  width: 48px;
+  height: 28px;
+  margin-left: auto;
+  padding: 3px;
+  border: 0;
+  border-radius: 999px;
+  background: #cbdde6;
+  cursor: pointer;
+  transition: background-color var(--motion-quick) ease, opacity var(--motion-quick) ease;
+}
+.switchButton span {
+  display: block;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(15, 54, 78, .22);
+  transition: transform var(--motion-ui) var(--ease-ui);
+}
+.switchButton.on { background: var(--em); }
+.switchButton.on span { transform: translateX(20px); }
+.switchButton:disabled { cursor: default; opacity: .55; }
 .recoveryState { font-weight: 800; color: #147a58; }
 .recoveryState.warning { color: #a36300; }
 .verifiedContacts { display: grid; gap: 8px; }
