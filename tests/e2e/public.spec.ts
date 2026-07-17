@@ -196,7 +196,20 @@ test("pulling down from the top offers a refresh", async ({ page }) => {
   await expect(page.locator(".pullRefresh")).toHaveClass(/returning/, { timeout: 1200 });
   await expect(page.locator(".pullRefreshSurface")).toHaveClass(/returning/);
   await expect(page.locator(".pullRefreshSurface")).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
-  await expect(page.locator(".pullRefresh")).not.toHaveClass(/show/, { timeout: 700 });
+  // A second pull can take over while the previous return animation is still
+  // settling, so rapid manual refreshes never feel locked out.
+  await page.evaluate(() => {
+    const start = new Event("touchstart", { bubbles: true, cancelable: true });
+    Object.defineProperty(start, "touches", { value: [{ clientY: 0 }] });
+    document.dispatchEvent(start);
+    const move = new Event("touchmove", { bubbles: true, cancelable: true });
+    Object.defineProperty(move, "touches", { value: [{ clientY: 150 }] });
+    document.dispatchEvent(move);
+  });
+  await expect(page.locator(".pullRefresh")).toHaveClass(/show ready/);
+  await expect(page.locator(".pullRefresh")).not.toHaveClass(/returning/);
+  await page.evaluate(() => document.dispatchEvent(new Event("touchcancel", { bubbles: true })));
+  await expect(page.locator(".pullRefresh")).not.toHaveClass(/show/);
 });
 
 test("a verified contact can start passkey recovery", async ({ page }) => {

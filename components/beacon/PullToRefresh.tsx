@@ -69,6 +69,15 @@ export function PullToRefresh({
 
     function onTouchStart(event: TouchEvent) {
       if (!enabled || refreshingRef.current || window.scrollY > 0 || isInteractive(event.target)) return;
+      // The previous refresh may still be visually springing back. Let a new
+      // gesture take control immediately instead of making the user wait for
+      // the return animation to finish.
+      if (returnTimer.current !== null) {
+        clearTimeout(returnTimer.current);
+        returnTimer.current = null;
+        setRefreshing(false);
+        setReturning(false);
+      }
       startY.current = event.touches[0]?.clientY ?? null;
       setDragging(startY.current !== null);
     }
@@ -111,10 +120,13 @@ export function PullToRefresh({
         const remaining = Math.max(0, MIN_SPIN_TIME - (performance.now() - started));
         settleTimer.current = window.setTimeout(() => {
           setReturning(true);
+          // Network refresh is complete. The remaining motion is cosmetic and
+          // must not block the next pull gesture.
+          refreshingRef.current = false;
           distanceRef.current = 0;
           setDistance(0);
           returnTimer.current = window.setTimeout(() => {
-            refreshingRef.current = false;
+            returnTimer.current = null;
             setRefreshing(false);
             setReturning(false);
             reset();
