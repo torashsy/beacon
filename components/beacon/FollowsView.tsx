@@ -212,7 +212,7 @@ export function FollowsView({
                     <button
                       className="unf"
                       style={{
-                        borderColor: "rgba(56,189,248,.45)",
+                        borderColor: "color-mix(in srgb, var(--em) 45%, transparent)",
                         color: "var(--emd)",
                         background: "var(--eml)",
                       }}
@@ -266,7 +266,7 @@ function FollowBadge({ st }: { st: FollowStatus }) {
         style={{
           ...base,
           color: "var(--emd)",
-          border: "1.5px solid rgba(56,189,248,.45)",
+          border: "1.5px solid color-mix(in srgb, var(--em) 45%, transparent)",
           padding: "1px 8px",
         }}
       >
