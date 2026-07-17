@@ -47,7 +47,10 @@ export function FollowsView({
   }).length;
 
   useEffect(() => {
-    for (const follow of follows) router.prefetch(`/@${follow.handle}`);
+    const timer = window.setTimeout(() => {
+      for (const follow of follows.slice(0, 6)) router.prefetch(`/@${follow.handle}`);
+    }, 250);
+    return () => window.clearTimeout(timer);
   }, [follows, router]);
 
   function openProfile(handle: string) {
@@ -177,6 +180,8 @@ export function FollowsView({
                   className="frow"
                   role="link"
                   tabIndex={0}
+                  onPointerDown={() => router.prefetch(`/@${f.handle}`)}
+                  onFocus={() => router.prefetch(`/@${f.handle}`)}
                   onClick={() => openProfile(f.handle)}
                   onKeyDown={(e) => {
                     if ((e.target as HTMLElement).closest("button")) return;
