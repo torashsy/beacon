@@ -198,14 +198,21 @@ body {
   flex-basis: 158px;
 }
 .appBootSpinner {
+  display: block;
   width: 18px;
   height: 18px;
   border: 2px solid rgba(2, 132, 199, .16);
   border-top-color: var(--emd);
   border-radius: 50%;
+  transform-origin: center;
+  backface-visibility: hidden;
+  will-change: transform;
   animation: appBootSpin .72s linear infinite;
 }
-@keyframes appBootSpin { to { transform: rotate(360deg); } }
+@keyframes appBootSpin {
+  from { transform: rotate(0deg) translateZ(0); }
+  to { transform: rotate(360deg) translateZ(0); }
+}
 .tag {
   margin-left: auto;
   font-size: 11px;
@@ -2020,7 +2027,8 @@ textarea:focus-visible {
     transition-duration: 0.01ms !important;
   }
   .pullRefreshSpinner,
-  .pullRefresh.ready .pullRefreshProgress {
+  .pullRefresh.ready .pullRefreshProgress,
+  .appBootSpinner {
     animation-duration: .9s !important;
     animation-iteration-count: infinite !important;
   }

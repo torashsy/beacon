@@ -13,6 +13,7 @@ test("public entry points and legal pages are reachable", async ({ page }) => {
 });
 
 test("a saved session shows the splash until verification finishes", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.addInitScript(() => {
     window.localStorage.setItem(
       "via-mi:session:v1",
@@ -26,7 +27,23 @@ test("a saved session shows the splash until verification finishes", async ({ pa
 
   await page.goto("/");
   await expect(page.locator(".appBoot")).toBeVisible();
-  await expect(page.locator(".appBootSpinner")).toBeVisible();
+  const spinner = page.locator(".appBootSpinner");
+  await expect(spinner).toBeVisible();
+  const motion = await spinner.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      name: style.animationName,
+      duration: style.animationDuration,
+      iterations: style.animationIterationCount,
+      state: style.animationPlayState,
+    };
+  });
+  expect(motion).toEqual({
+    name: "appBootSpin",
+    duration: "0.9s",
+    iterations: "infinite",
+    state: "running",
+  });
   await expect(page.locator(".landingTitle")).toHaveCount(0);
   await expect(page.locator(".appBoot")).toHaveCount(0, { timeout: 3_000 });
   await expect(page.locator(".landingTitle")).toBeVisible();
