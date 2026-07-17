@@ -141,14 +141,13 @@ body {
   width: 132px;
   height: 42px;
   overflow: hidden;
-  background-image: url("/via-mi-logo.jpg");
+  background-image: url("/via-mi-logo.png");
   background-repeat: no-repeat;
-  background-size: 167px 251px;
-  background-position: -18px -96px;
+  background-size: contain;
+  background-position: center;
   color: transparent;
   font-size: 0;
   text-indent: -9999px;
-  mix-blend-mode: multiply;
 }
 
 .reportLink {
@@ -1080,14 +1079,10 @@ textarea {
   border-bottom: 1px solid var(--border);
   cursor: pointer;
 }
-.frow:hover {
-  background: var(--ink);
-}
-.frow.is-opening {
-  background: var(--eml);
-  opacity: 0.72;
-  transition: background-color var(--motion-quick) var(--ease-state),
-    opacity var(--motion-quick) var(--ease-state);
+@media (hover: hover) and (pointer: fine) {
+  .frow:hover {
+    background: var(--ink);
+  }
 }
 .frow,
 .userSearchResult,
@@ -1100,6 +1095,9 @@ textarea {
 .userSearchResult:active,
 .plink:active {
   transform: scale(0.992);
+}
+.userSearchResult:active,
+.plink:active {
   background: var(--ink);
 }
 .frow:last-child {
@@ -1146,6 +1144,52 @@ textarea {
 .frow .st b {
   color: var(--emd);
   font-weight: 700;
+}
+.publicProfileLoading {
+  padding-top: 8px;
+}
+.publicProfileLoadingCard {
+  position: relative;
+  min-height: 430px;
+  overflow: hidden;
+  padding: 0 20px 24px;
+}
+.profileLoadingHeader,
+.profileLoadingAvatar,
+.profileLoadingLine,
+.profileLoadingBlock {
+  background: linear-gradient(100deg, #edf7fb 25%, #f8fcfe 45%, #edf7fb 65%);
+  background-size: 240% 100%;
+  animation: profileLoadingShimmer 1.15s ease-in-out infinite;
+}
+.profileLoadingHeader {
+  height: 150px;
+  margin: 0 -20px 58px;
+}
+.profileLoadingAvatar {
+  position: absolute;
+  top: 102px;
+  left: 24px;
+  width: 92px;
+  height: 92px;
+  border: 5px solid #fff;
+  border-radius: 50%;
+}
+.profileLoadingLine {
+  height: 18px;
+  margin: 0 0 12px;
+  border-radius: 999px;
+}
+.profileLoadingLine.wide { width: 42%; }
+.profileLoadingLine.short { width: 28%; height: 13px; }
+.profileLoadingBlock {
+  height: 92px;
+  margin-top: 28px;
+  border-radius: 16px;
+}
+@keyframes profileLoadingShimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
 }
 .unf {
   background: #fff;

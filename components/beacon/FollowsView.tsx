@@ -34,7 +34,6 @@ export function FollowsView({
   const [found, setFound] = useState<{ handle: string; page: PublicPage } | null>(null);
   const [searching, setSearching] = useState(false);
   const [searchMessage, setSearchMessage] = useState("");
-  const [openingHandle, setOpeningHandle] = useState<string | null>(null);
   const query = q.trim().toLowerCase();
   const shown = follows.filter(
     (f) =>
@@ -52,7 +51,6 @@ export function FollowsView({
   }, [follows, router]);
 
   function openProfile(handle: string) {
-    setOpeningHandle(handle);
     router.push(`/@${handle}`);
   }
 
@@ -176,7 +174,7 @@ export function FollowsView({
               return (
                 <div
                   key={f.handle}
-                  className={`frow${openingHandle === f.handle ? " is-opening" : ""}`}
+                  className="frow"
                   role="link"
                   tabIndex={0}
                   onClick={() => openProfile(f.handle)}
