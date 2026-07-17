@@ -82,6 +82,25 @@ function publicChannelsSignature(channels: Channel[]) {
   })));
 }
 
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  task: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let cursor = 0;
+  async function worker() {
+    while (cursor < items.length) {
+      const index = cursor++;
+      results[index] = await task(items[index]);
+    }
+  }
+  await Promise.all(
+    Array.from({ length: Math.min(limit, items.length) }, () => worker()),
+  );
+  return results;
+}
+
 function NavIcon({ name }: { name: NavTab }) {
   const path =
     name === "profile"
@@ -242,35 +261,32 @@ export function BeaconApp() {
   // ---- データ読み込み ----
   const loadMe = useCallback(
     async (handle: string, pass: string): Promise<Me> => {
-      const page = await getPublicPage(db, handle);
       // カレンダーもログイン時に読み込んでおく（プレビュー/自己フォローの
       // スナップショットが公開メモを正しく含むように）。公開分は get_public_page に
       // 含まれるので、非公開分だけ追加取得する。失敗時は calLoaded=false で遅延ロードへ。
       const cal: CalMap = {};
-      let calLoaded = false;
-      const clicksPromise = getClicks(db, handle, pass).catch(() => ({}));
-      const securityPromise = getAccountSecurity(db, handle, pass).catch(() => ({
-        passkey_linked: false,
-        recovery_verified: false,
-        recovery_kind: null,
-        recovery_email_masked: null,
-      }));
+      const [page, privateCal, clicks, security] = await Promise.all([
+        getPublicPage(db, handle),
+        getPrivateCal(db, handle, pass)
+          .then((entries) => ({ entries, loaded: true }))
+          .catch(() => ({ entries: [], loaded: false })),
+        getClicks(db, handle, pass).catch(() => ({})),
+        getAccountSecurity(db, handle, pass).catch(() => ({
+          passkey_linked: false,
+          recovery_verified: false,
+          recovery_kind: null,
+          recovery_email_masked: null,
+        })),
+      ]);
       (page?.cal ?? []).forEach((e) => (cal[e.d] = { memo: e.memo, pub: true }));
-      try {
-        const privList = await getPrivateCal(db, handle, pass);
-        privList.forEach((e) => (cal[e.d] = { memo: e.memo, pub: false }));
-        calLoaded = true;
-      } catch {
-        calLoaded = false;
-      }
-      const security = await securityPromise;
+      privateCal.entries.forEach((e) => (cal[e.d] = { memo: e.memo, pub: false }));
       return {
         profile: page?.profile ?? emptyProfile(handle),
         followerCount: page?.follower_count ?? 0,
         channels: ensureIds(page?.channels ?? []),
         cal,
-        calLoaded,
-        clicks: await clicksPromise,
+        calLoaded: privateCal.loaded,
+        clicks,
         passkeyLinked: security.passkey_linked,
         recoveryVerified: security.recovery_verified,
         recoveryKind: security.recovery_kind,
@@ -313,8 +329,12 @@ export function BeaconApp() {
         const targets = await getMyFollows(db, handle, pass);
         const local = loadFollows(handle);
         const cached = new Map(local.map((item) => [item.handle, item]));
-        const resolved = await Promise.all(
-          targets.map(async (target) => {
+        const resolved = await mapWithConcurrency(
+          targets,
+          4,
+          async (target) => {
+            const existing = cached.get(target);
+            if (existing) return existing;
             try {
               const page = await getPublicPage(db, target);
               return page
@@ -323,7 +343,7 @@ export function BeaconApp() {
             } catch {
               return cached.get(target) ?? null;
             }
-          }),
+          },
         );
         const accountFollows = resolved.filter(
           (item): item is FollowSnapshot => item !== null,
@@ -517,19 +537,28 @@ export function BeaconApp() {
   const persistCal = useCallback(
     async (date: string, memo: string, pub: boolean): Promise<boolean> => {
       if (!session) return false;
-      const wasPublic = Boolean(me?.cal[date]?.pub);
+      const previous = me?.cal[date];
+      const wasPublic = Boolean(previous?.pub);
+      setMe((current) => {
+        if (!current) return current;
+        const cal = { ...current.cal };
+        if (memo) cal[date] = { memo, pub };
+        else delete cal[date];
+        return { ...current, cal };
+      });
       const ok = await runWrite(() =>
         rpcSaveCal(db, session.handle, session.pass, date, memo, pub),
       );
       if (ok) {
-        setMe((m) => {
-          if (!m) return m;
-          const cal = { ...m.cal };
-          if (memo) cal[date] = { memo, pub };
-          else delete cal[date];
-          return { ...m, cal };
-        });
         if (pub || wasPublic) pushFollowUpdate();
+      } else {
+        setMe((current) => {
+          if (!current) return current;
+          const cal = { ...current.cal };
+          if (previous) cal[date] = previous;
+          else delete cal[date];
+          return { ...current, cal };
+        });
       }
       return ok;
     },
@@ -646,8 +675,10 @@ export function BeaconApp() {
           if (!next[f.handle]) next[f.handle] = { state: "loading", addedLive: 0 };
         return next;
       });
-      const entries = await Promise.all(
-        list.map(async (snap) => {
+      const entries = await mapWithConcurrency(
+        list,
+        4,
+        async (snap) => {
           try {
             const page = await getPublicPage(db, snap.handle);
             return [snap.handle, diffFollow(snap, page)] as const;
@@ -657,7 +688,7 @@ export function BeaconApp() {
               { state: "same", addedLive: 0 } as FollowStatus,
             ] as const;
           }
-        }),
+        },
       );
       setFollowStates(Object.fromEntries(entries));
 

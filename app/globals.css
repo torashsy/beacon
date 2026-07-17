@@ -18,10 +18,10 @@
   --radius: 14px;
   --shadow: 0 1px 3px rgba(15, 54, 78, 0.08);
   --motion-press: 70ms;
-  --motion-release: 180ms;
+  --motion-release: 140ms;
   --motion-quick: 110ms;
-  --motion-ui: 220ms;
-  --motion-slide: 240ms;
+  --motion-ui: 160ms;
+  --motion-slide: 180ms;
   --ease-state: cubic-bezier(0.2, 0, 0, 1);
   --ease-ui: cubic-bezier(0.25, 0.1, 0.25, 1);
   --ease-ios-out: cubic-bezier(0.22, 1, 0.36, 1);
@@ -117,17 +117,19 @@ body {
   min-height: 100vh;
   transition: transform 380ms var(--ease-pull-settle);
   backface-visibility: hidden;
-  will-change: transform;
 }
 .pullRefreshSurface.dragging,
 .pullRefreshSurface.ready {
   transition: none;
+  will-change: transform;
 }
 .pullRefreshSurface.refreshing {
   transition: transform 320ms var(--ease-pull-settle);
+  will-change: transform;
 }
 .pullRefreshSurface.returning {
   transition: transform 420ms var(--ease-pull-settle);
+  will-change: transform;
 }
 .top {
   display: flex;
@@ -254,9 +256,6 @@ h1 {
   margin: 0 4px 16px;
   font-weight: 500;
 }
-.view {
-  animation: view-in var(--motion-ui) var(--ease-ios-out);
-}
 .tabStage {
   min-width: 0;
 }
@@ -264,7 +263,7 @@ h1 {
   animation: none;
 }
 .tabStage.none {
-  animation: view-in var(--motion-ui) var(--ease-ios-out);
+  animation: none;
 }
 .tabStage.from-left {
   animation: tab-slide-from-left var(--motion-slide) var(--ease-ios-out);
@@ -272,20 +271,9 @@ h1 {
 .tabStage.from-right {
   animation: tab-slide-from-right var(--motion-slide) var(--ease-ios-out);
 }
-@keyframes view-in {
-  from {
-    opacity: 0.72;
-    transform: translateY(2px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
 @keyframes tab-slide-from-left {
   from {
-    opacity: 0.7;
-    transform: translate3d(-10px, 0, 0);
+    transform: translate3d(-6px, 0, 0);
   }
   to {
     opacity: 1;
@@ -294,8 +282,7 @@ h1 {
 }
 @keyframes tab-slide-from-right {
   from {
-    opacity: 0.7;
-    transform: translate3d(10px, 0, 0);
+    transform: translate3d(6px, 0, 0);
   }
   to {
     opacity: 1;
@@ -472,6 +459,7 @@ h1 {
   background: none;
   font-family: inherit;
   position: relative;
+  touch-action: manipulation;
   transition: color var(--motion-ui) var(--ease-ui),
     background-color var(--motion-quick) var(--ease-state),
     transform var(--motion-quick) var(--ease-ui);
@@ -492,11 +480,6 @@ h1 {
   height: 4px;
   border-radius: 99px;
   background: var(--em);
-  animation: tab-underline var(--motion-ui) var(--ease-ui);
-}
-@keyframes tab-underline {
-  from { opacity: 0; transform: translateX(-50%) scaleX(0.45); }
-  to { opacity: 1; transform: translateX(-50%) scaleX(1); }
 }
 .xpane {
   padding: 16px 16px 18px;
@@ -692,20 +675,18 @@ textarea {
   padding: 24px;
   background: rgba(23, 36, 43, .46);
   overscroll-behavior: contain;
-  animation: scrim-in var(--motion-ui) var(--ease-state);
-  -webkit-backdrop-filter: blur(3px);
-  backdrop-filter: blur(3px);
+  animation: scrim-in 120ms var(--ease-state);
 }
 .modalScrim > * {
   max-height: calc(100dvh - 48px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  animation: modal-in 300ms var(--ease-ios-out);
+  animation: modal-in 180ms var(--ease-ios-out);
 }
 @keyframes scrim-in { from { opacity: 0; } }
 @keyframes modal-in {
-  from { opacity: 0; transform: translateY(14px) scale(.965); }
+  from { opacity: 0; transform: translateY(8px) scale(.99); }
   to { opacity: 1; transform: none; }
 }
 .qrModal { width: 100%; max-width: 320px; text-align: center; }
@@ -813,7 +794,7 @@ textarea {
 .backlink:active,
 .xtab:active {
   transform: scale(0.985);
-  opacity: .62;
+  opacity: .82;
 }
 .circleAction:active,
 .calnav:active,
@@ -972,6 +953,7 @@ textarea {
     border-color var(--motion-quick) var(--ease-state),
     box-shadow var(--motion-quick) var(--ease-state);
   margin-bottom: 9px;
+  touch-action: manipulation;
 }
 .plink:hover {
   border-color: var(--em);
@@ -1104,6 +1086,7 @@ textarea {
   padding: 13px 6px;
   border-bottom: 1px solid var(--border);
   cursor: pointer;
+  touch-action: manipulation;
 }
 @media (hover: hover) and (pointer: fine) {
   .frow:hover {
@@ -1184,9 +1167,7 @@ textarea {
 .profileLoadingAvatar,
 .profileLoadingLine,
 .profileLoadingBlock {
-  background: linear-gradient(100deg, #edf7fb 25%, #f8fcfe 45%, #edf7fb 65%);
-  background-size: 240% 100%;
-  animation: profileLoadingShimmer 1.15s ease-in-out infinite;
+  background: #edf7fb;
 }
 .profileLoadingHeader {
   height: 150px;
@@ -1212,10 +1193,6 @@ textarea {
   height: 92px;
   margin-top: 28px;
   border-radius: 16px;
-}
-@keyframes profileLoadingShimmer {
-  from { background-position: 100% 0; }
-  to { background-position: -100% 0; }
 }
 .unf {
   background: #fff;
@@ -1851,7 +1828,7 @@ textarea {
   padding: 5px 4px;
   border-radius: 14px;
   touch-action: manipulation;
-  transition: color var(--motion-ui) var(--ease-ui),
+  transition: color var(--motion-quick) var(--ease-state),
     opacity var(--motion-release) var(--ease-state),
     transform var(--motion-press) var(--ease-state);
   text-decoration: none;
@@ -1867,8 +1844,8 @@ textarea {
   background: var(--eml);
   opacity: 0;
   transform: scale(0.72);
-  transition: opacity var(--motion-ui) var(--ease-state),
-    transform var(--motion-ui) var(--ease-ios-out);
+  transition: opacity var(--motion-quick) var(--ease-state),
+    transform var(--motion-ui) var(--ease-state);
   z-index: -1;
 }
 .nav .ni .i {
@@ -1885,38 +1862,26 @@ textarea {
 .nav .ni.on::before {
   opacity: 1;
   transform: scale(1);
-  animation: nav-halo var(--motion-ui) var(--ease-ui);
 }
 .nav .ni.on .i {
   filter: none;
   opacity: 1;
 }
-.nav .ni.on .navIcon {
-  animation: nav-pop var(--motion-ui) var(--ease-ios-out);
-}
-@keyframes nav-pop {
-  from { opacity: .68; transform: scale(.9); }
-  to { opacity: 1; transform: scale(1); }
-}
-@keyframes nav-halo {
-  from { opacity: 0; transform: scale(0.68); }
-  to { opacity: 1; transform: scale(1); }
-}
 .toast {
   position: fixed;
   left: 50%;
   bottom: calc(88px + env(safe-area-inset-bottom));
-  transform: translateX(-50%) translateY(20px);
+  transform: translateX(-50%) translateY(12px);
   background: var(--text);
   color: #fff;
-  padding: 12px 22px;
+  padding: 10px 18px;
   border-radius: 999px;
   font-weight: 700;
   font-size: 13px;
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--motion-ui) var(--ease-state),
-    transform 320ms var(--ease-ios-out);
+  transition: opacity 120ms var(--ease-state),
+    transform 180ms var(--ease-state);
   z-index: 50;
   width: max-content;
   max-width: calc(100% - 32px);
@@ -2004,6 +1969,12 @@ textarea {
     background: var(--em);
     transform: none;
   }
+  .xtab:hover { background: transparent; }
+  .plink:hover { border-color: var(--border); transform: none; }
+  .pill.line:hover,
+  .btn.ghost:hover,
+  .calnav:hover { border-color: var(--border); }
+  .unf:hover { border-color: var(--border); color: var(--muted); }
 }
 
 @media (max-width: 640px) {
