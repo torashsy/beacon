@@ -21,7 +21,7 @@ test("a saved session shows the splash until verification finishes", async ({ pa
     );
   });
   await page.route("**/rest/v1/rpc/verify_app_session", async (route) => {
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    await new Promise((resolve) => setTimeout(resolve, 1_500));
     await route.fulfill({ status: 200, contentType: "application/json", body: "false" });
   });
 
@@ -29,21 +29,10 @@ test("a saved session shows the splash until verification finishes", async ({ pa
   await expect(page.locator(".appBoot")).toBeVisible();
   const spinner = page.locator(".appBootSpinner");
   await expect(spinner).toBeVisible();
-  const motion = await spinner.evaluate((element) => {
-    const style = getComputedStyle(element);
-    return {
-      name: style.animationName,
-      duration: style.animationDuration,
-      iterations: style.animationIterationCount,
-      state: style.animationPlayState,
-    };
-  });
-  expect(motion).toEqual({
-    name: "appBootSpin",
-    duration: "0.9s",
-    iterations: "infinite",
-    state: "running",
-  });
+  await expect(spinner).toHaveCSS("animation-name", "appBootSpin");
+  await expect(spinner).toHaveCSS("animation-duration", "0.9s");
+  await expect(spinner).toHaveCSS("animation-iteration-count", "infinite");
+  await expect(spinner).toHaveCSS("animation-play-state", "running");
   await expect(page.locator(".landingTitle")).toHaveCount(0);
   await expect(page.locator(".appBoot")).toHaveCount(0, { timeout: 3_000 });
   await expect(page.locator(".landingTitle")).toBeVisible();
@@ -137,6 +126,26 @@ test("help explains the main flow in plain language", async ({ page }) => {
   await expect(page.getByText("me → リンクを追加 / 予定を追加", { exact: true })).toBeVisible();
   await expect(page.getByText("Follow → ID検索", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "ログインできないとき", exact: true })).toHaveCount(0);
+});
+
+test("appearance settings support dark mode and eight saved color themes", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Help", exact: true }).click();
+
+  await expect(page.getByRole("heading", { name: "表示", exact: true })).toBeVisible();
+  const themes = page.getByRole("group", { name: "カラーテーマ" });
+  await expect(themes.getByRole("button")).toHaveCount(8);
+
+  await page.getByRole("button", { name: "ダーク", exact: true }).click();
+  await page.getByRole("button", { name: "マゼンタ（ビビッド）", exact: true }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-color-mode", "dark");
+  await expect(page.locator("html")).toHaveAttribute("data-color-theme", "magenta");
+  await expect(page.locator("html")).toHaveCSS("color-scheme", "dark");
+  await expect(page.locator("body")).toHaveCSS("background-color", "rgb(25, 15, 21)");
+
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-color-mode", "dark");
+  await expect(page.locator("html")).toHaveAttribute("data-color-theme", "magenta");
 });
 
 test("bottom tabs slide in the direction of travel", async ({ page }) => {

@@ -48,6 +48,7 @@ import {
   type Me,
   type Session,
 } from "./appTypes";
+import { AppearanceSettings } from "./AppearanceSettings";
 import { AuthView } from "./AuthView";
 import { LandingView } from "./LandingView";
 import { ProfileView } from "./ProfileView";
@@ -942,9 +943,10 @@ export function BeaconApp() {
         {navTab === "help" && <HowtoView />}
 
         {navTab === "help" && (
-          <section className="view">
+          <section className="view settingsView">
+            <AppearanceSettings />
             <div className="card">
-              <h2 style={{ margin: "0 0 8px" }}>設定</h2>
+              <h2 style={{ margin: "0 0 8px" }}>アカウント</h2>
               <div className="lead" style={{ marginBottom: 18 }}>アカウントに関する設定です。</div>
               {session ? (
                 <div style={{ display: "grid", gap: 14 }}>
