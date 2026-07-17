@@ -204,10 +204,8 @@ export function BeaconApp() {
         setAuthInitialPane("login");
       }
 
-      // 保存セッションのネットワーク確認で初期画面をブロックしない。通信が遅い・
-      // オフラインでも、まずランディングとナビを操作できる状態にする。
-      if (!cancelled) setBooting(false);
-
+      // 保存セッションがある場合は、検証とプロフィール復元が終わるまで起動画面を保つ。
+      // 先にランディングを描画すると、ログイン済みでも未ログイン画面が一瞬見えてしまう。
       const saved = loadStoredSession();
       if (saved && !cancelled) {
         try {
@@ -220,6 +218,9 @@ export function BeaconApp() {
         // 起動が止まることもある。現行ユーザーはトークン方式なので読み込まず破棄する。
         clearTrustedDevice();
       }
+      // Do not reveal the signed-out landing page while a saved session and
+      // its profile are still being restored.
+      if (!cancelled) setBooting(false);
     })();
     return () => {
       cancelled = true;
@@ -778,13 +779,12 @@ export function BeaconApp() {
 
   if (booting) {
     return (
-      <div className="wrap">
-        <div className="top">
-          <button type="button" className="logo logoButton" onClick={goHome} aria-label="via-mi ホーム">
-            via-mi
-          </button>
+      <main className="appBoot" aria-label="via-miを読み込み中" aria-busy="true">
+        <div className="appBootContent">
+          <span className="logo appBootLogo" aria-hidden="true">via-mi</span>
+          <span className="appBootSpinner" aria-hidden="true" />
         </div>
-      </div>
+      </main>
     );
   }
 

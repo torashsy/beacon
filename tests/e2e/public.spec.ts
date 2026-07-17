@@ -12,6 +12,26 @@ test("public entry points and legal pages are reachable", async ({ page }) => {
   }
 });
 
+test("a saved session shows the splash until verification finishes", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      "via-mi:session:v1",
+      JSON.stringify({ handle: "saved_user", token: `bst_${"a".repeat(64)}` }),
+    );
+  });
+  await page.route("**/rest/v1/rpc/verify_app_session", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    await route.fulfill({ status: 200, contentType: "application/json", body: "false" });
+  });
+
+  await page.goto("/");
+  await expect(page.locator(".appBoot")).toBeVisible();
+  await expect(page.locator(".appBootSpinner")).toBeVisible();
+  await expect(page.locator(".landingTitle")).toHaveCount(0);
+  await expect(page.locator(".appBoot")).toHaveCount(0, { timeout: 3_000 });
+  await expect(page.locator(".landingTitle")).toBeVisible();
+});
+
 test("health endpoint and production metadata are valid", async ({ request }) => {
   const health = await request.get("/api/health");
   expect(health.ok()).toBeTruthy();
