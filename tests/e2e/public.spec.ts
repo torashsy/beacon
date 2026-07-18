@@ -290,8 +290,15 @@ test("appearance settings support dark mode and seven saved color themes", async
 
 test("bottom tabs slide in the direction of travel", async ({ page }) => {
   await page.goto("/");
+  const followTab = page.getByRole("button", { name: "Follow", exact: true });
+  const meTab = page.getByRole("button", { name: "me", exact: true });
+  const followPath = await followTab.locator(".navIcon path").getAttribute("d");
+  const mePath = await meTab.locator(".navIcon path").getAttribute("d");
+  expect(followPath).toContain("M23 21");
+  expect(mePath).toContain("M3 11.5");
+  expect(followPath).not.toBe(mePath);
 
-  await page.getByRole("button", { name: "Follow", exact: true }).click();
+  await followTab.click();
   await expect(page.locator(".tabStage")).toHaveClass(/from-left/);
   await expect(page.locator(".tabStage")).toHaveCSS("animation-name", "tab-slide-from-left");
 
