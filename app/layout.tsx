@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { AppearanceController } from "@/components/AppearanceController";
 import { PwaRegister } from "@/components/PwaRegister";
+import { UiTuningPanel } from "@/components/dev/UiTuningPanel";
 import {
   APPEARANCE_STORAGE_KEY,
   DEFAULT_APPEARANCE,
@@ -78,6 +79,7 @@ export default function RootLayout({
       <body>
         <AppearanceController />
         {children}
+        {process.env.NODE_ENV === "development" && <UiTuningPanel />}
         <PwaRegister />
       </body>
     </html>

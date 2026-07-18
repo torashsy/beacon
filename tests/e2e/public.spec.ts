@@ -30,6 +30,11 @@ test("public entry points and legal pages are reachable", async ({ page }) => {
   }
 });
 
+test("development-only UI tuning controls are excluded from production", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("button", { name: "UI調整" })).toHaveCount(0);
+});
+
 test("a saved session shows the splash until verification finishes", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.addInitScript(() => {
