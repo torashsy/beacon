@@ -619,14 +619,14 @@ function PhotosPane({
     setPhotoDraft(photos);
   }
 
-  function startDrag(id: string, event: ReactPointerEvent<HTMLButtonElement>) {
+  function startDrag(id: string, event: ReactPointerEvent<HTMLImageElement>) {
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
     draggingIdRef.current = id;
     setDraggingId(id);
   }
 
-  function moveDrag(event: ReactPointerEvent<HTMLButtonElement>) {
+  function moveDrag(event: ReactPointerEvent<HTMLImageElement>) {
     const dragId = draggingIdRef.current;
     if (!dragId) return;
     const target = document
@@ -636,7 +636,7 @@ function PhotosPane({
     if (target) reorder(dragId, target);
   }
 
-  function endDrag(event: ReactPointerEvent<HTMLButtonElement>) {
+  function endDrag(event: ReactPointerEvent<HTMLImageElement>) {
     if (!draggingIdRef.current) return;
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
@@ -661,20 +661,22 @@ function PhotosPane({
               data-photo-id={photo.id}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={photo.url} alt={`写真 ${index + 1}`} />
-              <div className="contentItemActions">
-                <button
-                  className="photoDragHandle"
-                  aria-label={`写真 ${index + 1} を並べ替え`}
-                  onPointerDown={(event) => startDrag(photo.id, event)}
-                  onPointerMove={moveDrag}
-                  onPointerUp={endDrag}
-                  onPointerCancel={endDrag}
-                >
-                  ⠿
-                </button>
-                <button className="dangerText" onClick={() => remove(photo.id)}>削除</button>
-              </div>
+              <img
+                src={photo.url}
+                alt={`写真 ${index + 1}（ドラッグで並べ替え）`}
+                draggable={false}
+                onPointerDown={(event) => startDrag(photo.id, event)}
+                onPointerMove={moveDrag}
+                onPointerUp={endDrag}
+                onPointerCancel={endDrag}
+              />
+              <button
+                className="photoRemoveButton"
+                onClick={() => remove(photo.id)}
+                aria-label={`写真 ${index + 1} を削除`}
+              >
+                −
+              </button>
             </div>
           ))}
         </div>
