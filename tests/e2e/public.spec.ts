@@ -38,6 +38,97 @@ test("a saved session shows the splash until verification finishes", async ({ pa
   await expect(page.locator(".landingTitle")).toBeVisible();
 });
 
+test("a profile QR is personalized and shareable as an image", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      "via-mi:session:v1",
+      JSON.stringify({ handle: "qr_user", token: `bst_${"a".repeat(64)}` }),
+    );
+    Object.defineProperty(navigator, "canShare", {
+      configurable: true,
+      value: () => true,
+    });
+    Object.defineProperty(navigator, "share", {
+      configurable: true,
+      value: async (data: ShareData) => {
+        const file = data.files?.[0];
+        (window as typeof window & {
+          __qrShare?: { name?: string; size?: number; type?: string };
+        }).__qrShare = {
+          name: file?.name,
+          size: file?.size,
+          type: file?.type,
+        };
+      },
+    });
+  });
+
+  const rpcResponses: Record<string, unknown> = {
+    verify_app_session: true,
+    get_public_page: {
+      profile: {
+        handle: "qr_user",
+        name: "QRテスト",
+        bio: "",
+        emoji: "🌙",
+        theme: 0,
+        av_theme: 0,
+        av_url: "",
+        bn_url: "",
+        verified: false,
+      },
+      channels: [],
+      cal: [],
+    },
+    get_follower_count: 4,
+    get_private_cal: [],
+    get_clicks: [],
+    get_account_security: {
+      passkey_linked: true,
+      recovery_verified: false,
+      recovery_kind: null,
+      recovery_email_masked: null,
+    },
+    get_my_follows: [],
+  };
+  await page.route("**/rest/v1/rpc/*", async (route) => {
+    const rpc = new URL(route.request().url()).pathname.split("/").pop() ?? "";
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(rpcResponses[rpc] ?? null),
+    });
+  });
+
+  await page.goto("/");
+  await expect(page.getByText("QRテスト", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "QRコード", exact: true }).click();
+
+  const dialog = page.getByRole("dialog", { name: "共有用QRコード" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByText("QRテスト", { exact: true })).toBeVisible();
+  await expect(dialog.getByText("@qr_user", { exact: true })).toBeVisible();
+  const qrImage = dialog.getByRole("img", { name: "@qr_user のQRコード" });
+  await expect(qrImage).toHaveAttribute("src", /^data:image\/svg\+xml/);
+  const svg = decodeURIComponent((await qrImage.getAttribute("src")) ?? "");
+  expect(svg).toContain('rx=".32"');
+  expect(svg.match(/<g><rect/g)).toHaveLength(3);
+
+  await dialog.getByRole("button", { name: "QR画像を共有", exact: true }).click();
+  await expect.poll(() =>
+    page.evaluate(() => (window as typeof window & {
+      __qrShare?: { name?: string; size?: number; type?: string };
+    }).__qrShare),
+  ).toMatchObject({
+    name: "via-mi-qr_user.png",
+    type: "image/png",
+  });
+  const sharedSize = await page.evaluate(() => (window as typeof window & {
+    __qrShare?: { size?: number };
+  }).__qrShare?.size ?? 0);
+  expect(sharedSize).toBeGreaterThan(5_000);
+});
+
 test("health endpoint and production metadata are valid", async ({ request }) => {
   const health = await request.get("/api/health");
   expect(health.ok()).toBeTruthy();

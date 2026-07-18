@@ -13,9 +13,11 @@ import {
   supportsUserId,
   userIdExample,
 } from "@/lib/beacon/link-input";
+import { createBrandQrSvg, qrSvgDataUrl } from "@/lib/beacon/brand-qr";
 import { cryptoId, type Me, type ToastFn } from "./appTypes";
 import { LinkThumb } from "./icons";
 import { PublicProfileCard } from "./PublicProfileCard";
+import { QrShareModal, type QrCard } from "./QrShareModal";
 
 /**
  * プロフィール表示 + 編集タブ（リンク / カレンダー）。beacon.html の prof-view を移植し、
@@ -47,7 +49,7 @@ export function ProfileView({
 }) {
   const [tab, setTab] = useState<"links" | "cal">(focusSection ?? "links");
   const editorSection = useRef<HTMLDivElement>(null);
-  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [qrCard, setQrCard] = useState<QrCard | null>(null);
 
   const publicCal = Object.entries(me.cal)
     .filter(([, value]) => value.pub && value.memo)
@@ -89,14 +91,16 @@ export function ProfileView({
 
   async function openQr() {
     try {
-      const { toDataURL } = await import("qrcode");
-      setQrDataUrl(
-        await toDataURL(pageUrl(), {
-          width: 512,
-          margin: 2,
-          color: { dark: "#17242b", light: "#ffffff" },
-        }),
-      );
+      const { create } = await import("qrcode");
+      const style = getComputedStyle(document.documentElement);
+      const accent = style.getPropertyValue("--em").trim() || "#0879ad";
+      const accent2 = style.getPropertyValue("--em2").trim() || "#60c8f3";
+      const qr = create(pageUrl(), { errorCorrectionLevel: "H" });
+      setQrCard({
+        dataUrl: qrSvgDataUrl(createBrandQrSvg(qr.modules, accent)),
+        accent,
+        accent2,
+      });
     } catch {
       toast("QRコードを作成できませんでした");
     }
@@ -149,15 +153,16 @@ export function ProfileView({
             <span>予定を追加</span>
           </button>
         </div>
-        {qrDataUrl && (
-          <div className="modalScrim" onClick={() => setQrDataUrl(null)}>
-            <div className="card qrModal" onClick={(e) => e.stopPropagation()}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={qrDataUrl} alt={`@${handle} のQRコード`} />
-              <div className="xid" style={{ marginTop: 8 }}>@{handle}</div>
-              <button className="btn ghost" onClick={() => setQrDataUrl(null)}>閉じる</button>
-            </div>
-          </div>
+        {qrCard && (
+          <QrShareModal
+            qr={qrCard}
+            handle={handle}
+            name={me.profile.name}
+            avatarUrl={me.profile.av_url}
+            emoji={me.profile.emoji}
+            onClose={() => setQrCard(null)}
+            toast={toast}
+          />
         )}
       </>
     );
@@ -193,29 +198,6 @@ export function ProfileView({
         )}
       </div>
 
-      {qrDataUrl && (
-        <div className="modalScrim" onClick={() => setQrDataUrl(null)}>
-          <div
-            className="card qrModal"
-            role="dialog"
-            aria-modal="true"
-            aria-label="QRコード"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={qrDataUrl}
-              alt={`@${handle} のQRコード`}
-            />
-            <div className="xid" style={{ marginTop: 8 }}>
-              @{handle}
-            </div>
-            <button className="btn ghost" onClick={() => setQrDataUrl(null)}>
-              閉じる
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

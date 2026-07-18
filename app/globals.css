@@ -1018,8 +1018,193 @@ textarea {
   from { opacity: 0; transform: translateY(8px) scale(.99); }
   to { opacity: 1; transform: none; }
 }
-.qrModal { width: 100%; max-width: 320px; text-align: center; }
-.qrModal img { width: 100%; border-radius: 12px; }
+.qrScrim {
+  padding-inline: 16px;
+}
+.qrModal {
+  --qr-accent: #0879ad;
+  --qr-accent-2: #60c8f3;
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  text-align: center;
+}
+.qrShareCard {
+  position: relative;
+  overflow: hidden;
+  padding: 23px 22px 25px;
+  border: 1px solid color-mix(in srgb, #fff 34%, transparent);
+  border-radius: 28px;
+  background: linear-gradient(
+    145deg,
+    var(--qr-accent) 0%,
+    color-mix(in srgb, var(--qr-accent) 58%, var(--qr-accent-2)) 100%
+  );
+  color: #fff;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, .24);
+  isolation: isolate;
+}
+.qrShareCard::before,
+.qrShareCard::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .12);
+}
+.qrShareCard::before {
+  width: 220px;
+  height: 220px;
+  top: -118px;
+  right: -92px;
+}
+.qrShareCard::after {
+  width: 260px;
+  height: 260px;
+  left: -155px;
+  bottom: -170px;
+}
+.qrBrand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: .01em;
+}
+.qrBrandIcon {
+  width: 26px;
+  height: 26px;
+  display: block;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, .12);
+}
+.qrBrandIcon img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.qrProfileName {
+  max-width: 100%;
+  overflow: hidden;
+  margin-top: 12px;
+  font-size: 20px;
+  font-weight: 850;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.qrProfileId {
+  margin-top: 1px;
+  color: rgba(255, 255, 255, .8);
+  font-size: 11.5px;
+  font-weight: 650;
+}
+.qrCodeShell {
+  position: relative;
+  width: min(100%, 258px);
+  margin: 17px auto 15px;
+  padding: 12px;
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .16);
+}
+.qrCodeImage {
+  display: block;
+  width: 100%;
+  border-radius: 16px;
+}
+.qrIdentity {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 5px solid #fff;
+  border-radius: 13px;
+  background: var(--qr-accent);
+  color: #fff;
+  font-size: 20px;
+  line-height: 1;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .2);
+}
+.qrIdentity img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.qrPrompt {
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.qrClose {
+  position: absolute;
+  z-index: 4;
+  top: 11px;
+  right: 11px;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, .3);
+  border-radius: 50%;
+  background: rgba(15, 23, 30, .32);
+  color: #fff;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.qrClose svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.qrActions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 9px;
+  margin-top: 11px;
+}
+.qrActions .btn {
+  width: auto;
+  min-height: 48px;
+  margin-top: 0;
+}
+.qrShareButton.btn.sig {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--surface);
+  color: var(--emd);
+  box-shadow: var(--shadow);
+}
+.qrShareButton.btn.sig:hover:not(:disabled) {
+  background: var(--ink);
+}
+.qrShareButton svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.qrCloseButton {
+  min-width: 82px;
+  padding-inline: 14px;
+}
 .cropScrim { z-index: 70; background: rgba(23, 36, 43, .62); }
 .cropModal { width: 100%; max-width: 380px; text-align: center; }
 .textDangerButton {
