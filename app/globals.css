@@ -30,6 +30,8 @@
   --success-border: #9ddbc4;
   --success-text: #147a58;
   --radius: 14px;
+  --content-width: 520px;
+  --page-gutter: 16px;
   --shadow: 0 1px 3px rgba(15, 54, 78, 0.08);
   --nav-shadow: 0 -8px 28px color-mix(in srgb, var(--em) 8%, transparent);
   --dark-page: #0b151a;
@@ -377,9 +379,9 @@ body {
   overscroll-behavior-x: none;
 }
 .wrap {
-  max-width: 520px;
+  max-width: var(--content-width);
   margin: 0 auto;
-  padding: 0 max(16px, env(safe-area-inset-left));
+  padding: 0 max(var(--page-gutter), env(safe-area-inset-left));
 }
 .pullRefresh {
   position: fixed;
@@ -2660,6 +2662,231 @@ textarea:focus-visible {
   .appBootSpinner {
     animation-duration: .9s !important;
     animation-iteration-count: infinite !important;
+  }
+}
+
+/* Development-only UI tuning panel */
+.uiTuning {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 1000;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans JP", sans-serif;
+  color: #17212b;
+}
+.uiTuningToggle {
+  min-width: 82px;
+  min-height: 40px;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #fff;
+  color: #17212b;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, .16);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.uiTuning.open .uiTuningToggle { display: none; }
+.uiTuningPanel {
+  width: min(360px, calc(100vw - 24px));
+  max-height: calc(100vh - 24px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  border: 1px solid #d8dee8;
+  border-radius: 18px;
+  background: #f8fafc;
+  box-shadow: 0 18px 56px rgba(15, 23, 42, .24);
+  overscroll-behavior: contain;
+}
+.uiTuningHeader {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid #e2e8f0;
+  background: rgba(248, 250, 252, .96);
+  backdrop-filter: blur(12px);
+}
+.uiTuningHeader div { display: grid; gap: 1px; }
+.uiTuningHeader strong { font-size: 16px; }
+.uiTuningHeader span { color: #64748b; font-size: 10px; }
+.uiTuningHeader button {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: #e2e8f0;
+  color: #334155;
+  font-size: 20px;
+  cursor: pointer;
+}
+.uiTuningNote {
+  margin: 12px 14px 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #eef2ff;
+  color: #4338ca;
+  font-size: 11px;
+  line-height: 1.55;
+}
+.uiTuningGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 14px;
+}
+.uiTuningGrid label,
+.uiTuningColors label { display: grid; gap: 5px; }
+.uiTuningGrid label > span,
+.uiTuningColors label > span {
+  color: #475569;
+  font-size: 10px;
+  font-weight: 750;
+}
+.uiTuning select,
+.uiTuning input,
+.uiTuning textarea,
+.uiTuning button { font-family: inherit; }
+.uiTuning select,
+.uiTuning input[type="text"],
+.uiTuning textarea {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  background: #fff;
+  color: #17212b;
+  outline: none;
+}
+.uiTuning select {
+  height: 38px;
+  padding: 0 9px;
+  font-size: 12px;
+}
+.uiTuning select:focus,
+.uiTuning input:focus,
+.uiTuning textarea:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, .15);
+}
+.uiTuningSection {
+  margin: 0 14px;
+  padding: 14px 0;
+  border-top: 1px solid #e2e8f0;
+}
+.uiTuningSection h2 {
+  margin: 0 0 10px;
+  color: #17212b;
+  font-size: 13px;
+}
+.uiTuningSection > p {
+  margin: -5px 0 8px;
+  color: #64748b;
+  font-size: 10px;
+}
+.uiTuningColors {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 8px;
+}
+.uiTuningColors label > div {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 6px;
+}
+.uiTuning input[type="color"] {
+  width: 36px;
+  height: 36px;
+  padding: 2px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  background: #fff;
+  cursor: pointer;
+}
+.uiTuning input[type="text"] {
+  min-width: 0;
+  height: 36px;
+  padding: 0 7px;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 10px;
+}
+.uiTuningRange {
+  display: grid;
+  gap: 5px;
+  margin-top: 10px;
+}
+.uiTuningRange > span {
+  display: flex;
+  justify-content: space-between;
+  color: #475569;
+  font-size: 11px;
+}
+.uiTuningRange b { color: #17212b; }
+.uiTuning input[type="range"] {
+  width: 100%;
+  accent-color: #4f46e5;
+}
+.uiTuning textarea {
+  min-height: 116px;
+  resize: vertical;
+  padding: 10px;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.uiTuning pre {
+  max-height: 180px;
+  overflow: auto;
+  padding: 10px;
+  border-radius: 10px;
+  background: #111827;
+  color: #e5e7eb;
+  font: 10px/1.55 ui-monospace, SFMono-Regular, Consolas, monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.uiTuningActions {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 12px 14px;
+  border-top: 1px solid #e2e8f0;
+  background: rgba(248, 250, 252, .96);
+  backdrop-filter: blur(12px);
+}
+.uiTuningActions button {
+  min-height: 40px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #fff;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.uiTuningActions button.primary {
+  border-color: #4f46e5;
+  background: #4f46e5;
+  color: #fff;
+}
+.uiTuningMessage {
+  padding: 0 14px 12px;
+  color: #166534;
+  font-size: 11px;
+  font-weight: 700;
+}
+@media (max-width: 560px) {
+  .uiTuning {
+    top: max(8px, env(safe-area-inset-top));
+    right: 8px;
+  }
+  .uiTuningPanel {
+    width: calc(100vw - 16px);
+    max-height: calc(100vh - 16px - env(safe-area-inset-top));
   }
 }
 .emojis {
