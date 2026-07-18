@@ -8,6 +8,7 @@ export type QrCard = {
   dataUrl: string;
   accent: string;
   accent2: string;
+  onAccent: string;
 };
 
 export function QrShareModal({
@@ -39,6 +40,7 @@ export function QrShareModal({
         name,
         accent: qr.accent,
         accent2: qr.accent2,
+        onAccent: qr.onAccent,
         avatarUrl,
         emoji,
       });
@@ -88,6 +90,7 @@ export function QrShareModal({
           {
             "--qr-accent": qr.accent,
             "--qr-accent-2": qr.accent2,
+            "--qr-on-accent": qr.onAccent,
           } as CSSProperties
         }
       >

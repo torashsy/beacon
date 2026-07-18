@@ -8,6 +8,7 @@ export type QrShareImageOptions = {
   name: string;
   accent: string;
   accent2: string;
+  onAccent: string;
   avatarUrl?: string;
   emoji?: string;
 };
@@ -122,6 +123,7 @@ export async function renderQrSharePng(
 
   const accent = safeColor(options.accent, FALLBACK_ACCENT);
   const accent2 = safeColor(options.accent2, FALLBACK_ACCENT_2);
+  const foreground = safeColor(options.onAccent, "#ffffff");
   const gradient = context.createLinearGradient(70, 40, width - 40, height);
   gradient.addColorStop(0, accent);
   gradient.addColorStop(1, accent2);
@@ -152,7 +154,7 @@ export async function renderQrSharePng(
     context.drawImage(brandIcon, 88, 58, 60, 60);
     context.restore();
   }
-  context.fillStyle = "#fff";
+  context.fillStyle = foreground;
   context.font = '800 56px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
   context.textAlign = "left";
   context.fillText("via-mi", brandIcon ? 168 : 88, 108);
@@ -215,7 +217,7 @@ export async function renderQrSharePng(
   } else {
     context.fillStyle = accent;
     context.fillRect(identityX, identityY, identitySize, identitySize);
-    context.fillStyle = "#fff";
+    context.fillStyle = foreground;
     context.font = '58px -apple-system, BlinkMacSystemFont, "Segoe UI Emoji", sans-serif';
     context.textAlign = "center";
     context.textBaseline = "middle";
@@ -223,7 +225,7 @@ export async function renderQrSharePng(
   }
   context.restore();
 
-  context.fillStyle = "#fff";
+  context.fillStyle = foreground;
   context.textAlign = "center";
   context.textBaseline = "alphabetic";
   context.font = '750 38px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
