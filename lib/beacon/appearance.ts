@@ -5,10 +5,10 @@ export const APPEARANCE_MODES = ["system", "light", "dark"] as const;
 export type AppearanceMode = (typeof APPEARANCE_MODES)[number];
 
 export const COLOR_THEMES = [
-  { id: "peach", label: "ピンク", category: "パステル", colors: ["#efb7c7", "#f8d6df"] },
-  { id: "mint", label: "緑", category: "パステル", colors: ["#9fd8c7", "#c8eadf"] },
+  { id: "peach", label: "ピンク", category: "パステル", colors: ["#f5c9d5", "#fbe0e7"] },
+  { id: "mint", label: "緑", category: "パステル", colors: ["#b9e5d8", "#d8f0e8"] },
   { id: "sky", label: "青", category: "爽やか", colors: ["#8fcde0", "#c6eaf2"] },
-  { id: "lilac", label: "紫", category: "パステル", colors: ["#c5b9e4", "#ddd5f0"] },
+  { id: "lilac", label: "紫", category: "パステル", colors: ["#d5caec", "#e5def3"] },
   { id: "citrus", label: "オレンジ", category: "やわらか", colors: ["#e7b98c", "#f3d8bd"] },
   { id: "mono", label: "黒", category: "シック", colors: ["#303338", "#adb2b6"] },
 ] as const;
