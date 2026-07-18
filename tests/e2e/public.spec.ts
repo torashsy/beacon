@@ -161,7 +161,7 @@ test("profile photos keep their ratio, enlarge on tap, and expose a horizontal e
     );
   });
   const storageOrigin = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://example.supabase.co";
-  const photos = Array.from({ length: 3 }, (_, index) => ({
+  const photos = Array.from({ length: 5 }, (_, index) => ({
     id: `photo-${index}`,
     url: `${storageOrigin}/storage/v1/object/public/avatars/test/photo-${index}.svg`,
   }));
@@ -223,11 +223,13 @@ test("profile photos keep their ratio, enlarge on tap, and expose a horizontal e
   await expect(page.getByRole("heading", { name: "写真", exact: true })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "メモ", exact: true })).toHaveCount(0);
   const items = page.locator(".profilePhotoItem");
-  await expect(items).toHaveCount(3);
+  await expect(items).toHaveCount(5);
   const sizes = await items.evaluateAll((elements) =>
     elements.map((element) => Math.round(element.getBoundingClientRect().height)),
   );
   expect(new Set(sizes).size).toBe(1);
+  await expect(page.locator(".profileContentSection")).toHaveCSS("padding-left", "0px");
+  await expect(page.locator(".profileContentSection")).toHaveCSS("padding-right", "0px");
   await expect(page.locator(".profilePhotoRail")).toHaveCSS("overflow-x", "auto");
   await expect(items.first().locator("img")).toHaveCSS("object-fit", "contain");
   await page.getByRole("button", { name: "写真 1 を拡大" }).click();
@@ -247,13 +249,21 @@ test("profile photos keep their ratio, enlarge on tap, and expose a horizontal e
   await page.getByRole("button", { name: "写真を追加" }).click();
   await expect(page.getByText("プロフィールでは横にスライドして表示されます。")).toHaveCount(0);
   await expect(page.locator('.photoEditorList')).toHaveCSS("display", "flex");
+  await expect(page.locator('.photoEditorList')).toHaveCSS("touch-action", "pan-x");
+  await expect(page.locator(".photoEditorItem img").first()).toHaveCSS("touch-action", "pan-x");
   await expect(page.locator(".photoDragHandle")).toHaveCount(0);
   const removeButtons = page.getByRole("button", { name: /写真 \d を削除/ });
-  await expect(removeButtons).toHaveCount(3);
+  await expect(removeButtons).toHaveCount(5);
   await expect(removeButtons.first()).toHaveCSS("border-radius", "50%");
   await expect(page.locator('input[type="file"].visuallyHidden')).toHaveAttribute("multiple", "");
   await expect(page.locator(".efield textarea")).toHaveAttribute("maxlength", "800");
   await page.locator(".photoEditorList").scrollIntoViewIfNeeded();
+  expect(await page.locator(".photoEditorList").evaluate((element) => {
+    element.scrollLeft = element.scrollWidth;
+    const scrolled = element.scrollLeft > 0;
+    element.scrollLeft = 0;
+    return scrolled;
+  })).toBe(true);
   await page.screenshot({ path: testInfo.outputPath("photo-editor-mobile.png"), fullPage: true });
   const firstBefore = await page.locator(".photoEditorItem img").first().getAttribute("src");
   const dragBox = await page.getByRole("img", { name: "写真 1（ドラッグで並べ替え）" }).boundingBox();
