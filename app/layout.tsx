@@ -15,9 +15,12 @@ const appearanceBootstrap = `
       const fallback = ${JSON.stringify(DEFAULT_APPEARANCE)};
       const stored = JSON.parse(localStorage.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEY)}) || "null") || fallback;
       const modes = ["system", "light", "dark"];
-      const themes = ["mono", "sky", "mint", "lilac", "peach", "cobalt", "magenta", "citrus"];
+      const themes = ["peach", "mint", "sky", "lilac", "citrus", "mono"];
+      const legacyThemes = { cobalt: "sky", magenta: "peach" };
       const mode = modes.includes(stored.mode) ? stored.mode : fallback.mode;
-      const theme = themes.includes(stored.theme) ? stored.theme : fallback.theme;
+      const theme = themes.includes(stored.theme)
+        ? stored.theme
+        : legacyThemes[stored.theme] || fallback.theme;
       document.documentElement.dataset.colorMode = mode;
       document.documentElement.dataset.colorTheme = theme;
       document.documentElement.style.colorScheme = mode === "system" ? "light dark" : mode;
@@ -57,8 +60,8 @@ export const viewport: Viewport = {
   viewportFit: "cover",
   colorScheme: "light dark",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f6fbfe" },
-    { media: "(prefers-color-scheme: dark)", color: "#0d1419" },
+    { media: "(prefers-color-scheme: light)", color: "#f2fbff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0b151a" },
   ],
 };
 
