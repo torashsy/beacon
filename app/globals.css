@@ -228,6 +228,41 @@ html[data-color-theme="peach"] {
   --dark-em2: #f4ccd6;
   --dark-on-em: #fff;
 }
+html[data-color-theme="sweet"] {
+  --page: #fff2f7;
+  --page-glass: rgba(255, 242, 247, .94);
+  --text: #532d3b;
+  --muted: #936979;
+  --faint: #d9aebb;
+  --surface: #fffafd;
+  --surface-glass: rgba(255, 250, 253, .95);
+  --surface-subtle: rgba(255, 250, 253, .76);
+  --border: #f2c8d4;
+  --ink: #ffe7ef;
+  --soft: #ffdae6;
+  --skeleton: #f8e2e9;
+  --em: #f29fba;
+  --emd: #9d4667;
+  --eml: #ffdce7;
+  --em2: #ffc8d8;
+  --on-em: #4f2837;
+  --dark-page: #1b0f15;
+  --dark-text: #fff0f5;
+  --dark-muted: #d2a5b6;
+  --dark-faint: #966276;
+  --dark-surface: #281720;
+  --dark-surface-glass: rgba(40, 23, 32, .94);
+  --dark-page-glass: rgba(27, 15, 21, .94);
+  --dark-border: #543043;
+  --dark-ink: #351d2a;
+  --dark-soft: #46243a;
+  --dark-skeleton: #3c2530;
+  --dark-em: #8b3f5e;
+  --dark-emd: #ffb4ca;
+  --dark-eml: #482338;
+  --dark-em2: #ffd0dd;
+  --dark-on-em: #fff;
+}
 html[data-color-theme="citrus"] {
   --page: #fffaf5;
   --page-glass: rgba(255, 250, 245, .94);

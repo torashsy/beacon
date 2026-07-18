@@ -6,6 +6,7 @@ export type AppearanceMode = (typeof APPEARANCE_MODES)[number];
 
 export const COLOR_THEMES = [
   { id: "peach", label: "ピンク", category: "パステル", colors: ["#f5c9d5", "#fbe0e7"] },
+  { id: "sweet", label: "甘めピンク", category: "スイート", colors: ["#f29fba", "#ffc8d8"] },
   { id: "mint", label: "緑", category: "パステル", colors: ["#b9e5d8", "#d8f0e8"] },
   { id: "sky", label: "青", category: "爽やか", colors: ["#8fcde0", "#c6eaf2"] },
   { id: "lilac", label: "紫", category: "パステル", colors: ["#d5caec", "#e5def3"] },
