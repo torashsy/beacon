@@ -5,14 +5,14 @@ export const APPEARANCE_MODES = ["system", "light", "dark"] as const;
 export type AppearanceMode = (typeof APPEARANCE_MODES)[number];
 
 export const COLOR_THEMES = [
-  { id: "mono", label: "モノクロ", category: "シック", colors: ["#3f464d", "#d8dde3"] },
-  { id: "sky", label: "スカイ", category: "パステル", colors: ["#0879ad", "#dff4ff"] },
-  { id: "mint", label: "ミント", category: "パステル", colors: ["#137d69", "#dcf7ef"] },
-  { id: "lilac", label: "ライラック", category: "パステル", colors: ["#6f54b5", "#eee8ff"] },
-  { id: "peach", label: "ピーチ", category: "パステル", colors: ["#b95745", "#ffe8e1"] },
-  { id: "cobalt", label: "コバルト", category: "ビビッド", colors: ["#2858d8", "#dce4ff"] },
-  { id: "magenta", label: "マゼンタ", category: "ビビッド", colors: ["#b52570", "#ffe0ed"] },
-  { id: "citrus", label: "シトラス", category: "ビビッド", colors: ["#b65300", "#ffead0"] },
+  { id: "mono", label: "モノクロ", category: "シック", colors: ["#4d5358", "#c8cdd0"] },
+  { id: "sky", label: "ソーダ", category: "爽やか", colors: ["#087fa9", "#72d9f7"] },
+  { id: "mint", label: "ミント", category: "爽やか", colors: ["#12836d", "#7ae1bc"] },
+  { id: "lilac", label: "ラベンダー", category: "パステル", colors: ["#7658c7", "#c4adff"] },
+  { id: "peach", label: "ピーチ", category: "キュート", colors: ["#bd5149", "#ffab98"] },
+  { id: "cobalt", label: "オーシャン", category: "爽やか", colors: ["#3468cf", "#63c5f4"] },
+  { id: "magenta", label: "ベリー", category: "キュート", colors: ["#b9437d", "#f58db7"] },
+  { id: "citrus", label: "レモン", category: "フレッシュ", colors: ["#946b00", "#f5d44c"] },
 ] as const;
 
 export type ColorThemeId = (typeof COLOR_THEMES)[number]["id"];

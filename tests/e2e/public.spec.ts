@@ -225,10 +225,20 @@ test("appearance settings support dark mode and eight saved color themes", async
 
   await expect(page.getByRole("heading", { name: "表示", exact: true })).toBeVisible();
   const themes = page.getByRole("group", { name: "カラーテーマ" });
-  await expect(themes.getByRole("button")).toHaveCount(8);
+  const themeButtons = themes.getByRole("button");
+  await expect(themeButtons).toHaveCount(8);
+
+  const accentColors = new Set<string>();
+  for (let index = 0; index < 8; index += 1) {
+    await themeButtons.nth(index).click();
+    accentColors.add(await page.locator("html").evaluate(
+      (element) => getComputedStyle(element).getPropertyValue("--em").trim(),
+    ));
+  }
+  expect(accentColors.size).toBe(8);
 
   await page.getByRole("button", { name: "ダーク", exact: true }).click();
-  await page.getByRole("button", { name: "マゼンタ（ビビッド）", exact: true }).click();
+  await page.getByRole("button", { name: "ベリー（キュート）", exact: true }).click();
   await expect(page.locator("html")).toHaveAttribute("data-color-mode", "dark");
   await expect(page.locator("html")).toHaveAttribute("data-color-theme", "magenta");
   await expect(page.locator("html")).toHaveCSS("color-scheme", "dark");

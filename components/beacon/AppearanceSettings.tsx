@@ -73,7 +73,7 @@ export function AppearanceSettings() {
                   className="themeSwatch"
                   aria-hidden="true"
                   style={{
-                    background: `linear-gradient(135deg, ${theme.colors[0]} 0 50%, ${theme.colors[1]} 50% 100%)`,
+                    background: `linear-gradient(135deg, ${theme.colors[0]}, ${theme.colors[1]})`,
                   }}
                 />
                 <span className="themeChoiceText">
