@@ -5,14 +5,12 @@ export const APPEARANCE_MODES = ["system", "light", "dark"] as const;
 export type AppearanceMode = (typeof APPEARANCE_MODES)[number];
 
 export const COLOR_THEMES = [
-  { id: "mono", label: "モノクロ", category: "シック", colors: ["#4d5358", "#c8cdd0"] },
-  { id: "sky", label: "ソーダ", category: "淡色", colors: ["#8fcde0", "#c6eaf2"] },
-  { id: "mint", label: "ミント", category: "淡色", colors: ["#9fd8c7", "#c8eadf"] },
-  { id: "lilac", label: "ラベンダー", category: "淡色", colors: ["#c5b9e4", "#ddd5f0"] },
-  { id: "peach", label: "サクラ", category: "パステル", colors: ["#efb7c7", "#f8d6df"] },
-  { id: "cobalt", label: "オーシャン", category: "くすみ", colors: ["#9db9d8", "#c9daeb"] },
-  { id: "magenta", label: "モーヴ", category: "くすみ", colors: ["#c8afc1", "#dfceda"] },
-  { id: "citrus", label: "レモン", category: "淡色", colors: ["#ecd58f", "#f4e4ad"] },
+  { id: "peach", label: "ピンク", category: "パステル", colors: ["#efb7c7", "#f8d6df"] },
+  { id: "mint", label: "緑", category: "パステル", colors: ["#9fd8c7", "#c8eadf"] },
+  { id: "sky", label: "青", category: "爽やか", colors: ["#8fcde0", "#c6eaf2"] },
+  { id: "lilac", label: "紫", category: "パステル", colors: ["#c5b9e4", "#ddd5f0"] },
+  { id: "citrus", label: "オレンジ", category: "やわらか", colors: ["#e7b98c", "#f3d8bd"] },
+  { id: "mono", label: "黒", category: "シック", colors: ["#303338", "#adb2b6"] },
 ] as const;
 
 export type ColorThemeId = (typeof COLOR_THEMES)[number]["id"];
@@ -27,6 +25,11 @@ export const DEFAULT_APPEARANCE: AppearancePreference = {
   theme: "sky",
 };
 
+const LEGACY_COLOR_THEMES: Record<string, ColorThemeId> = {
+  cobalt: "sky",
+  magenta: "peach",
+};
+
 export function isAppearanceMode(value: unknown): value is AppearanceMode {
   return APPEARANCE_MODES.includes(value as AppearanceMode);
 }
@@ -35,13 +38,20 @@ export function isColorTheme(value: unknown): value is ColorThemeId {
   return COLOR_THEMES.some((theme) => theme.id === value);
 }
 
+export function normalizeColorTheme(value: unknown): ColorThemeId {
+  if (isColorTheme(value)) return value;
+  return typeof value === "string"
+    ? LEGACY_COLOR_THEMES[value] ?? DEFAULT_APPEARANCE.theme
+    : DEFAULT_APPEARANCE.theme;
+}
+
 export function parseAppearance(value: string | null): AppearancePreference {
   if (!value) return DEFAULT_APPEARANCE;
   try {
     const parsed = JSON.parse(value) as Partial<AppearancePreference>;
     return {
       mode: isAppearanceMode(parsed.mode) ? parsed.mode : DEFAULT_APPEARANCE.mode,
-      theme: isColorTheme(parsed.theme) ? parsed.theme : DEFAULT_APPEARANCE.theme,
+      theme: normalizeColorTheme(parsed.theme),
     };
   } catch {
     return DEFAULT_APPEARANCE;

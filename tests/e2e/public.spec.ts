@@ -238,17 +238,26 @@ test("help explains the main flow in plain language", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "ログインできないとき", exact: true })).toHaveCount(0);
 });
 
-test("appearance settings support dark mode and eight saved color themes", async ({ page }) => {
+test("appearance settings support dark mode and six saved color themes", async ({ page }) => {
+  await page.addInitScript(() => {
+    if (window.sessionStorage.getItem("legacy-theme-seeded")) return;
+    window.localStorage.setItem(
+      "via-mi:appearance:v1",
+      JSON.stringify({ mode: "light", theme: "magenta" }),
+    );
+    window.sessionStorage.setItem("legacy-theme-seeded", "1");
+  });
   await page.goto("/");
+  await expect(page.locator("html")).toHaveAttribute("data-color-theme", "peach");
   await page.getByRole("button", { name: "Help", exact: true }).click();
 
   await expect(page.getByRole("heading", { name: "表示", exact: true })).toBeVisible();
   const themes = page.getByRole("group", { name: "カラーテーマ" });
   const themeButtons = themes.getByRole("button");
-  await expect(themeButtons).toHaveCount(8);
+  await expect(themeButtons).toHaveCount(6);
 
   const accentColors = new Set<string>();
-  for (let index = 0; index < 8; index += 1) {
+  for (let index = 0; index < 6; index += 1) {
     await themeButtons.nth(index).click();
     const palette = await page.locator("html").evaluate((element) => {
       const style = getComputedStyle(element);
@@ -260,18 +269,18 @@ test("appearance settings support dark mode and eight saved color themes", async
     accentColors.add(palette.accent);
     expect(contrastRatio(palette.accent, palette.onAccent)).toBeGreaterThanOrEqual(4.5);
   }
-  expect(accentColors.size).toBe(8);
+  expect(accentColors.size).toBe(6);
 
   await page.getByRole("button", { name: "ダーク", exact: true }).click();
-  await page.getByRole("button", { name: "モーヴ（くすみ）", exact: true }).click();
+  await page.getByRole("button", { name: "ピンク（パステル）", exact: true }).click();
   await expect(page.locator("html")).toHaveAttribute("data-color-mode", "dark");
-  await expect(page.locator("html")).toHaveAttribute("data-color-theme", "magenta");
+  await expect(page.locator("html")).toHaveAttribute("data-color-theme", "peach");
   await expect(page.locator("html")).toHaveCSS("color-scheme", "dark");
-  await expect(page.locator("body")).toHaveCSS("background-color", "rgb(23, 19, 23)");
+  await expect(page.locator("body")).toHaveCSS("background-color", "rgb(24, 17, 20)");
 
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-color-mode", "dark");
-  await expect(page.locator("html")).toHaveAttribute("data-color-theme", "magenta");
+  await expect(page.locator("html")).toHaveAttribute("data-color-theme", "peach");
 });
 
 test("bottom tabs slide in the direction of travel", async ({ page }) => {
