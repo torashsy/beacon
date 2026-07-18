@@ -9,6 +9,17 @@ describe("appearance", () => {
   it("offers exactly eight color themes", () => {
     expect(COLOR_THEMES).toHaveLength(8);
     expect(new Set(COLOR_THEMES.map((theme) => theme.id)).size).toBe(8);
+    expect(new Set(COLOR_THEMES.map((theme) => theme.colors[0])).size).toBe(8);
+    expect(COLOR_THEMES.map((theme) => theme.label)).toEqual([
+      "モノクロ",
+      "ソーダ",
+      "ミント",
+      "ラベンダー",
+      "ピーチ",
+      "オーシャン",
+      "ベリー",
+      "レモン",
+    ]);
   });
 
   it("restores a valid saved preference", () => {
