@@ -1,5 +1,23 @@
 import { expect, test } from "@playwright/test";
 
+function contrastRatio(first: string, second: string): number {
+  const luminance = (value: string) => {
+    const hex = value.length === 4
+      ? value.slice(1).split("").map((part) => part.repeat(2)).join("")
+      : value.slice(1);
+    const channels = hex.match(/.{2}/g)?.map((part) => Number.parseInt(part, 16) / 255) ?? [];
+    const linear = channels.map((channel) =>
+      channel <= 0.04045
+        ? channel / 12.92
+        : ((channel + 0.055) / 1.055) ** 2.4,
+    );
+    return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
+  };
+  const light = Math.max(luminance(first), luminance(second));
+  const dark = Math.min(luminance(first), luminance(second));
+  return (light + 0.05) / (dark + 0.05);
+}
+
 test("public entry points and legal pages are reachable", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveTitle(/via-mi/);
@@ -112,6 +130,7 @@ test("a profile QR is personalized and shareable as an image", async ({ page }) 
   await expect(qrImage).toHaveAttribute("src", /^data:image\/svg\+xml/);
   const svg = decodeURIComponent((await qrImage.getAttribute("src")) ?? "");
   expect(svg).toContain('rx=".32"');
+  expect(svg).toContain('fill="#3c7184"');
   expect(svg.match(/<g><rect/g)).toHaveLength(3);
 
   await dialog.getByRole("button", { name: "QR画像を共有", exact: true }).click();
@@ -231,18 +250,24 @@ test("appearance settings support dark mode and eight saved color themes", async
   const accentColors = new Set<string>();
   for (let index = 0; index < 8; index += 1) {
     await themeButtons.nth(index).click();
-    accentColors.add(await page.locator("html").evaluate(
-      (element) => getComputedStyle(element).getPropertyValue("--em").trim(),
-    ));
+    const palette = await page.locator("html").evaluate((element) => {
+      const style = getComputedStyle(element);
+      return {
+        accent: style.getPropertyValue("--em").trim(),
+        onAccent: style.getPropertyValue("--on-em").trim(),
+      };
+    });
+    accentColors.add(palette.accent);
+    expect(contrastRatio(palette.accent, palette.onAccent)).toBeGreaterThanOrEqual(4.5);
   }
   expect(accentColors.size).toBe(8);
 
   await page.getByRole("button", { name: "ダーク", exact: true }).click();
-  await page.getByRole("button", { name: "ベリー（キュート）", exact: true }).click();
+  await page.getByRole("button", { name: "モーヴ（くすみ）", exact: true }).click();
   await expect(page.locator("html")).toHaveAttribute("data-color-mode", "dark");
   await expect(page.locator("html")).toHaveAttribute("data-color-theme", "magenta");
   await expect(page.locator("html")).toHaveCSS("color-scheme", "dark");
-  await expect(page.locator("body")).toHaveCSS("background-color", "rgb(25, 15, 21)");
+  await expect(page.locator("body")).toHaveCSS("background-color", "rgb(23, 19, 23)");
 
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-color-mode", "dark");

@@ -95,11 +95,14 @@ export function ProfileView({
       const style = getComputedStyle(document.documentElement);
       const accent = style.getPropertyValue("--em").trim() || "#0879ad";
       const accent2 = style.getPropertyValue("--em2").trim() || "#60c8f3";
+      const qrColor = style.getPropertyValue("--emd").trim() || "#0879ad";
+      const onAccent = style.getPropertyValue("--on-em").trim() || "#ffffff";
       const qr = create(pageUrl(), { errorCorrectionLevel: "H" });
       setQrCard({
-        dataUrl: qrSvgDataUrl(createBrandQrSvg(qr.modules, accent)),
+        dataUrl: qrSvgDataUrl(createBrandQrSvg(qr.modules, qrColor)),
         accent,
         accent2,
+        onAccent,
       });
     } catch {
       toast("QRコードを作成できませんでした");
