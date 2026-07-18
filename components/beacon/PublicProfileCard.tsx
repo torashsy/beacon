@@ -6,6 +6,7 @@ import { safeUrl } from "@/lib/beacon/safe";
 import { LinkThumb } from "./icons";
 import { TrackedLink } from "./TrackedLink";
 import { normalizeProfileContent } from "@/lib/beacon/profile-content";
+import { ProfilePhotoGallery } from "./ProfilePhotoGallery";
 
 /**
  * 公開プロフィールの見た目（X風カード）。beacon.html の renderPublicFor を移植。
@@ -59,7 +60,7 @@ export function PublicProfileCard({
   const { handle, profile, channels, pubcal } = data;
   const hasLinks = channels.some((c) => c.type !== HEADING_TYPE && c.status === "live");
   const content = normalizeProfileContent(profile.content);
-  const hasAnyContent = hasLinks || content.photos.length > 0 || content.notes.length > 0 || pubcal.length > 0;
+  const hasAnyContent = hasLinks || content.photos.length > 0 || pubcal.length > 0;
 
   return (
     <div className="xcard">
@@ -139,35 +140,8 @@ export function PublicProfileCard({
       </div>
 
       {content.photos.length > 0 && (
-        <section className="profileContentSection" aria-label="写真">
-          <h2>写真</h2>
-          <div className="profilePhotoRail">
-            {content.photos.map((photo, index) => (
-              <div className="profilePhotoItem" key={photo.id}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={photo.url} alt={`プロフィール写真 ${index + 1}`} />
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {content.notes.length > 0 && (
-        <section className="profileContentSection profileNotes" aria-label="メモ">
-          <h2>メモ</h2>
-          {content.notes.map((note) => (
-            <div
-              className="profileNote"
-              key={note.id}
-              style={{
-                textAlign: note.align,
-                fontWeight: note.bold ? 700 : 400,
-                textDecoration: note.underline ? "underline" : "none",
-              }}
-            >
-              {note.text}
-            </div>
-          ))}
+        <section className="profileContentSection">
+          <ProfilePhotoGallery photos={content.photos} />
         </section>
       )}
 

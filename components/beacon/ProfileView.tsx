@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import type { Channel } from "@/lib/beacon/types";
 import {
   HEADING_TYPE,
@@ -20,16 +20,15 @@ import { PublicProfileCard } from "./PublicProfileCard";
 import { QrShareModal, type QrCard } from "./QrShareModal";
 import {
   normalizeProfileContent,
-  type NoteAlignment,
   type ProfileContent,
-  type ProfileNote,
+  type ProfilePhoto,
 } from "@/lib/beacon/profile-content";
 
-type EditSection = "profile" | "links" | "cal" | "photos" | "notes";
+type EditSection = "profile" | "links" | "cal" | "photos";
 type ContentTab = Exclude<EditSection, "profile">;
 
 /**
- * プロフィール表示 + 編集タブ（リンク / カレンダー）。beacon.html の prof-view を移植し、
+ * プロフィール表示 + 編集タブ（リンク / カレンダー / 写真）。beacon.html の prof-view を移植し、
  * リンクの編集・セクション見出し・シェア(共有/QR) を追加拡張。
  * 共有はOS共有シート、非対応環境ではURLコピーにフォールバックする。
  * 書き込みは onSaveChannels / onSaveCal を通じて失効可能なセッションで認証する。
@@ -174,12 +173,6 @@ export function ProfileView({
             </svg>
             <span>写真を追加</span>
           </button>
-          <button className="homeQuickAction" onClick={() => onEdit("notes")}>
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6 3h12v18H6V3Zm3 5h6m-6 4h6m-6 4h4" />
-            </svg>
-            <span>メモを追加</span>
-          </button>
         </div>
         {qrCard && (
           <QrShareModal
@@ -218,12 +211,6 @@ export function ProfileView({
             >
               写真
             </button>
-            <button
-              className={`xtab ${tab === "notes" ? "on" : ""}`}
-              onClick={() => setTab("notes")}
-            >
-              メモ
-            </button>
           </div>
 
         {tab === "links" ? (
@@ -235,15 +222,13 @@ export function ProfileView({
           />
         ) : tab === "cal" ? (
           <CalendarPane me={me} onSaveCal={onSaveCal} toast={toast} />
-        ) : tab === "photos" ? (
+        ) : (
           <PhotosPane
             me={me}
             onSaveContent={onSaveContent}
             onUploadPhoto={onUploadPhoto}
             toast={toast}
           />
-        ) : (
-          <NotesPane me={me} onSaveContent={onSaveContent} toast={toast} />
         )}
       </div>
 
@@ -570,23 +555,47 @@ function PhotosPane({
 }) {
   const content = normalizeProfileContent(me.profile.content);
   const [busy, setBusy] = useState(false);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const draggingIdRef = useRef<string | null>(null);
+  const [draftPhotos, setDraftPhotos] = useState<ProfilePhoto[]>(content.photos);
+  const draftPhotosRef = useRef(draftPhotos);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  async function addPhoto(file?: File) {
-    if (!file || busy) return;
-    if (content.photos.length >= 5) {
+  useEffect(() => {
+    if (draggingId) return;
+    const next = normalizeProfileContent(me.profile.content).photos;
+    draftPhotosRef.current = next;
+    setDraftPhotos(next);
+  }, [me.profile.content, draggingId]);
+
+  function setPhotoDraft(next: ProfilePhoto[]) {
+    draftPhotosRef.current = next;
+    setDraftPhotos(next);
+  }
+
+  async function addPhotos(files?: FileList | null) {
+    if (!files?.length || busy) return;
+    const available = 5 - draftPhotos.length;
+    if (available <= 0) {
       toast("写真は5枚まで追加できます");
       return;
     }
+    const selected = Array.from(files).slice(0, available);
+    if (files.length > available) toast(`追加できる残り${available}枚を選びました`);
     setBusy(true);
     try {
-      const url = await onUploadPhoto(file);
-      if (!url) return;
+      const urls = (await Promise.all(selected.map(onUploadPhoto)))
+        .filter((url): url is string => Boolean(url));
+      if (!urls.length) return;
+      const photos = [
+        ...draftPhotos,
+        ...urls.map((url) => ({ id: cryptoId(), url })),
+      ];
+      setPhotoDraft(photos);
       const ok = await onSaveContent({
-        ...content,
-        photos: [...content.photos, { id: cryptoId(), url }],
+        photos,
       });
-      if (ok) toast("写真を追加しました");
+      if (ok) toast(`${urls.length}枚の写真を追加しました`);
     } finally {
       setBusy(false);
       if (inputRef.current) inputRef.current.value = "";
@@ -594,38 +603,76 @@ function PhotosPane({
   }
 
   function remove(id: string) {
-    void onSaveContent({
-      ...content,
-      photos: content.photos.filter((photo) => photo.id !== id),
-    });
+    const photos = draftPhotos.filter((photo) => photo.id !== id);
+    setPhotoDraft(photos);
+    void onSaveContent({ photos });
   }
 
-  function move(index: number, direction: -1 | 1) {
-    const target = index + direction;
-    if (target < 0 || target >= content.photos.length) return;
-    const photos = [...content.photos];
-    [photos[index], photos[target]] = [photos[target], photos[index]];
-    void onSaveContent({ ...content, photos });
+  function reorder(dragId: string, targetId: string) {
+    if (dragId === targetId) return;
+    const photos = [...draftPhotosRef.current];
+    const from = photos.findIndex((photo) => photo.id === dragId);
+    const to = photos.findIndex((photo) => photo.id === targetId);
+    if (from < 0 || to < 0) return;
+    const [moving] = photos.splice(from, 1);
+    photos.splice(to, 0, moving);
+    setPhotoDraft(photos);
+  }
+
+  function startDrag(id: string, event: ReactPointerEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    draggingIdRef.current = id;
+    setDraggingId(id);
+  }
+
+  function moveDrag(event: ReactPointerEvent<HTMLButtonElement>) {
+    const dragId = draggingIdRef.current;
+    if (!dragId) return;
+    const target = document
+      .elementFromPoint(event.clientX, event.clientY)
+      ?.closest<HTMLElement>("[data-photo-id]")
+      ?.dataset.photoId;
+    if (target) reorder(dragId, target);
+  }
+
+  function endDrag(event: ReactPointerEvent<HTMLButtonElement>) {
+    if (!draggingIdRef.current) return;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    draggingIdRef.current = null;
+    setDraggingId(null);
+    void onSaveContent({ photos: draftPhotosRef.current });
   }
 
   return (
     <div className="xpane contentEditorPane">
       <div className="editorPaneHeading">
-        <div>
-          <h2>写真</h2>
-          <p>最大5枚。プロフィールでは横にスライドして表示されます。</p>
-        </div>
-        <span>{content.photos.length} / 5</span>
+        <p>最大5枚</p>
+        <span>{draftPhotos.length} / 5</span>
       </div>
-      {content.photos.length > 0 && (
+      {draftPhotos.length > 0 && (
         <div className="photoEditorList">
-          {content.photos.map((photo, index) => (
-            <div className="photoEditorItem" key={photo.id}>
+          {draftPhotos.map((photo, index) => (
+            <div
+              className={`photoEditorItem ${draggingId === photo.id ? "dragging" : ""}`}
+              key={photo.id}
+              data-photo-id={photo.id}
+            >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={photo.url} alt={`写真 ${index + 1}`} />
               <div className="contentItemActions">
-                <button disabled={index === 0} onClick={() => move(index, -1)} aria-label="前へ">‹</button>
-                <button disabled={index === content.photos.length - 1} onClick={() => move(index, 1)} aria-label="後へ">›</button>
+                <button
+                  className="photoDragHandle"
+                  aria-label={`写真 ${index + 1} を並べ替え`}
+                  onPointerDown={(event) => startDrag(photo.id, event)}
+                  onPointerMove={moveDrag}
+                  onPointerUp={endDrag}
+                  onPointerCancel={endDrag}
+                >
+                  ⠿
+                </button>
                 <button className="dangerText" onClick={() => remove(photo.id)}>削除</button>
               </div>
             </div>
@@ -637,156 +684,16 @@ function PhotosPane({
         className="visuallyHidden"
         type="file"
         accept="image/*"
-        onChange={(event) => void addPhoto(event.target.files?.[0])}
+        multiple
+        onChange={(event) => void addPhotos(event.target.files)}
       />
       <button
         className="btn sig"
-        disabled={busy || content.photos.length >= 5}
+        disabled={busy || draftPhotos.length >= 5}
         onClick={() => inputRef.current?.click()}
       >
-        {busy ? "追加中…" : content.photos.length >= 5 ? "5枚追加済み" : "写真を選ぶ"}
+        {busy ? "追加中…" : draftPhotos.length >= 5 ? "5枚追加済み" : "写真を選ぶ"}
       </button>
-    </div>
-  );
-}
-
-// ---------- メモタブ ----------
-
-const EMPTY_NOTE: Omit<ProfileNote, "id"> = {
-  text: "",
-  bold: false,
-  underline: false,
-  align: "left",
-};
-
-function NotesPane({
-  me,
-  onSaveContent,
-  toast,
-}: {
-  me: Me;
-  onSaveContent: (next: ProfileContent) => Promise<boolean>;
-  toast: ToastFn;
-}) {
-  const content = normalizeProfileContent(me.profile.content);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [draft, setDraft] = useState(EMPTY_NOTE);
-  const [busy, setBusy] = useState(false);
-
-  function edit(note: ProfileNote) {
-    setEditingId(note.id);
-    setDraft({
-      text: note.text,
-      bold: note.bold,
-      underline: note.underline,
-      align: note.align,
-    });
-  }
-
-  function reset() {
-    setEditingId(null);
-    setDraft(EMPTY_NOTE);
-  }
-
-  async function save() {
-    const text = draft.text.trim();
-    if (!text) {
-      toast("メモを入力してください");
-      return;
-    }
-    setBusy(true);
-    const note = { id: editingId ?? cryptoId(), ...draft, text };
-    const notes = editingId
-      ? content.notes.map((item) => item.id === editingId ? note : item)
-      : [...content.notes, note];
-    try {
-      if (await onSaveContent({ ...content, notes })) {
-        toast(editingId ? "メモを保存しました" : "メモを追加しました");
-        reset();
-      }
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function remove(id: string) {
-    if (editingId === id) reset();
-    void onSaveContent({
-      ...content,
-      notes: content.notes.filter((note) => note.id !== id),
-    });
-  }
-
-  return (
-    <div className="xpane contentEditorPane">
-      <div className="editorPaneHeading">
-        <div>
-          <h2>メモ</h2>
-          <p>プロフィールに表示する文章を追加できます。</p>
-        </div>
-      </div>
-      {content.notes.map((note) => (
-        <div className="noteEditorItem" key={note.id}>
-          <div
-            className="noteEditorPreview"
-            style={{
-              textAlign: note.align,
-              fontWeight: note.bold ? 700 : 400,
-              textDecoration: note.underline ? "underline" : "none",
-            }}
-          >
-            {note.text}
-          </div>
-          <div className="contentItemActions">
-            <button onClick={() => edit(note)}>編集</button>
-            <button className="dangerText" onClick={() => remove(note.id)}>削除</button>
-          </div>
-        </div>
-      ))}
-      <label className="f">{editingId ? "メモを編集" : "メモを追加"}</label>
-      <div className="noteToolbar" role="toolbar" aria-label="文字の書式">
-        <button
-          aria-label="太字"
-          aria-pressed={draft.bold}
-          className={draft.bold ? "on" : ""}
-          onClick={() => setDraft((value) => ({ ...value, bold: !value.bold }))}
-        ><strong>B</strong></button>
-        <button
-          aria-label="下線"
-          aria-pressed={draft.underline}
-          className={draft.underline ? "on" : ""}
-          onClick={() => setDraft((value) => ({ ...value, underline: !value.underline }))}
-        ><u>U</u></button>
-        {(["left", "center", "right"] as NoteAlignment[]).map((align) => (
-          <button
-            key={align}
-            aria-label={`${align === "left" ? "左" : align === "center" ? "中央" : "右"}揃え`}
-            aria-pressed={draft.align === align}
-            className={draft.align === align ? "on" : ""}
-            onClick={() => setDraft((value) => ({ ...value, align }))}
-          >
-            <span className={`alignGlyph ${align}`} aria-hidden="true">≡</span>
-          </button>
-        ))}
-      </div>
-      <textarea
-        className="plain noteTextarea"
-        value={draft.text}
-        maxLength={1000}
-        rows={7}
-        placeholder="メモを入力"
-        style={{
-          textAlign: draft.align,
-          fontWeight: draft.bold ? 700 : 400,
-          textDecoration: draft.underline ? "underline" : "none",
-        }}
-        onChange={(event) => setDraft((value) => ({ ...value, text: event.target.value }))}
-      />
-      <div className="fieldCounter">{draft.text.length} / 1000</div>
-      <button className="btn sig" disabled={busy} onClick={() => void save()}>
-        {busy ? "保存中…" : editingId ? "変更を保存" : "追加する"}
-      </button>
-      {editingId && <button className="btn ghost" onClick={reset}>キャンセル</button>}
     </div>
   );
 }

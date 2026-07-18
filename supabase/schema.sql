@@ -31,7 +31,7 @@ create table if not exists profiles (
   bn_url   text default '',
   status   text default '',              -- ひとこと近況
   status_at timestamptz,                 -- 近況の更新時刻
-  content jsonb not null default '{"photos":[],"notes":[]}'::jsonb
+  content jsonb not null default '{"photos":[]}'::jsonb
 );
 
 create table if not exists channels (
@@ -345,7 +345,7 @@ begin
   -- クライアントの maxLength は UI 制限にすぎず、RPCを直接呼べば無制限に
   -- なるため、DB/表示の肥大化を防ぐ寛容な上限をサーバー側にも設ける。
   if length(coalesce(p_name,''))   > 100  then raise exception 'name too long'; end if;
-  if length(coalesce(p_bio,''))    > 1000 then raise exception 'bio too long'; end if;
+  if length(coalesce(p_bio,''))    > 800  then raise exception 'bio too long'; end if;
   if length(coalesce(p_status,'')) > 200  then raise exception 'status too long'; end if;
   if p_theme not between 0 and 11 or p_av_theme not between 0 and 11 then
     raise exception 'invalid theme';
@@ -362,23 +362,20 @@ begin
   update accounts set updated_at=now() where handle=lower(p_handle);
 end $$;
 
--- ---- RPC: 写真・メモ更新 ----
+-- ---- RPC: 写真更新 ----
 create or replace function update_profile_content(
   p_handle text, p_pass text, p_content jsonb
 )
 returns void language plpgsql security definer set search_path = public, extensions as $$
 declare
   photo jsonb;
-  note jsonb;
 begin
   if not _check_pass(p_handle,p_pass) then raise exception 'auth'; end if;
   if coalesce(jsonb_typeof(p_content), 'null') <> 'object'
-     or coalesce(jsonb_typeof(p_content->'photos'), 'null') <> 'array'
-     or coalesce(jsonb_typeof(p_content->'notes'), 'null') <> 'array' then
+     or coalesce(jsonb_typeof(p_content->'photos'), 'null') <> 'array' then
     raise exception 'invalid content';
   end if;
   if jsonb_array_length(p_content->'photos') > 5 then raise exception 'too many photos'; end if;
-  if jsonb_array_length(p_content->'notes') > 10 then raise exception 'too many notes'; end if;
   for photo in select value from jsonb_array_elements(p_content->'photos') loop
     if coalesce(jsonb_typeof(photo), 'null') <> 'object'
        or length(coalesce(photo->>'id','')) not between 1 and 100
@@ -387,18 +384,8 @@ begin
       raise exception 'invalid photo';
     end if;
   end loop;
-  for note in select value from jsonb_array_elements(p_content->'notes') loop
-    if coalesce(jsonb_typeof(note), 'null') <> 'object'
-       or length(coalesce(note->>'id','')) not between 1 and 100
-       or length(coalesce(note->>'text','')) not between 1 and 1000
-       or coalesce(note->>'align','') not in ('left','center','right')
-       or coalesce(jsonb_typeof(note->'bold'), 'null') <> 'boolean'
-       or coalesce(jsonb_typeof(note->'underline'), 'null') <> 'boolean' then
-      raise exception 'invalid note';
-    end if;
-  end loop;
   update profiles set content=jsonb_build_object(
-    'photos', p_content->'photos', 'notes', p_content->'notes'
+    'photos', p_content->'photos'
   ) where handle=lower(p_handle);
   update accounts set updated_at=now() where handle=lower(p_handle);
 end $$;
