@@ -27,7 +27,7 @@ export interface Profile {
   status?: string; // ひとこと近況（任意）
   status_at?: string | null; // 近況の更新時刻
   verified?: boolean; // 復旧用メールアドレスを確認済み
-  content?: ProfileContent; // 写真・メモ（旧プロフィールでは未設定）
+  content?: ProfileContent; // 写真（旧プロフィールでは未設定）
 }
 
 /** カレンダーメモ 1 件 */

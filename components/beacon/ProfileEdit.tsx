@@ -224,10 +224,10 @@ export function ProfileEdit({
             <textarea
               value={bio}
               onChange={(e) => setBio(e.target.value)}
-              maxLength={200}
+              maxLength={800}
               placeholder="自己紹介を追加"
             />
-            <div className="ecount">{bio.length} / 200</div>
+            <div className="ecount">{bio.length} / 800</div>
           </div>
         </div>
       </div>

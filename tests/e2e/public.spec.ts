@@ -153,7 +153,7 @@ test("a profile QR is personalized and shareable as an image", async ({ page }) 
   expect(sharedSize).toBeGreaterThan(5_000);
 });
 
-test("profile photos use a fixed-height rail and notes expose formatting controls", async ({ page }, testInfo) => {
+test("profile photos keep their ratio, enlarge on tap, and expose a horizontal editor", async ({ page }, testInfo) => {
   await page.addInitScript(() => {
     window.localStorage.setItem(
       "via-mi:session:v1",
@@ -162,7 +162,7 @@ test("profile photos use a fixed-height rail and notes expose formatting control
   });
   const photos = Array.from({ length: 3 }, (_, index) => ({
     id: `photo-${index}`,
-    url: `https://kciftkinnwkjmlouzmwu.supabase.co/storage/v1/object/public/avatars/test/photo-${index}.jpg`,
+    url: `https://kciftkinnwkjmlouzmwu.supabase.co/storage/v1/object/public/avatars/test/photo-${index}.svg`,
   }));
   const rpcResponses: Record<string, unknown> = {
     verify_app_session: true,
@@ -179,13 +179,6 @@ test("profile photos use a fixed-height rail and notes expose formatting control
         verified: false,
         content: {
           photos,
-          notes: [{
-            id: "note-1",
-            text: "中央の太字メモ",
-            bold: true,
-            underline: true,
-            align: "center",
-          }],
         },
       },
       channels: [],
@@ -202,14 +195,16 @@ test("profile photos use a fixed-height rail and notes expose formatting control
     },
     get_my_follows: [],
   };
-  await page.route("https://kciftkinnwkjmlouzmwu.supabase.co/storage/v1/object/public/avatars/test/photo-*.jpg", async (route) => {
+  await page.route("https://kciftkinnwkjmlouzmwu.supabase.co/storage/v1/object/public/avatars/test/photo-*.svg", async (route) => {
     const index = Number(route.request().url().match(/photo-(\d+)/)?.[1] ?? 0);
     const colors = [["#60c8f3", "#44d7bc"], ["#ffb8d0", "#d7b7ff"], ["#ffd3a8", "#fff0b8"]];
+    const sizes = [[600, 400], [320, 640], [720, 360]];
     const [from, to] = colors[index] ?? colors[0];
+    const [width, height] = sizes[index] ?? sizes[0];
     await route.fulfill({
       status: 200,
       contentType: "image/svg+xml",
-      body: `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"><defs><linearGradient id="g"><stop stop-color="${from}"/><stop offset="1" stop-color="${to}"/></linearGradient></defs><rect width="600" height="400" fill="url(#g)"/></svg>`,
+      body: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><defs><linearGradient id="g"><stop stop-color="${from}"/><stop offset="1" stop-color="${to}"/></linearGradient></defs><rect width="${width}" height="${height}" fill="url(#g)"/></svg>`,
     });
   });
   await page.route("**/rest/v1/rpc/*", async (route) => {
@@ -223,29 +218,47 @@ test("profile photos use a fixed-height rail and notes expose formatting control
 
   await page.goto("/");
   await expect(page.getByRole("button", { name: "写真を追加" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "メモを追加" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "メモを追加" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "写真", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "メモ", exact: true })).toHaveCount(0);
   const items = page.locator(".profilePhotoItem");
   await expect(items).toHaveCount(3);
   const sizes = await items.evaluateAll((elements) =>
     elements.map((element) => Math.round(element.getBoundingClientRect().height)),
   );
   expect(new Set(sizes).size).toBe(1);
+  await expect.poll(() => items.locator("img").evaluateAll(
+    (images) => images.every((image) => (image as HTMLImageElement).naturalWidth > 0),
+  )).toBe(true);
+  const widths = await items.evaluateAll((elements) =>
+    elements.map((element) => Math.round(element.getBoundingClientRect().width)),
+  );
+  expect(new Set(widths).size).toBeGreaterThan(1);
   await expect(page.locator(".profilePhotoRail")).toHaveCSS("overflow-x", "auto");
-  const note = page.getByText("中央の太字メモ", { exact: true });
-  await expect(note).toHaveCSS("text-align", "center");
-  await expect(note).toHaveCSS("font-weight", "700");
-  await expect(note).toHaveCSS("text-decoration-line", "underline");
-  expect(await note.evaluate((element) => getComputedStyle(element).color))
-    .toBe(await page.locator("body").evaluate((element) => getComputedStyle(element).color));
+  await expect(items.first().locator("img")).toHaveCSS("object-fit", "contain");
+  await page.getByRole("button", { name: "写真 1 を拡大" }).click();
+  await expect(page.getByRole("dialog", { name: "写真を拡大表示" })).toBeVisible();
+  await page.getByRole("button", { name: "閉じる" }).click();
+  await expect(page.getByRole("dialog", { name: "写真を拡大表示" })).toHaveCount(0);
   await page.screenshot({ path: testInfo.outputPath("profile-content-mobile.png"), fullPage: true });
 
-  await page.getByRole("button", { name: "メモを追加" }).click();
-  await expect(page.getByRole("button", { name: "太字" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "下線" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "左揃え" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "中央揃え" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "右揃え" })).toBeVisible();
-  await expect(page.getByPlaceholder("メモを入力")).toHaveAttribute("maxlength", "1000");
+  await page.getByRole("button", { name: "写真を追加" }).click();
+  await expect(page.getByText("プロフィールでは横にスライドして表示されます。")).toHaveCount(0);
+  await expect(page.locator('.photoEditorList')).toHaveCSS("display", "flex");
+  await expect(page.getByRole("button", { name: /を並べ替え/ })).toHaveCount(3);
+  await expect(page.locator('input[type="file"].visuallyHidden')).toHaveAttribute("multiple", "");
+  await expect(page.locator(".efield textarea")).toHaveAttribute("maxlength", "800");
+  await page.locator(".photoEditorList").scrollIntoViewIfNeeded();
+  await page.screenshot({ path: testInfo.outputPath("photo-editor-mobile.png"), fullPage: true });
+  const firstBefore = await page.locator(".photoEditorItem img").first().getAttribute("src");
+  const handleBox = await page.getByRole("button", { name: "写真 1 を並べ替え" }).boundingBox();
+  const targetBox = await page.locator(".photoEditorItem").nth(2).boundingBox();
+  if (!handleBox || !targetBox) throw new Error("photo drag controls are not visible");
+  await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(targetBox.x + targetBox.width / 2, targetBox.y + targetBox.height / 2, { steps: 5 });
+  await page.mouse.up();
+  await expect(page.locator(".photoEditorItem img").first()).not.toHaveAttribute("src", firstBefore ?? "");
 });
 
 test("health endpoint and production metadata are valid", async ({ request }) => {
