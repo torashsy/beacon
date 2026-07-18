@@ -130,7 +130,7 @@ test("a profile QR is personalized and shareable as an image", async ({ page }) 
   await expect(qrImage).toHaveAttribute("src", /^data:image\/svg\+xml/);
   const svg = decodeURIComponent((await qrImage.getAttribute("src")) ?? "");
   expect(svg).toContain('rx=".32"');
-  expect(svg).toContain('fill="#3c7184"');
+  expect(svg).toContain('fill="#235f74"');
   expect(svg.match(/<g><rect/g)).toHaveLength(3);
 
   await dialog.getByRole("button", { name: "QR画像を共有", exact: true }).click();
