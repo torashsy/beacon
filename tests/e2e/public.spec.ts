@@ -230,11 +230,13 @@ test("profile photos keep their ratio, enlarge on tap, and expose a horizontal e
   expect(new Set(sizes).size).toBe(1);
   await expect(page.locator(".profileContentSection")).toHaveCSS("padding-left", "0px");
   await expect(page.locator(".profileContentSection")).toHaveCSS("padding-right", "0px");
+  await expect(items.first()).toHaveCSS("min-width", "0px");
   await expect(page.locator(".profilePhotoRail")).toHaveCSS("overflow-x", "auto");
   await expect(items.first().locator("img")).toHaveCSS("object-fit", "contain");
   await page.getByRole("button", { name: "写真 1 を拡大" }).click();
   const lightbox = page.getByRole("dialog", { name: "写真を拡大表示" });
   await expect(lightbox).toBeVisible();
+  expect(await lightbox.evaluate((element) => element.parentElement === document.body)).toBe(true);
   const lightboxCenter = await lightbox.locator("img").evaluate((image) => {
     const rect = image.getBoundingClientRect();
     return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };

@@ -587,8 +587,7 @@ export function BeaconApp() {
     async (file: File): Promise<string | null> => {
       if (!session) return null;
       try {
-        // ギャラリーも横長表示向けの最大800px画像として保存する。
-        return await uploadImage(db, session.handle, session.pass, "bn", file);
+        return await uploadImage(db, session.handle, session.pass, "photo", file);
       } catch (error) {
         toast(writeErrorMessage(error));
         return null;

@@ -17,13 +17,17 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 const BUCKET = "avatars";
 
-export type ImageKind = "av" | "bn";
+export type ImageKind = "av" | "bn" | "photo";
 
-const MAX_EDGE: Record<ImageKind, number> = { av: 256, bn: 800 };
+export const IMAGE_SETTINGS: Record<ImageKind, { maxEdge: number; quality: number }> = {
+  av: { maxEdge: 256, quality: 0.86 },
+  bn: { maxEdge: 1200, quality: 0.9 },
+  photo: { maxEdge: 2560, quality: 0.92 },
+};
 
 /** File を受け取り、長辺を上限までリサイズして JPEG Blob を返す。 */
 export async function resizeToJpeg(file: File, kind: ImageKind): Promise<Blob> {
-  const max = MAX_EDGE[kind];
+  const max = IMAGE_SETTINGS[kind].maxEdge;
   const bitmap = await createImageBitmap(file);
   const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
   const w = Math.round(bitmap.width * scale);
@@ -40,7 +44,7 @@ export async function resizeToJpeg(file: File, kind: ImageKind): Promise<Blob> {
     canvas.toBlob(
       (blob) => (blob ? resolve(blob) : reject(new Error("toBlob failed"))),
       "image/jpeg",
-      0.85,
+      IMAGE_SETTINGS[kind].quality,
     ),
   );
 }

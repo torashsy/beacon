@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import type { ProfilePhoto } from "@/lib/beacon/profile-content";
 
 export function ProfilePhotoGallery({ photos }: { photos: ProfilePhoto[] }) {
   const [active, setActive] = useState<ProfilePhoto | null>(null);
+  const [loaded, setLoaded] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
     if (!active) return;
@@ -26,17 +28,25 @@ export function ProfilePhotoGallery({ photos }: { photos: ProfilePhoto[] }) {
         {photos.map((photo, index) => (
           <button
             type="button"
-            className="profilePhotoItem"
+            className={`profilePhotoItem ${loaded.has(photo.id) ? "loaded" : "loading"}`}
             key={photo.id}
             onClick={() => setActive(photo)}
             aria-label={`写真 ${index + 1} を拡大`}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={photo.url} alt="" />
+            <img
+              src={photo.url}
+              alt=""
+              onLoad={() => setLoaded((current) => {
+                const next = new Set(current);
+                next.add(photo.id);
+                return next;
+              })}
+            />
           </button>
         ))}
       </div>
-      {active && (
+      {active && createPortal(
         <div
           className="photoLightbox"
           role="dialog"
@@ -54,7 +64,8 @@ export function ProfilePhotoGallery({ photos }: { photos: ProfilePhoto[] }) {
           </button>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={active.url} alt="" onClick={(event) => event.stopPropagation()} />
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );
