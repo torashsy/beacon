@@ -153,6 +153,101 @@ test("a profile QR is personalized and shareable as an image", async ({ page }) 
   expect(sharedSize).toBeGreaterThan(5_000);
 });
 
+test("profile photos use a fixed-height rail and notes expose formatting controls", async ({ page }, testInfo) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      "via-mi:session:v1",
+      JSON.stringify({ handle: "content_user", token: `bst_${"a".repeat(64)}` }),
+    );
+  });
+  const photos = Array.from({ length: 3 }, (_, index) => ({
+    id: `photo-${index}`,
+    url: `https://kciftkinnwkjmlouzmwu.supabase.co/storage/v1/object/public/avatars/test/photo-${index}.jpg`,
+  }));
+  const rpcResponses: Record<string, unknown> = {
+    verify_app_session: true,
+    get_public_page: {
+      profile: {
+        handle: "content_user",
+        name: "コンテンツテスト",
+        bio: "",
+        emoji: "🌸",
+        theme: 0,
+        av_theme: 0,
+        av_url: "",
+        bn_url: "",
+        verified: false,
+        content: {
+          photos,
+          notes: [{
+            id: "note-1",
+            text: "中央の太字メモ",
+            bold: true,
+            underline: true,
+            align: "center",
+          }],
+        },
+      },
+      channels: [],
+      cal: [],
+    },
+    get_follower_count: 0,
+    get_private_cal: [],
+    get_clicks: [],
+    get_account_security: {
+      passkey_linked: true,
+      recovery_verified: false,
+      recovery_kind: null,
+      recovery_email_masked: null,
+    },
+    get_my_follows: [],
+  };
+  await page.route("https://kciftkinnwkjmlouzmwu.supabase.co/storage/v1/object/public/avatars/test/photo-*.jpg", async (route) => {
+    const index = Number(route.request().url().match(/photo-(\d+)/)?.[1] ?? 0);
+    const colors = [["#60c8f3", "#44d7bc"], ["#ffb8d0", "#d7b7ff"], ["#ffd3a8", "#fff0b8"]];
+    const [from, to] = colors[index] ?? colors[0];
+    await route.fulfill({
+      status: 200,
+      contentType: "image/svg+xml",
+      body: `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"><defs><linearGradient id="g"><stop stop-color="${from}"/><stop offset="1" stop-color="${to}"/></linearGradient></defs><rect width="600" height="400" fill="url(#g)"/></svg>`,
+    });
+  });
+  await page.route("**/rest/v1/rpc/*", async (route) => {
+    const rpc = new URL(route.request().url()).pathname.split("/").pop() ?? "";
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(rpcResponses[rpc] ?? null),
+    });
+  });
+
+  await page.goto("/");
+  await expect(page.getByRole("button", { name: "写真を追加" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "メモを追加" })).toBeVisible();
+  const items = page.locator(".profilePhotoItem");
+  await expect(items).toHaveCount(3);
+  const sizes = await items.evaluateAll((elements) =>
+    elements.map((element) => Math.round(element.getBoundingClientRect().height)),
+  );
+  expect(new Set(sizes).size).toBe(1);
+  await expect(page.locator(".profilePhotoRail")).toHaveCSS("overflow-x", "auto");
+  const note = page.getByText("中央の太字メモ", { exact: true });
+  await expect(note).toHaveCSS("text-align", "center");
+  await expect(note).toHaveCSS("font-weight", "700");
+  await expect(note).toHaveCSS("text-decoration-line", "underline");
+  expect(await note.evaluate((element) => getComputedStyle(element).color))
+    .toBe(await page.locator("body").evaluate((element) => getComputedStyle(element).color));
+  await page.screenshot({ path: testInfo.outputPath("profile-content-mobile.png"), fullPage: true });
+
+  await page.getByRole("button", { name: "メモを追加" }).click();
+  await expect(page.getByRole("button", { name: "太字" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "下線" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "左揃え" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "中央揃え" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "右揃え" })).toBeVisible();
+  await expect(page.getByPlaceholder("メモを入力")).toHaveAttribute("maxlength", "1000");
+});
+
 test("health endpoint and production metadata are valid", async ({ request }) => {
   const health = await request.get("/api/health");
   expect(health.ok()).toBeTruthy();
@@ -238,7 +333,7 @@ test("help explains the main flow in plain language", async ({ page }) => {
   await page.getByRole("button", { name: "Help", exact: true }).click();
 
   await expect(page.getByRole("heading", { name: "via-miの使い方", exact: true })).toBeVisible();
-  await expect(page.getByText("me → リンクを追加 / 予定を追加", { exact: true })).toBeVisible();
+  await expect(page.getByText("me → 追加したい項目を選ぶ", { exact: true })).toBeVisible();
   await expect(page.getByText("Follow → ID検索", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "ログインできないとき", exact: true })).toHaveCount(0);
 });

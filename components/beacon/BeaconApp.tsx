@@ -16,11 +16,16 @@ import {
   saveCal as rpcSaveCal,
   saveChannels as rpcSaveChannels,
   updateProfile,
+  updateProfileContent,
   verifyAppSession,
 } from "@/lib/beacon/rpc";
 import { uploadImage } from "@/lib/beacon/storage";
 import { registerPasskeyForHandle } from "@/lib/beacon/passkey";
 import type { Channel } from "@/lib/beacon/types";
+import {
+  normalizeProfileContent,
+  type ProfileContent,
+} from "@/lib/beacon/profile-content";
 import {
   clearTrustedDevice,
 } from "@/lib/beacon/deviceTrust";
@@ -122,7 +127,7 @@ export function BeaconApp() {
   // 全画面オーバーレイ（ナビを隠す）: 認証フォーム / 公開プレビュー
   const [overlay, setOverlay] = useState<Overlay>("none");
   const [editing, setEditing] = useState(false);
-  const [editTarget, setEditTarget] = useState<"profile" | "links" | "cal">("profile");
+  const [editTarget, setEditTarget] = useState<"profile" | "links" | "cal" | "photos" | "notes">("profile");
   const [recoveryFocusRequest, setRecoveryFocusRequest] = useState(0);
   const [recoveryHighlighted, setRecoveryHighlighted] = useState(false);
   const recoverySetupRef = useRef<HTMLDivElement | null>(null);
@@ -140,7 +145,7 @@ export function BeaconApp() {
     [follows, followStates],
   );
 
-  function openEditor(target: "profile" | "links" | "cal" = "profile") {
+  function openEditor(target: "profile" | "links" | "cal" | "photos" | "notes" = "profile") {
     setEditTarget(target);
     setEditing(true);
   }
@@ -553,6 +558,45 @@ export function BeaconApp() {
     [db, session, me, runWrite, pushFollowUpdate],
   );
 
+  const persistProfileContent = useCallback(
+    async (next: ProfileContent): Promise<boolean> => {
+      if (!session || !me) return false;
+      const normalized = normalizeProfileContent(next);
+      const previous = normalizeProfileContent(me.profile.content);
+      setMe((current) => current ? {
+        ...current,
+        profile: { ...current.profile, content: normalized },
+      } : current);
+      const ok = await runWrite(() =>
+        updateProfileContent(db, session.handle, session.pass, normalized),
+      );
+      if (!ok) {
+        setMe((current) => current ? {
+          ...current,
+          profile: { ...current.profile, content: previous },
+        } : current);
+      } else {
+        pushFollowUpdate();
+      }
+      return ok;
+    },
+    [db, session, me, runWrite, pushFollowUpdate],
+  );
+
+  const uploadProfilePhoto = useCallback(
+    async (file: File): Promise<string | null> => {
+      if (!session) return null;
+      try {
+        // ギャラリーも横長表示向けの最大800px画像として保存する。
+        return await uploadImage(db, session.handle, session.pass, "bn", file);
+      } catch (error) {
+        toast(writeErrorMessage(error));
+        return null;
+      }
+    },
+    [db, session, toast],
+  );
+
   const loadCal = useCallback(async () => {
     if (!session || !me || me.calLoaded || calLoading.current) return;
     calLoading.current = true;
@@ -893,6 +937,8 @@ export function BeaconApp() {
                   onEdit={openEditor}
                   onSaveChannels={persistChannels}
                   onSaveCal={persistCal}
+                  onSaveContent={persistProfileContent}
+                  onUploadPhoto={uploadProfilePhoto}
                   onLoadCal={loadCal}
                   toast={toast}
                 />
@@ -904,6 +950,8 @@ export function BeaconApp() {
                   onEdit={openEditor}
                   onSaveChannels={persistChannels}
                   onSaveCal={persistCal}
+                  onSaveContent={persistProfileContent}
+                  onUploadPhoto={uploadProfilePhoto}
                   onLoadCal={loadCal}
                   toast={toast}
                 />

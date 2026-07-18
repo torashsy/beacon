@@ -1,4 +1,5 @@
 // Beacon のドメイン型。supabase/schema.sql のテーブル定義と対応。
+import type { ProfileContent } from "./profile-content";
 
 export type ChannelStatus = "live" | "dead";
 
@@ -26,6 +27,7 @@ export interface Profile {
   status?: string; // ひとこと近況（任意）
   status_at?: string | null; // 近況の更新時刻
   verified?: boolean; // 復旧用メールアドレスを確認済み
+  content?: ProfileContent; // 写真・メモ（旧プロフィールでは未設定）
 }
 
 /** カレンダーメモ 1 件 */

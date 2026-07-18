@@ -5,6 +5,7 @@ import { fmtMd } from "@/lib/beacon/format";
 import { safeUrl } from "@/lib/beacon/safe";
 import { LinkThumb } from "./icons";
 import { TrackedLink } from "./TrackedLink";
+import { normalizeProfileContent } from "@/lib/beacon/profile-content";
 
 /**
  * 公開プロフィールの見た目（X風カード）。beacon.html の renderPublicFor を移植。
@@ -17,7 +18,7 @@ export interface PublicCardData {
   followerCount?: number;
   profile: Pick<
     Profile,
-    "name" | "bio" | "emoji" | "theme" | "av_theme" | "av_url" | "bn_url" | "status" | "verified"
+    "name" | "bio" | "emoji" | "theme" | "av_theme" | "av_url" | "bn_url" | "status" | "verified" | "content"
   >;
   channels: Channel[]; // 非表示リンクも含む。ここで公開対象だけに絞る
   pubcal: CalMemo[]; // 公開メモのみ
@@ -57,6 +58,8 @@ export function PublicProfileCard({
 }) {
   const { handle, profile, channels, pubcal } = data;
   const hasLinks = channels.some((c) => c.type !== HEADING_TYPE && c.status === "live");
+  const content = normalizeProfileContent(profile.content);
+  const hasAnyContent = hasLinks || content.photos.length > 0 || content.notes.length > 0 || pubcal.length > 0;
 
   return (
     <div className="xcard">
@@ -130,10 +133,43 @@ export function PublicProfileCard({
               </TrackedLink>
             );
           })
-        ) : (
+        ) : !hasAnyContent ? (
           <div className="empty">表示中のリンクがありません。</div>
-        )}
+        ) : null}
       </div>
+
+      {content.photos.length > 0 && (
+        <section className="profileContentSection" aria-label="写真">
+          <h2>写真</h2>
+          <div className="profilePhotoRail">
+            {content.photos.map((photo, index) => (
+              <div className="profilePhotoItem" key={photo.id}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={photo.url} alt={`プロフィール写真 ${index + 1}`} />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {content.notes.length > 0 && (
+        <section className="profileContentSection profileNotes" aria-label="メモ">
+          <h2>メモ</h2>
+          {content.notes.map((note) => (
+            <div
+              className="profileNote"
+              key={note.id}
+              style={{
+                textAlign: note.align,
+                fontWeight: note.bold ? 700 : 400,
+                textDecoration: note.underline ? "underline" : "none",
+              }}
+            >
+              {note.text}
+            </div>
+          ))}
+        </section>
+      )}
 
       {pubcal.length > 0 && (
         <div className="calpub" style={{ padding: "0 16px 18px" }}>

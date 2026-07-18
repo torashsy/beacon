@@ -5,6 +5,7 @@ import {
   type Profile,
   toChannelPayload,
 } from "./types";
+import type { ProfileContent } from "./profile-content";
 
 /**
  * supabase/schema.sql の RPC 群を型付きで呼ぶ薄いラッパー。
@@ -215,6 +216,19 @@ export async function updateProfile(
       p_av_theme: p.av_theme,
     }),
   );
+}
+
+export async function updateProfileContent(
+  db: DB,
+  handle: string,
+  pass: string,
+  content: ProfileContent,
+): Promise<void> {
+  unwrap(await db.rpc("update_profile_content", {
+    p_handle: handle,
+    p_pass: pass,
+    p_content: content,
+  }));
 }
 
 // ---- チャンネル（リンク）----

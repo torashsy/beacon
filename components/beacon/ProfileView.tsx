@@ -18,6 +18,15 @@ import { cryptoId, type Me, type ToastFn } from "./appTypes";
 import { LinkThumb } from "./icons";
 import { PublicProfileCard } from "./PublicProfileCard";
 import { QrShareModal, type QrCard } from "./QrShareModal";
+import {
+  normalizeProfileContent,
+  type NoteAlignment,
+  type ProfileContent,
+  type ProfileNote,
+} from "@/lib/beacon/profile-content";
+
+type EditSection = "profile" | "links" | "cal" | "photos" | "notes";
+type ContentTab = Exclude<EditSection, "profile">;
 
 /**
  * プロフィール表示 + 編集タブ（リンク / カレンダー）。beacon.html の prof-view を移植し、
@@ -34,20 +43,24 @@ export function ProfileView({
   focusSection,
   onSaveChannels,
   onSaveCal,
+  onSaveContent,
+  onUploadPhoto,
   onLoadCal,
   toast,
 }: {
   me: Me;
   handle: string;
-  onEdit: (section?: "profile" | "links" | "cal") => void;
+  onEdit: (section?: EditSection) => void;
   editing?: boolean;
-  focusSection?: "links" | "cal";
+  focusSection?: ContentTab;
   onSaveChannels: (next: Channel[]) => Promise<boolean>;
   onSaveCal: (date: string, memo: string, pub: boolean) => Promise<boolean>;
   onLoadCal: () => void;
+  onSaveContent: (next: ProfileContent) => Promise<boolean>;
+  onUploadPhoto: (file: File) => Promise<string | null>;
   toast: ToastFn;
 }) {
-  const [tab, setTab] = useState<"links" | "cal">(focusSection ?? "links");
+  const [tab, setTab] = useState<ContentTab>(focusSection ?? "links");
   const editorSection = useRef<HTMLDivElement>(null);
   const [qrCard, setQrCard] = useState<QrCard | null>(null);
 
@@ -155,6 +168,18 @@ export function ProfileView({
             </svg>
             <span>予定を追加</span>
           </button>
+          <button className="homeQuickAction" onClick={() => onEdit("photos")}>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 5h16v14H4V5Zm0 10 4.5-4 3.5 3 2.5-2 5.5 5M16.5 8.5h.01" />
+            </svg>
+            <span>写真を追加</span>
+          </button>
+          <button className="homeQuickAction" onClick={() => onEdit("notes")}>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 3h12v18H6V3Zm3 5h6m-6 4h6m-6 4h4" />
+            </svg>
+            <span>メモを追加</span>
+          </button>
         </div>
         {qrCard && (
           <QrShareModal
@@ -187,6 +212,18 @@ export function ProfileView({
             >
               カレンダー
             </button>
+            <button
+              className={`xtab ${tab === "photos" ? "on" : ""}`}
+              onClick={() => setTab("photos")}
+            >
+              写真
+            </button>
+            <button
+              className={`xtab ${tab === "notes" ? "on" : ""}`}
+              onClick={() => setTab("notes")}
+            >
+              メモ
+            </button>
           </div>
 
         {tab === "links" ? (
@@ -196,8 +233,17 @@ export function ProfileView({
             onSaveChannels={onSaveChannels}
             toast={toast}
           />
-        ) : (
+        ) : tab === "cal" ? (
           <CalendarPane me={me} onSaveCal={onSaveCal} toast={toast} />
+        ) : tab === "photos" ? (
+          <PhotosPane
+            me={me}
+            onSaveContent={onSaveContent}
+            onUploadPhoto={onUploadPhoto}
+            toast={toast}
+          />
+        ) : (
+          <NotesPane me={me} onSaveContent={onSaveContent} toast={toast} />
         )}
       </div>
 
@@ -505,6 +551,242 @@ function LinksPane({
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+// ---------- 写真タブ ----------
+
+function PhotosPane({
+  me,
+  onSaveContent,
+  onUploadPhoto,
+  toast,
+}: {
+  me: Me;
+  onSaveContent: (next: ProfileContent) => Promise<boolean>;
+  onUploadPhoto: (file: File) => Promise<string | null>;
+  toast: ToastFn;
+}) {
+  const content = normalizeProfileContent(me.profile.content);
+  const [busy, setBusy] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  async function addPhoto(file?: File) {
+    if (!file || busy) return;
+    if (content.photos.length >= 5) {
+      toast("写真は5枚まで追加できます");
+      return;
+    }
+    setBusy(true);
+    try {
+      const url = await onUploadPhoto(file);
+      if (!url) return;
+      const ok = await onSaveContent({
+        ...content,
+        photos: [...content.photos, { id: cryptoId(), url }],
+      });
+      if (ok) toast("写真を追加しました");
+    } finally {
+      setBusy(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  }
+
+  function remove(id: string) {
+    void onSaveContent({
+      ...content,
+      photos: content.photos.filter((photo) => photo.id !== id),
+    });
+  }
+
+  function move(index: number, direction: -1 | 1) {
+    const target = index + direction;
+    if (target < 0 || target >= content.photos.length) return;
+    const photos = [...content.photos];
+    [photos[index], photos[target]] = [photos[target], photos[index]];
+    void onSaveContent({ ...content, photos });
+  }
+
+  return (
+    <div className="xpane contentEditorPane">
+      <div className="editorPaneHeading">
+        <div>
+          <h2>写真</h2>
+          <p>最大5枚。プロフィールでは横にスライドして表示されます。</p>
+        </div>
+        <span>{content.photos.length} / 5</span>
+      </div>
+      {content.photos.length > 0 && (
+        <div className="photoEditorList">
+          {content.photos.map((photo, index) => (
+            <div className="photoEditorItem" key={photo.id}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={photo.url} alt={`写真 ${index + 1}`} />
+              <div className="contentItemActions">
+                <button disabled={index === 0} onClick={() => move(index, -1)} aria-label="前へ">‹</button>
+                <button disabled={index === content.photos.length - 1} onClick={() => move(index, 1)} aria-label="後へ">›</button>
+                <button className="dangerText" onClick={() => remove(photo.id)}>削除</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      <input
+        ref={inputRef}
+        className="visuallyHidden"
+        type="file"
+        accept="image/*"
+        onChange={(event) => void addPhoto(event.target.files?.[0])}
+      />
+      <button
+        className="btn sig"
+        disabled={busy || content.photos.length >= 5}
+        onClick={() => inputRef.current?.click()}
+      >
+        {busy ? "追加中…" : content.photos.length >= 5 ? "5枚追加済み" : "写真を選ぶ"}
+      </button>
+    </div>
+  );
+}
+
+// ---------- メモタブ ----------
+
+const EMPTY_NOTE: Omit<ProfileNote, "id"> = {
+  text: "",
+  bold: false,
+  underline: false,
+  align: "left",
+};
+
+function NotesPane({
+  me,
+  onSaveContent,
+  toast,
+}: {
+  me: Me;
+  onSaveContent: (next: ProfileContent) => Promise<boolean>;
+  toast: ToastFn;
+}) {
+  const content = normalizeProfileContent(me.profile.content);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draft, setDraft] = useState(EMPTY_NOTE);
+  const [busy, setBusy] = useState(false);
+
+  function edit(note: ProfileNote) {
+    setEditingId(note.id);
+    setDraft({
+      text: note.text,
+      bold: note.bold,
+      underline: note.underline,
+      align: note.align,
+    });
+  }
+
+  function reset() {
+    setEditingId(null);
+    setDraft(EMPTY_NOTE);
+  }
+
+  async function save() {
+    const text = draft.text.trim();
+    if (!text) {
+      toast("メモを入力してください");
+      return;
+    }
+    setBusy(true);
+    const note = { id: editingId ?? cryptoId(), ...draft, text };
+    const notes = editingId
+      ? content.notes.map((item) => item.id === editingId ? note : item)
+      : [...content.notes, note];
+    try {
+      if (await onSaveContent({ ...content, notes })) {
+        toast(editingId ? "メモを保存しました" : "メモを追加しました");
+        reset();
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function remove(id: string) {
+    if (editingId === id) reset();
+    void onSaveContent({
+      ...content,
+      notes: content.notes.filter((note) => note.id !== id),
+    });
+  }
+
+  return (
+    <div className="xpane contentEditorPane">
+      <div className="editorPaneHeading">
+        <div>
+          <h2>メモ</h2>
+          <p>プロフィールに表示する文章を追加できます。</p>
+        </div>
+      </div>
+      {content.notes.map((note) => (
+        <div className="noteEditorItem" key={note.id}>
+          <div
+            className="noteEditorPreview"
+            style={{
+              textAlign: note.align,
+              fontWeight: note.bold ? 700 : 400,
+              textDecoration: note.underline ? "underline" : "none",
+            }}
+          >
+            {note.text}
+          </div>
+          <div className="contentItemActions">
+            <button onClick={() => edit(note)}>編集</button>
+            <button className="dangerText" onClick={() => remove(note.id)}>削除</button>
+          </div>
+        </div>
+      ))}
+      <label className="f">{editingId ? "メモを編集" : "メモを追加"}</label>
+      <div className="noteToolbar" role="toolbar" aria-label="文字の書式">
+        <button
+          aria-label="太字"
+          aria-pressed={draft.bold}
+          className={draft.bold ? "on" : ""}
+          onClick={() => setDraft((value) => ({ ...value, bold: !value.bold }))}
+        ><strong>B</strong></button>
+        <button
+          aria-label="下線"
+          aria-pressed={draft.underline}
+          className={draft.underline ? "on" : ""}
+          onClick={() => setDraft((value) => ({ ...value, underline: !value.underline }))}
+        ><u>U</u></button>
+        {(["left", "center", "right"] as NoteAlignment[]).map((align) => (
+          <button
+            key={align}
+            aria-label={`${align === "left" ? "左" : align === "center" ? "中央" : "右"}揃え`}
+            aria-pressed={draft.align === align}
+            className={draft.align === align ? "on" : ""}
+            onClick={() => setDraft((value) => ({ ...value, align }))}
+          >
+            <span className={`alignGlyph ${align}`} aria-hidden="true">≡</span>
+          </button>
+        ))}
+      </div>
+      <textarea
+        className="plain noteTextarea"
+        value={draft.text}
+        maxLength={1000}
+        rows={7}
+        placeholder="メモを入力"
+        style={{
+          textAlign: draft.align,
+          fontWeight: draft.bold ? 700 : 400,
+          textDecoration: draft.underline ? "underline" : "none",
+        }}
+        onChange={(event) => setDraft((value) => ({ ...value, text: event.target.value }))}
+      />
+      <div className="fieldCounter">{draft.text.length} / 1000</div>
+      <button className="btn sig" disabled={busy} onClick={() => void save()}>
+        {busy ? "保存中…" : editingId ? "変更を保存" : "追加する"}
+      </button>
+      {editingId && <button className="btn ghost" onClick={reset}>キャンセル</button>}
     </div>
   );
 }
