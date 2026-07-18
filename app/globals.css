@@ -946,7 +946,7 @@ textarea {
   stroke-linejoin: round;
 }
 .profileContentSection {
-  padding: 8px 16px 18px;
+  padding: 8px 0 18px;
 }
 .homeQuickAction:last-child:nth-child(odd) {
   grid-column: 1 / -1;
@@ -958,7 +958,7 @@ textarea {
   overscroll-behavior-inline: contain;
   scroll-snap-type: x proximity;
   scrollbar-width: none;
-  padding: 0 2px 4px;
+  padding: 0 0 4px;
 }
 .profilePhotoRail::-webkit-scrollbar {
   display: none;
@@ -1050,6 +1050,8 @@ textarea {
   padding: 2px 2px 8px;
   scrollbar-width: none;
   overscroll-behavior-inline: contain;
+  touch-action: pan-x;
+  -webkit-overflow-scrolling: touch;
 }
 .photoEditorList::-webkit-scrollbar {
   display: none;
@@ -1076,7 +1078,7 @@ textarea {
   object-fit: contain;
   background: var(--eml);
   display: block;
-  touch-action: none;
+  touch-action: pan-x;
   cursor: grab;
   user-select: none;
   -webkit-user-drag: none;

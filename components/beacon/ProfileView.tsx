@@ -557,9 +557,21 @@ function PhotosPane({
   const [busy, setBusy] = useState(false);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const draggingIdRef = useRef<string | null>(null);
+  const pendingDragRef = useRef<{
+    id: string;
+    pointerId: number;
+    startX: number;
+    startY: number;
+    element: HTMLImageElement;
+    timer: number;
+  } | null>(null);
   const [draftPhotos, setDraftPhotos] = useState<ProfilePhoto[]>(content.photos);
   const draftPhotosRef = useRef(draftPhotos);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => () => {
+    if (pendingDragRef.current) window.clearTimeout(pendingDragRef.current.timer);
+  }, []);
 
   useEffect(() => {
     if (draggingId) return;
@@ -619,16 +631,57 @@ function PhotosPane({
     setPhotoDraft(photos);
   }
 
-  function startDrag(id: string, event: ReactPointerEvent<HTMLImageElement>) {
-    event.preventDefault();
-    event.currentTarget.setPointerCapture(event.pointerId);
+  function activateDrag(id: string, element: HTMLImageElement, pointerId: number) {
+    try {
+      element.setPointerCapture(pointerId);
+    } catch {
+      return;
+    }
     draggingIdRef.current = id;
     setDraggingId(id);
   }
 
+  function clearPendingDrag() {
+    if (!pendingDragRef.current) return;
+    window.clearTimeout(pendingDragRef.current.timer);
+    pendingDragRef.current = null;
+  }
+
+  function startDrag(id: string, event: ReactPointerEvent<HTMLImageElement>) {
+    clearPendingDrag();
+    if (event.pointerType === "mouse") {
+      event.preventDefault();
+      activateDrag(id, event.currentTarget, event.pointerId);
+      return;
+    }
+    const pending = {
+      id,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      element: event.currentTarget,
+      timer: 0,
+    };
+    pending.timer = window.setTimeout(() => {
+      if (pendingDragRef.current !== pending) return;
+      pendingDragRef.current = null;
+      activateDrag(id, pending.element, pending.pointerId);
+    }, 260);
+    pendingDragRef.current = pending;
+  }
+
   function moveDrag(event: ReactPointerEvent<HTMLImageElement>) {
+    const pending = pendingDragRef.current;
+    if (pending && Math.hypot(
+      event.clientX - pending.startX,
+      event.clientY - pending.startY,
+    ) > 8) {
+      clearPendingDrag();
+      return;
+    }
     const dragId = draggingIdRef.current;
     if (!dragId) return;
+    event.preventDefault();
     const target = document
       .elementFromPoint(event.clientX, event.clientY)
       ?.closest<HTMLElement>("[data-photo-id]")
@@ -637,6 +690,7 @@ function PhotosPane({
   }
 
   function endDrag(event: ReactPointerEvent<HTMLImageElement>) {
+    clearPendingDrag();
     if (!draggingIdRef.current) return;
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
