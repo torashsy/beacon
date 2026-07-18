@@ -1,4 +1,5 @@
 import type { Channel, Profile } from "@/lib/beacon/types";
+import { EMPTY_PROFILE_CONTENT } from "@/lib/beacon/profile-content";
 
 // クライアントアプリ内で共有する型と小さなユーティリティ。
 
@@ -57,6 +58,7 @@ export function emptyProfile(handle: string): Profile {
     av_theme: 0,
     av_url: "",
     bn_url: "",
+    content: EMPTY_PROFILE_CONTENT,
   };
 }
 

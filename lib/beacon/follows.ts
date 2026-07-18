@@ -1,6 +1,7 @@
 import type { CalMemo, Channel, Profile } from "./types";
 import type { PublicPage } from "./rpc";
 import { HEADING_TYPE } from "./constants";
+import { normalizeProfileContent, type ProfileContent } from "./profile-content";
 
 /**
  * 表示用スナップショットは端末localStorageに置き、ログイン中はハンドルだけを
@@ -22,6 +23,7 @@ export interface FollowSnapshot {
   av_theme?: number;
   av_url: string;
   bn_url: string;
+  content?: ProfileContent;
   channels: Pick<Channel, "type" | "url" | "label" | "descr" | "status">[];
   pubcal: CalMemo[];
   updated: number;
@@ -44,6 +46,7 @@ export function toSnapshot(
     av_theme: profile.av_theme ?? 0,
     av_url: profile.av_url,
     bn_url: profile.bn_url,
+    content: normalizeProfileContent(profile.content),
     channels: channels.map((c) => ({
       type: c.type,
       url: c.url,
@@ -141,6 +144,7 @@ function snapshotSignature(snapshot: FollowSnapshot): string {
     av_theme: snapshot.av_theme ?? 0,
     av_url: snapshot.av_url,
     bn_url: snapshot.bn_url,
+    content: normalizeProfileContent(snapshot.content),
     channels: snapshot.channels.map((channel) => ({
       type: channel.type,
       url: channel.url,
