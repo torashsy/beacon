@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Channel } from "@/lib/beacon/types";
 import {
+  COLORS,
   HEADING_TYPE,
   TYPES,
   typeMeta,
@@ -62,6 +63,7 @@ export function ProfileView({
   const [tab, setTab] = useState<ContentTab>(focusSection ?? "links");
   const editorSection = useRef<HTMLDivElement>(null);
   const [qrCard, setQrCard] = useState<QrCard | null>(null);
+  const avatarColors = COLORS[me.profile.av_theme ?? 0] ?? COLORS[0];
 
   const publicCal = Object.entries(me.cal)
     .filter(([, value]) => value.pub && value.memo)
@@ -181,6 +183,8 @@ export function ProfileView({
             name={me.profile.name}
             avatarUrl={me.profile.av_url}
             emoji={me.profile.emoji}
+            avatarAccent={avatarColors[0]}
+            avatarAccent2={avatarColors[1]}
             onClose={() => setQrCard(null)}
             toast={toast}
           />

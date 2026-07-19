@@ -1311,9 +1311,9 @@ textarea {
   place-items: center;
   overflow: hidden;
   border: 5px solid #fff;
-  border-radius: 13px;
-  background: var(--qr-accent);
-  color: var(--qr-on-accent);
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--qr-avatar-accent), var(--qr-avatar-accent-2));
+  color: #fff;
   font-size: 20px;
   line-height: 1;
   transform: translate(-50%, -50%);

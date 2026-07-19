@@ -95,7 +95,7 @@ test("a profile QR is personalized and shareable as an image", async ({ page }) 
         bio: "",
         emoji: "🌙",
         theme: 0,
-        av_theme: 0,
+        av_theme: 6,
         av_url: "",
         bn_url: "",
         verified: false,
@@ -131,6 +131,12 @@ test("a profile QR is personalized and shareable as an image", async ({ page }) 
   await expect(dialog).toBeVisible();
   await expect(dialog.getByText("QRテスト", { exact: true })).toBeVisible();
   await expect(dialog.getByText("@qr_user", { exact: true })).toBeVisible();
+  const identity = dialog.locator(".qrIdentity");
+  await expect(identity).toHaveCSS("border-radius", "50%");
+  await expect(identity).toHaveCSS(
+    "background-image",
+    "linear-gradient(135deg, rgb(252, 231, 243), rgb(243, 232, 255))",
+  );
   const qrImage = dialog.getByRole("img", { name: "@qr_user のQRコード" });
   await expect(qrImage).toHaveAttribute("src", /^data:image\/svg\+xml/);
   const svg = decodeURIComponent((await qrImage.getAttribute("src")) ?? "");

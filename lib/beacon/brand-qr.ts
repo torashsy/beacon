@@ -11,6 +11,8 @@ export type QrShareImageOptions = {
   onAccent: string;
   avatarUrl?: string;
   emoji?: string;
+  avatarAccent?: string;
+  avatarAccent2?: string;
 };
 
 const FALLBACK_ACCENT = "#0879ad";
@@ -123,6 +125,8 @@ export async function renderQrSharePng(
 
   const accent = safeColor(options.accent, FALLBACK_ACCENT);
   const accent2 = safeColor(options.accent2, FALLBACK_ACCENT_2);
+  const avatarAccent = safeColor(options.avatarAccent ?? "", FALLBACK_ACCENT);
+  const avatarAccent2 = safeColor(options.avatarAccent2 ?? "", FALLBACK_ACCENT_2);
   const foreground = safeColor(options.onAccent, "#ffffff");
   const gradient = context.createLinearGradient(70, 40, width - 40, height);
   gradient.addColorStop(0, accent);
@@ -186,7 +190,8 @@ export async function renderQrSharePng(
   context.save();
   context.shadowColor = "rgba(0, 0, 0, .22)";
   context.shadowBlur = 18;
-  roundedRect(context, identityX - 8, identityY - 8, identitySize + 16, identitySize + 16, 30);
+  context.beginPath();
+  context.arc(width / 2, identityY + identitySize / 2, identitySize / 2 + 8, 0, Math.PI * 2);
   context.fillStyle = "#fff";
   context.fill();
   context.restore();
@@ -201,8 +206,19 @@ export async function renderQrSharePng(
   }
 
   context.save();
-  roundedRect(context, identityX, identityY, identitySize, identitySize, 24);
+  context.beginPath();
+  context.arc(width / 2, identityY + identitySize / 2, identitySize / 2, 0, Math.PI * 2);
   context.clip();
+  const avatarGradient = context.createLinearGradient(
+    identityX,
+    identityY,
+    identityX + identitySize,
+    identityY + identitySize,
+  );
+  avatarGradient.addColorStop(0, avatarAccent);
+  avatarGradient.addColorStop(1, avatarAccent2);
+  context.fillStyle = avatarGradient;
+  context.fillRect(identityX, identityY, identitySize, identitySize);
   if (avatar) {
     const scale = Math.max(identitySize / avatar.width, identitySize / avatar.height);
     const drawWidth = avatar.width * scale;
@@ -215,13 +231,15 @@ export async function renderQrSharePng(
       drawHeight,
     );
   } else {
-    context.fillStyle = accent;
-    context.fillRect(identityX, identityY, identitySize, identitySize);
-    context.fillStyle = foreground;
+    context.fillStyle = "#ffffff";
     context.font = '58px -apple-system, BlinkMacSystemFont, "Segoe UI Emoji", sans-serif';
     context.textAlign = "center";
     context.textBaseline = "middle";
-    context.fillText(options.emoji || "•", width / 2, identityY + identitySize / 2 + 2);
+    context.fillText(
+      options.emoji || (options.handle[0] ?? "?").toUpperCase(),
+      width / 2,
+      identityY + identitySize / 2 + 2,
+    );
   }
   context.restore();
 
