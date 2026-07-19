@@ -7,12 +7,11 @@ export const metadata: Metadata = {
   description: "via-miのはじめ方から、ページ作り・共有・フォローまでを順番に説明します。",
 };
 
-/** 下部ナビのタブを、実物と同じアイコンで文中に示すチップ。 */
+/** 下部ナビのタブを、実物と同じアイコンだけで文中に示すチップ。label は読み上げ用。 */
 function NavTab({ name, label }: { name: NavIconName; label: string }) {
   return (
-    <span className="navTabRef">
+    <span className="navTabRef" role="img" aria-label={label}>
       <NavIcon name={name} />
-      {label}
     </span>
   );
 }

@@ -2031,15 +2031,13 @@ textarea {
 .navTabRef {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
   margin: 0 2px;
-  padding: 1px 8px 1px 6px;
+  padding: 3px 6px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--soft);
   color: var(--emd);
-  font-weight: 750;
-  vertical-align: -4px;
+  vertical-align: -5px;
 }
 .navTabRef .navIcon {
   width: 14px;
