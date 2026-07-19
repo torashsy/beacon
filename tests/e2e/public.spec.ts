@@ -75,12 +75,21 @@ test("a profile QR is personalized and shareable as an image", async ({ page }) 
       configurable: true,
       value: async (data: ShareData) => {
         const file = data.files?.[0];
+        const dataUrl = file
+          ? await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(String(reader.result));
+              reader.onerror = () => reject(reader.error);
+              reader.readAsDataURL(file);
+            })
+          : undefined;
         (window as typeof window & {
-          __qrShare?: { name?: string; size?: number; type?: string };
+          __qrShare?: { name?: string; size?: number; type?: string; dataUrl?: string };
         }).__qrShare = {
           name: file?.name,
           size: file?.size,
           type: file?.type,
+          dataUrl,
         };
       },
     });
@@ -93,7 +102,7 @@ test("a profile QR is personalized and shareable as an image", async ({ page }) 
         handle: "qr_user",
         name: "QRテスト",
         bio: "",
-        emoji: "🌙",
+        emoji: "🫶",
         theme: 0,
         av_theme: 6,
         av_url: "",
@@ -164,6 +173,63 @@ test("a profile QR is personalized and shareable as an image", async ({ page }) 
     __qrShare?: { size?: number };
   }).__qrShare?.size ?? 0);
   expect(sharedSize).toBeGreaterThan(5_000);
+
+  const glyphCenter = await page.evaluate(async () => {
+    const dataUrl = (window as typeof window & {
+      __qrShare?: { dataUrl?: string };
+    }).__qrShare?.dataUrl;
+    if (!dataUrl) return null;
+    const image = new Image();
+    image.src = dataUrl;
+    await image.decode();
+    const canvas = document.createElement("canvas");
+    canvas.width = image.width;
+    canvas.height = image.height;
+    const context = canvas.getContext("2d");
+    if (!context) return null;
+    context.drawImage(image, 0, 0);
+    const pixels = context.getImageData(480, 650, 120, 120).data;
+    let minX = 120;
+    let minY = 120;
+    let maxX = -1;
+    let maxY = -1;
+    for (let y = 0; y < 120; y += 1) {
+      for (let x = 0; x < 120; x += 1) {
+        const offset = (y * 120 + x) * 4;
+        const globalX = 480 + x;
+        const globalY = 650 + y;
+        if ((globalX - 540) ** 2 + (globalY - 710) ** 2 > 44 ** 2) continue;
+        const red = pixels[offset];
+        const green = pixels[offset + 1];
+        const blue = pixels[offset + 2];
+        const alpha = pixels[offset + 3];
+        const mix = Math.min(1, Math.max(0, (globalX - 484 + globalY - 654) / 224));
+        const background = [
+          252 + (243 - 252) * mix,
+          231 + (232 - 231) * mix,
+          243 + (255 - 243) * mix,
+        ];
+        const difference =
+          Math.abs(red - background[0]) +
+          Math.abs(green - background[1]) +
+          Math.abs(blue - background[2]);
+        const isEmojiPixel = alpha > 32 && difference > 40;
+        if (!isEmojiPixel) continue;
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+      }
+    }
+    if (maxX < minX || maxY < minY) return null;
+    return {
+      x: 480 + (minX + maxX) / 2,
+      y: 650 + (minY + maxY) / 2,
+    };
+  });
+  expect(glyphCenter).not.toBeNull();
+  expect(Math.abs((glyphCenter?.x ?? 0) - 540)).toBeLessThanOrEqual(1);
+  expect(Math.abs((glyphCenter?.y ?? 0) - 710)).toBeLessThanOrEqual(1);
 });
 
 test.describe("profile photo interactions", () => {

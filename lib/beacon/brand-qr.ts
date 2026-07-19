@@ -118,24 +118,60 @@ function drawCenteredGlyph(
   centerX: number,
   centerY: number,
 ) {
-  context.textAlign = "center";
-  context.textBaseline = "alphabetic";
-  const metrics = context.measureText(glyph);
-  const hasHorizontalBounds =
-    Number.isFinite(metrics.actualBoundingBoxLeft) &&
-    Number.isFinite(metrics.actualBoundingBoxRight) &&
-    metrics.actualBoundingBoxLeft + metrics.actualBoundingBoxRight > 0;
-  const hasVerticalBounds =
-    Number.isFinite(metrics.actualBoundingBoxAscent) &&
-    Number.isFinite(metrics.actualBoundingBoxDescent) &&
-    metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent > 0;
-  const horizontalOffset = hasHorizontalBounds
-    ? (metrics.actualBoundingBoxRight - metrics.actualBoundingBoxLeft) / 2
-    : 0;
-  const baselineY = hasVerticalBounds
-    ? centerY + (metrics.actualBoundingBoxAscent - metrics.actualBoundingBoxDescent) / 2
-    : centerY;
-  context.fillText(glyph, centerX - horizontalOffset, baselineY);
+  const bufferSize = 160;
+  const glyphCanvas = document.createElement("canvas");
+  glyphCanvas.width = bufferSize;
+  glyphCanvas.height = bufferSize;
+  const glyphContext = glyphCanvas.getContext("2d", { willReadFrequently: true });
+
+  if (!glyphContext) {
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText(glyph, centerX, centerY);
+    return;
+  }
+
+  glyphContext.font = context.font;
+  glyphContext.fillStyle = context.fillStyle;
+  glyphContext.textAlign = "center";
+  glyphContext.textBaseline = "middle";
+  glyphContext.fillText(glyph, bufferSize / 2, bufferSize / 2);
+
+  const pixels = glyphContext.getImageData(0, 0, bufferSize, bufferSize).data;
+  let minX = bufferSize;
+  let minY = bufferSize;
+  let maxX = -1;
+  let maxY = -1;
+  for (let y = 0; y < bufferSize; y += 1) {
+    for (let x = 0; x < bufferSize; x += 1) {
+      if (pixels[(y * bufferSize + x) * 4 + 3] <= 8) continue;
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x);
+      maxY = Math.max(maxY, y);
+    }
+  }
+
+  if (maxX < minX || maxY < minY) {
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText(glyph, centerX, centerY);
+    return;
+  }
+
+  const glyphWidth = maxX - minX + 1;
+  const glyphHeight = maxY - minY + 1;
+  context.drawImage(
+    glyphCanvas,
+    minX,
+    minY,
+    glyphWidth,
+    glyphHeight,
+    Math.round(centerX - glyphWidth / 2),
+    Math.round(centerY - glyphHeight / 2),
+    glyphWidth,
+    glyphHeight,
+  );
 }
 
 function drawShareBackdrop(
