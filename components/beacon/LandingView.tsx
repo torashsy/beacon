@@ -26,7 +26,7 @@ const SELLING_POINTS = [
   {
     emoji: "🔗",
     title: "ぜんぶ、ひとつのURLに",
-    text: "SNS・連絡先・写真を1ページに。QRコードでその場で渡せる。",
+    text: "SNSやリンクを1ページに。",
   },
   {
     emoji: "🗓",
