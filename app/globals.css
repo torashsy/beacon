@@ -1986,8 +1986,50 @@ textarea {
 .linkImageHint {
   margin: -2px 2px 7px;
 }
+.sampleIntro { margin: -6px 0 10px; }
+.sampleTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.sampleTabs button {
+  min-height: 34px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.sampleTabs button.on {
+  background: var(--em);
+  color: var(--on-em);
+  border-color: var(--em);
+}
 .guideIntro { margin: -4px 0 16px; }
 .guideSteps { display: grid; gap: 10px; }
+.guideUseCasesTitle { margin: 22px 0 10px; }
+.guideUseCases { display: grid; gap: 8px; margin-bottom: 14px; }
+.useCase {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  box-shadow: var(--shadow);
+}
+.useCaseEmoji { font-size: 22px; flex: 0 0 auto; }
+.useCaseText { display: grid; gap: 2px; font-size: 12.5px; }
+.useCaseText strong { font-size: 13.5px; }
+.useCaseText span { color: var(--muted); font-weight: 500; }
+.guideSampleHint { margin: 4px 0 0; font-size: 12px; color: var(--muted); }
 .step {
   display: flex;
   gap: 14px;
