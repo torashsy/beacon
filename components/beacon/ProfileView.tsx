@@ -107,10 +107,10 @@ export function ProfileView({
     try {
       const { create } = await import("qrcode");
       const style = getComputedStyle(document.documentElement);
-      const accent = style.getPropertyValue("--em").trim() || "#0879ad";
+      const accent = style.getPropertyValue("--eml").trim() || "#e4f7fd";
       const accent2 = style.getPropertyValue("--em2").trim() || "#60c8f3";
       const qrColor = style.getPropertyValue("--emd").trim() || "#0879ad";
-      const onAccent = style.getPropertyValue("--on-em").trim() || "#ffffff";
+      const onAccent = style.getPropertyValue("--text").trim() || "#17323e";
       const qr = create(pageUrl(), { errorCorrectionLevel: "H" });
       setQrCard({
         dataUrl: qrSvgDataUrl(createBrandQrSvg(qr.modules, qrColor)),
