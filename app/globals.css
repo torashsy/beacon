@@ -1074,12 +1074,6 @@ textarea {
   background: transparent;
   position: relative;
   display: block;
-  transition: opacity var(--motion-quick) var(--ease-state),
-    transform var(--motion-quick) var(--ease-state);
-}
-.photoEditorItem.dragging {
-  opacity: .72;
-  transform: scale(.97);
 }
 .photoEditorItem img {
   width: auto;
@@ -1089,14 +1083,42 @@ textarea {
   background: transparent;
   display: block;
   touch-action: pan-x;
-  cursor: grab;
   user-select: none;
   -webkit-user-select: none;
   -webkit-user-drag: none;
-  -webkit-touch-callout: none;
 }
-.photoEditorItem img:active {
-  cursor: grabbing;
+.photoMoveButton {
+  position: absolute;
+  top: 50%;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, .5);
+  border-radius: 50%;
+  background: rgba(24, 39, 48, .38);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  transform: translateY(-50%);
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  touch-action: manipulation;
+}
+.photoMoveButton.previous {
+  left: 6px;
+}
+.photoMoveButton.next {
+  right: 6px;
+}
+.photoMoveButton svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.25;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 .photoRemoveButton {
   position: absolute;
