@@ -13,7 +13,7 @@ export const SELLING_POINTS: SellingPoint[] = [
   },
   {
     emoji: "🔑",
-    title: "Face ID・生体認証で3秒ログイン",
+    title: "Face ID・生体認証で3秒ログイン。",
     text: "パスワードは要りません。\n生体認証（パスキー）で今すぐはじめましょう。",
   },
   {
@@ -24,6 +24,6 @@ export const SELLING_POINTS: SellingPoint[] = [
   {
     emoji: "🕊",
     title: "渡した人だけに届く。",
-    text: "あなたを見つけられるのは、IDかURLを知っているひとだけ。\n届けたいひとに、届けましょう。",
+    text: "あなたを見つけられるのは、IDを知っている人だけ。\n届けたい人に、届けましょう。",
   },
 ];

@@ -3,9 +3,9 @@ import { SELLING_POINTS } from "@/lib/beacon/sellingPoints";
 export function HowtoView() {
   return (
     <section className="view guideView">
-      <h1>via-miの使い方</h1>
+      <h1>via-miとは</h1>
       <p className="lead guideIntro">
-        複数のSNSアカウントや連絡先、予定をひとつのページにまとめて、URLかQRコードひとつで共有できるサービスです。
+        複数のSNSアカウントや予定をひとつのページにまとめて、IDやQRコードで共有できるサービスです。
       </p>
       <div className="guideUseCases">
         {SELLING_POINTS.map((p) => (
