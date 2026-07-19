@@ -2,9 +2,9 @@
 
 ## 自動監視
 
-- GitHub Actions の `Production smoke` が6時間ごとにトップ、ヘルスチェック、問い合わせ画面、CSPを確認する。
+- GitHub Actions の `Production smoke` が6時間ごとにトップ、DB疎通を含むヘルスチェック、問い合わせ画面、CSPを確認する。
 - 失敗時はActionsの失敗通知を確認し、Vercelの直近デプロイとSupabaseの稼働状況を確認する。
-- `/api/health` はアプリ自体の応答確認であり、DB疎通までは保証しない。
+- `/api/health` は公開プロフィール用RPCまで確認する。HTTP 503または `dependencies.database.ok = false` はDB障害として扱う。
 - ID検索はアプリ側でIPごとに10分20回へ制限する。サーバーレス環境ではインスタンス間で
   カウントが共有されないため、異常アクセスが見えたらVercel Firewall側にもレート制限を追加する。
 
@@ -16,6 +16,13 @@
 - 正規URLは `https://via-mi.com`。`www.via-mi.com` とVercel既定ドメインは正規URLへ転送する。
 - 画像アップロード用Edge Functionの `BEACON_ALLOWED_ORIGINS` は
   `https://via-mi.com,https://www.via-mi.com` を維持する。
+
+## バックアップ
+
+- GitHub Actions の `Encrypted production backup` が毎日03:30（日本時間）に実行される。
+- 失敗した場合は当日中に原因を確認し、Actionsから手動で再実行する。
+- 復号鍵はリポジトリ外に保管する。鍵を更新するときは、旧バックアップの復号鍵も保存期間中は残す。
+- 復元方法と制約は [BACKUP_RESTORE.md](./BACKUP_RESTORE.md) を参照する。
 
 ## 毎日の問い合わせ・通報確認
 
