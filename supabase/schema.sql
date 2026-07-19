@@ -701,6 +701,20 @@ returns bigint language sql security definer stable as $$
 $$;
 revoke all on function get_follower_count(text) from public, authenticated;
 grant execute on function get_follower_count(text) to anon;
+
+-- ---- 問い合わせキュー監視（個人情報を返さない） ----
+create or replace function get_contact_queue_summary()
+returns jsonb language sql security definer stable set search_path = public as $$
+  select jsonb_build_object(
+    'pending_count', count(*) filter (where status in ('new', 'reviewing')),
+    'new_count', count(*) filter (where status = 'new'),
+    'reviewing_count', count(*) filter (where status = 'reviewing'),
+    'oldest_pending_at', min(created_at) filter (where status in ('new', 'reviewing'))
+  )
+  from contact_submissions;
+$$;
+revoke all on function get_contact_queue_summary() from public, anon, authenticated;
+grant execute on function get_contact_queue_summary() to service_role;
 revoke all on function authorize_avatar_upload(text, text) from public, anon, authenticated;
 grant execute on function authorize_avatar_upload(text, text) to service_role;
 

@@ -1,0 +1,123 @@
+name: Contact queue monitor
+
+on:
+  schedule:
+    - cron: "11 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: contact-queue-monitor
+  cancel-in-progress: true
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SUPABASE_PROJECT_ID: ${{ vars.SUPABASE_PROJECT_ID }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - name: Read non-sensitive queue summary
+        id: queue
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_PROJECT_ID"
+          test -n "$SUPABASE_SERVICE_ROLE_KEY"
+          summary="$(
+            curl --fail-with-body --silent --show-error \
+              --request POST \
+              --header "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+              --header "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+              --header "Content-Type: application/json" \
+              --data '{}' \
+              "https://${SUPABASE_PROJECT_ID}.supabase.co/rest/v1/rpc/get_contact_queue_summary"
+          )"
+          compact="$(jq -c . <<<"$summary")"
+          echo "summary=$compact" >> "$GITHUB_OUTPUT"
+
+      - name: Synchronize private-data-free alert issue
+        uses: actions/github-script@v7
+        env:
+          QUEUE_SUMMARY: ${{ steps.queue.outputs.summary }}
+        with:
+          script: |
+            const summary = JSON.parse(process.env.QUEUE_SUMMARY);
+            const pending = Number(summary.pending_count || 0);
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const label = "contact-queue";
+
+            try {
+              await github.rest.issues.createLabel({
+                owner,
+                repo,
+                name: label,
+                color: "D93F0B",
+                description: "via-mi運営の問い合わせ対応キュー",
+              });
+            } catch (error) {
+              if (error.status !== 422) throw error;
+            }
+
+            const { data } = await github.rest.issues.listForRepo({
+              owner,
+              repo,
+              state: "open",
+              labels: label,
+              per_page: 10,
+            });
+            const existing = data.find((issue) => !issue.pull_request);
+
+            if (pending === 0) {
+              if (existing) {
+                await github.rest.issues.update({
+                  owner,
+                  repo,
+                  issue_number: existing.number,
+                  state: "closed",
+                  state_reason: "completed",
+                  body: `${existing.body}\n\n未処理件数が0件になったため自動で閉じました。`,
+                });
+              }
+              core.info("No pending contact submissions.");
+              return;
+            }
+
+            const oldest = summary.oldest_pending_at
+              ? new Date(summary.oldest_pending_at).toLocaleString("ja-JP", {
+                  timeZone: "Asia/Tokyo",
+                })
+              : "不明";
+            const body = [
+              "Supabaseに未処理の問い合わせ・通報があります。",
+              "",
+              `- 未処理: ${pending}件`,
+              `- 新着: ${Number(summary.new_count || 0)}件`,
+              `- 確認中: ${Number(summary.reviewing_count || 0)}件`,
+              `- 最古の受付: ${oldest}（日本時間）`,
+              "",
+              "本文・メールアドレス・対象URL・IPアドレスはGitHubへ転記していません。",
+              "Supabase Dashboardの `contact_submissions` を確認し、対応後にステータスを更新してください。",
+            ].join("\n");
+
+            if (existing) {
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number: existing.number,
+                title: `運営対応: 未処理の問い合わせが${pending}件あります`,
+                body,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner,
+                repo,
+                title: `運営対応: 未処理の問い合わせが${pending}件あります`,
+                body,
+                labels: [label],
+              });
+            }
