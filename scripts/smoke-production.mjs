@@ -78,11 +78,16 @@ for (const icon of ["/icon-192.png", "/icon-512.png", "/apple-touch-icon.png"]) 
 
 await check("/contact?category=privacy", (_response, body) => {
   if (body.includes("my-ideal.example")) throw new Error("placeholder contact address detected");
-  if (!body.includes("運営者情報の確認")) throw new Error("operator disclosure request path missing");
 });
 
 await check("/privacy", (_response, body) => {
-  for (const marker of ["安全管理措置", "手数料はかかりません", "運営者情報・苦情窓口", "最大30日間"]) {
+  for (const marker of [
+    "安全管理措置",
+    "手数料はかかりません",
+    "運営者情報・苦情窓口",
+    "最大30日間",
+    "公開ページには常時掲載せず",
+  ]) {
     if (!body.includes(marker)) throw new Error(`privacy disclosure missing: ${marker}`);
   }
 });
