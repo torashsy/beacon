@@ -81,13 +81,13 @@ await check("/contact", (_response, body) => {
 });
 
 await check("/privacy", (_response, body) => {
-  for (const marker of ["安全管理措置", "手数料はかかりません", "運営者情報・苦情窓口"]) {
+  for (const marker of ["安全管理措置", "手数料はかかりません", "運営者情報・苦情窓口", "最大30日間"]) {
     if (!body.includes(marker)) throw new Error(`privacy disclosure missing: ${marker}`);
   }
 });
 
 await check("/terms", (_response, body) => {
-  for (const marker of ["未成年の方は、法定代理人の同意", "運営者に軽過失がある場合", "規約の変更"]) {
+  for (const marker of ["未成年の方は、法定代理人の同意", "運営者に軽過失がある場合", "規約の変更", "現在、無料"]) {
     if (!body.includes(marker)) throw new Error(`terms disclosure missing: ${marker}`);
   }
 });
