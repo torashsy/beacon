@@ -20,7 +20,7 @@ export const SAMPLE_PROFILES: SampleProfile[] = [
       handle: "mihon_oshi",
       profile: {
         name: "みほ",
-        bio: "04 東京 ♡ n\→ あみ (@ami_mihonz) ちゃんだけ フォローお気軽にどうぞ！",
+        bio: "04 東京 ♡\n→ あみ (@ami_mihonz) ちゃんだけ\nフォローお気軽にどうぞ！",
         emoji: "🩷",
         theme: 10,
         av_theme: 4,

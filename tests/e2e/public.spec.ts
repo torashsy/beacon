@@ -468,7 +468,7 @@ test("privacy requests explain the procedure and require a reply address", async
 
 test("account creation only asks for an ID and passkey", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "無料でIDを作る", exact: true }).click();
+  await page.getByRole("button", { name: "はじめる", exact: true }).click();
 
   await page.getByLabel("ID", { exact: true }).fill("new_user");
   const create = page.getByRole("button", { name: "パスキーで作成", exact: true });
