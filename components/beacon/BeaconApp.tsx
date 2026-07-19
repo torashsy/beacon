@@ -670,7 +670,7 @@ export function BeaconApp() {
     if (!session) return;
     if (
       !window.confirm(
-        "本当に退会しますか？\nプロフィール・リンク・カレンダーはすべて削除され、元に戻せません。",
+        "本当に退会しますか？\nプロフィール・リンク・カレンダー・画像はすべて削除され、元に戻せません。",
       )
     )
       return;
