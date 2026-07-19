@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { SELLING_POINTS } from "@/lib/beacon/sellingPoints";
 
 export function HowtoView() {
@@ -18,6 +19,9 @@ export function HowtoView() {
           </div>
         ))}
       </div>
+      <Link className="guideLink" href="/guide">
+        📖 使い方ガイドを見る
+      </Link>
     </section>
   );
 }
