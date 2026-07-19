@@ -5,13 +5,12 @@ export const APPEARANCE_MODES = ["system", "light", "dark"] as const;
 export type AppearanceMode = (typeof APPEARANCE_MODES)[number];
 
 export const COLOR_THEMES = [
-  { id: "peach", label: "ピンク", category: "パステル", colors: ["#f5c9d5", "#fbe0e7"] },
-  { id: "sweet", label: "甘めピンク", category: "スイート", colors: ["#f29fba", "#ffc8d8"] },
-  { id: "mint", label: "緑", category: "パステル", colors: ["#b9e5d8", "#d8f0e8"] },
-  { id: "sky", label: "青", category: "爽やか", colors: ["#8fcde0", "#c6eaf2"] },
-  { id: "lilac", label: "紫", category: "パステル", colors: ["#d5caec", "#e5def3"] },
-  { id: "citrus", label: "オレンジ", category: "やわらか", colors: ["#e7b98c", "#f3d8bd"] },
-  { id: "mono", label: "黒", category: "シック", colors: ["#303338", "#adb2b6"] },
+  { id: "peach", label: "ピンク", category: "パステル", colors: ["#f6b4ca", "#ffe2ec"] },
+  { id: "mint", label: "緑", category: "パステル", colors: ["#9ee4cf", "#d9f7ed"] },
+  { id: "sky", label: "青", category: "爽やか", colors: ["#78d0ed", "#d8f4fc"] },
+  { id: "lilac", label: "紫", category: "パステル", colors: ["#c6b1ef", "#eee7ff"] },
+  { id: "citrus", label: "オレンジ", category: "やわらか", colors: ["#ffc47f", "#ffe8c7"] },
+  { id: "mono", label: "黒", category: "シック", colors: ["#383c42", "#d7dadd"] },
 ] as const;
 
 export type ColorThemeId = (typeof COLOR_THEMES)[number]["id"];
@@ -29,6 +28,7 @@ export const DEFAULT_APPEARANCE: AppearancePreference = {
 const LEGACY_COLOR_THEMES: Record<string, ColorThemeId> = {
   cobalt: "sky",
   magenta: "peach",
+  sweet: "peach",
 };
 
 export function isAppearanceMode(value: unknown): value is AppearanceMode {

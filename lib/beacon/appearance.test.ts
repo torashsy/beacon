@@ -7,13 +7,12 @@ import {
 } from "./appearance";
 
 describe("appearance", () => {
-  it("offers the six base colors plus a sweet pink variation", () => {
-    expect(COLOR_THEMES).toHaveLength(7);
-    expect(new Set(COLOR_THEMES.map((theme) => theme.id)).size).toBe(7);
-    expect(new Set(COLOR_THEMES.map((theme) => theme.colors[0])).size).toBe(7);
+  it("offers six distinct, bright color themes", () => {
+    expect(COLOR_THEMES).toHaveLength(6);
+    expect(new Set(COLOR_THEMES.map((theme) => theme.id)).size).toBe(6);
+    expect(new Set(COLOR_THEMES.map((theme) => theme.colors[0])).size).toBe(6);
     expect(COLOR_THEMES.map((theme) => theme.label)).toEqual([
       "ピンク",
-      "甘めピンク",
       "緑",
       "青",
       "紫",
@@ -39,6 +38,7 @@ describe("appearance", () => {
   it("maps removed themes to the closest remaining color", () => {
     expect(normalizeColorTheme("cobalt")).toBe("sky");
     expect(normalizeColorTheme("magenta")).toBe("peach");
+    expect(normalizeColorTheme("sweet")).toBe("peach");
     expect(parseAppearance('{"mode":"light","theme":"magenta"}')).toEqual({
       mode: "light",
       theme: "peach",

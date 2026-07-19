@@ -135,7 +135,7 @@ test("a profile QR is personalized and shareable as an image", async ({ page }) 
   await expect(qrImage).toHaveAttribute("src", /^data:image\/svg\+xml/);
   const svg = decodeURIComponent((await qrImage.getAttribute("src")) ?? "");
   expect(svg).toContain('rx=".32"');
-  expect(svg).toContain('fill="#235f74"');
+  expect(svg).toContain('fill="#066886"');
   expect(svg.match(/<g><rect/g)).toHaveLength(3);
 
   await dialog.getByRole("button", { name: "QR画像を共有", exact: true }).click();
@@ -378,7 +378,7 @@ test("help explains the main flow in plain language", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "ログインできないとき", exact: true })).toHaveCount(0);
 });
 
-test("appearance settings support dark mode and seven saved color themes", async ({ page }) => {
+test("appearance settings support dark mode and six saved color themes", async ({ page }, testInfo) => {
   await page.addInitScript(() => {
     if (window.sessionStorage.getItem("legacy-theme-seeded")) return;
     window.localStorage.setItem(
@@ -394,33 +394,57 @@ test("appearance settings support dark mode and seven saved color themes", async
   await expect(page.getByRole("heading", { name: "表示", exact: true })).toBeVisible();
   const themes = page.getByRole("group", { name: "カラーテーマ" });
   const themeButtons = themes.getByRole("button");
-  await expect(themeButtons).toHaveCount(7);
+  await expect(themeButtons).toHaveCount(6);
 
   const accentColors = new Set<string>();
-  for (let index = 0; index < 7; index += 1) {
+  for (let index = 0; index < 6; index += 1) {
     await themeButtons.nth(index).click();
     const palette = await page.locator("html").evaluate((element) => {
       const style = getComputedStyle(element);
       return {
         accent: style.getPropertyValue("--em").trim(),
         onAccent: style.getPropertyValue("--on-em").trim(),
+        page: style.getPropertyValue("--page").trim(),
+        text: style.getPropertyValue("--text").trim(),
+        muted: style.getPropertyValue("--muted").trim(),
       };
     });
     accentColors.add(palette.accent);
     expect(contrastRatio(palette.accent, palette.onAccent)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(palette.page, "#000000")).toBeGreaterThanOrEqual(19);
+    expect(contrastRatio(palette.text, palette.page)).toBeGreaterThanOrEqual(7);
+    expect(contrastRatio(palette.muted, palette.page)).toBeGreaterThanOrEqual(4.5);
+    if (testInfo.project.name === "mobile-safari") {
+      const theme = await page.locator("html").getAttribute("data-color-theme");
+      await page.screenshot({ path: testInfo.outputPath(`theme-${theme}.png`) });
+    }
   }
-  expect(accentColors.size).toBe(7);
+  expect(accentColors.size).toBe(6);
 
   await page.getByRole("button", { name: "ダーク", exact: true }).click();
-  await page.getByRole("button", { name: "甘めピンク（スイート）", exact: true }).click();
+  for (let index = 0; index < 6; index += 1) {
+    await themeButtons.nth(index).click();
+    const palette = await page.locator("html").evaluate((element) => {
+      const style = getComputedStyle(element);
+      return {
+        accent: style.getPropertyValue("--em").trim(),
+        onAccent: style.getPropertyValue("--on-em").trim(),
+        page: style.getPropertyValue("--page").trim(),
+        text: style.getPropertyValue("--text").trim(),
+      };
+    });
+    expect(contrastRatio(palette.accent, palette.onAccent)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(palette.text, palette.page)).toBeGreaterThanOrEqual(7);
+  }
+  await page.getByRole("button", { name: "ピンク（パステル）", exact: true }).click();
   await expect(page.locator("html")).toHaveAttribute("data-color-mode", "dark");
-  await expect(page.locator("html")).toHaveAttribute("data-color-theme", "sweet");
+  await expect(page.locator("html")).toHaveAttribute("data-color-theme", "peach");
   await expect(page.locator("html")).toHaveCSS("color-scheme", "dark");
-  await expect(page.locator("body")).toHaveCSS("background-color", "rgb(27, 15, 21)");
+  await expect(page.locator("body")).toHaveCSS("background-color", "rgb(27, 19, 23)");
 
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-color-mode", "dark");
-  await expect(page.locator("html")).toHaveAttribute("data-color-theme", "sweet");
+  await expect(page.locator("html")).toHaveAttribute("data-color-theme", "peach");
 });
 
 test("bottom tabs slide in the direction of travel", async ({ page }) => {
