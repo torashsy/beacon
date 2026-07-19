@@ -666,7 +666,7 @@ function PhotosPane({
       if (pendingDragRef.current !== pending) return;
       pendingDragRef.current = null;
       activateDrag(id, pending.element, pending.pointerId);
-    }, 260);
+    }, 220);
     pendingDragRef.current = pending;
   }
 
@@ -719,6 +719,8 @@ function PhotosPane({
                 src={photo.url}
                 alt={`写真 ${index + 1}（ドラッグで並べ替え）`}
                 draggable={false}
+                onContextMenu={(event) => event.preventDefault()}
+                onDragStart={(event) => event.preventDefault()}
                 onPointerDown={(event) => startDrag(photo.id, event)}
                 onPointerMove={moveDrag}
                 onPointerUp={endDrag}

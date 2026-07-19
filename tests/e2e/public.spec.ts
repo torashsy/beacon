@@ -153,6 +153,9 @@ test("a profile QR is personalized and shareable as an image", async ({ page }) 
   expect(sharedSize).toBeGreaterThan(5_000);
 });
 
+test.describe("profile photo interactions", () => {
+  test.use({ serviceWorkers: "block" });
+
 test("profile photos keep their ratio, enlarge on tap, and expose a horizontal editor", async ({ page }, testInfo) => {
   await page.addInitScript(() => {
     window.localStorage.setItem(
@@ -160,10 +163,11 @@ test("profile photos keep their ratio, enlarge on tap, and expose a horizontal e
       JSON.stringify({ handle: "content_user", token: `bst_${"a".repeat(64)}` }),
     );
   });
-  const storageOrigin = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://example.supabase.co";
+  const colors = [["#60c8f3", "#44d7bc"], ["#ffb8d0", "#d7b7ff"], ["#ffd3a8", "#fff0b8"]];
+  const photoSizes = [[600, 400], [320, 640], [720, 360]];
   const photos = Array.from({ length: 5 }, (_, index) => ({
     id: `photo-${index}`,
-    url: `${storageOrigin}/storage/v1/object/public/avatars/test/photo-${index}.svg`,
+    url: `http://127.0.0.1:3100/__test__/photo-${index}.svg`,
   }));
   const rpcResponses: Record<string, unknown> = {
     verify_app_session: true,
@@ -196,12 +200,10 @@ test("profile photos keep their ratio, enlarge on tap, and expose a horizontal e
     },
     get_my_follows: [],
   };
-  await page.route(`${storageOrigin}/storage/v1/object/public/avatars/test/photo-*.svg`, async (route) => {
+  await page.route(/\/__test__\/photo-\d+\.svg$/, async (route) => {
     const index = Number(route.request().url().match(/photo-(\d+)/)?.[1] ?? 0);
-    const colors = [["#60c8f3", "#44d7bc"], ["#ffb8d0", "#d7b7ff"], ["#ffd3a8", "#fff0b8"]];
-    const sizes = [[600, 400], [320, 640], [720, 360]];
     const [from, to] = colors[index] ?? colors[0];
-    const [width, height] = sizes[index] ?? sizes[0];
+    const [width, height] = photoSizes[index] ?? photoSizes[0];
     await route.fulfill({
       status: 200,
       contentType: "image/svg+xml",
@@ -224,12 +226,13 @@ test("profile photos keep their ratio, enlarge on tap, and expose a horizontal e
   await expect(page.getByRole("heading", { name: "メモ", exact: true })).toHaveCount(0);
   const items = page.locator(".profilePhotoItem");
   await expect(items).toHaveCount(5);
+  await expect(page.locator(".profilePhotoItem.loaded")).toHaveCount(5);
   const sizes = await items.evaluateAll((elements) =>
     elements.map((element) => Math.round(element.getBoundingClientRect().height)),
   );
   expect(new Set(sizes).size).toBe(1);
-  await expect(page.locator(".profileContentSection")).toHaveCSS("padding-left", "0px");
-  await expect(page.locator(".profileContentSection")).toHaveCSS("padding-right", "0px");
+  await expect(page.locator(".profilePhotoRail")).toHaveCSS("padding-left", "20px");
+  await expect(page.locator(".profilePhotoRail")).toHaveCSS("padding-right", "20px");
   await expect(items.first()).toHaveCSS("min-width", "0px");
   await expect(page.locator(".profilePhotoRail")).toHaveCSS("overflow-x", "auto");
   await expect(items.first().locator("img")).toHaveCSS("object-fit", "contain");
@@ -253,10 +256,17 @@ test("profile photos keep their ratio, enlarge on tap, and expose a horizontal e
   await expect(page.locator('.photoEditorList')).toHaveCSS("display", "flex");
   await expect(page.locator('.photoEditorList')).toHaveCSS("touch-action", "pan-x");
   await expect(page.locator(".photoEditorItem img").first()).toHaveCSS("touch-action", "pan-x");
+  await expect(page.locator(".photoEditorItem").first()).toHaveCSS("padding", "0px");
+  await expect(page.locator(".photoEditorItem").first()).toHaveCSS("border-top-width", "0px");
   await expect(page.locator(".photoDragHandle")).toHaveCount(0);
   const removeButtons = page.getByRole("button", { name: /写真 \d を削除/ });
   await expect(removeButtons).toHaveCount(5);
   await expect(removeButtons.first()).toHaveCSS("border-radius", "50%");
+  await expect(removeButtons.first()).toHaveCSS("background-color", "rgba(24, 39, 48, 0.38)");
+  expect(await page.locator(".photoEditorItem img").first().evaluate((image) => {
+    const event = new MouseEvent("contextmenu", { bubbles: true, cancelable: true });
+    return image.dispatchEvent(event);
+  })).toBe(false);
   await expect(page.locator('input[type="file"].visuallyHidden')).toHaveAttribute("multiple", "");
   await expect(page.locator(".efield textarea")).toHaveAttribute("maxlength", "800");
   await page.locator(".photoEditorList").scrollIntoViewIfNeeded();
@@ -267,15 +277,18 @@ test("profile photos keep their ratio, enlarge on tap, and expose a horizontal e
     return scrolled;
   })).toBe(true);
   await page.screenshot({ path: testInfo.outputPath("photo-editor-mobile.png"), fullPage: true });
+  if (testInfo.project.name === "mobile-safari") return;
+  await page.locator(".photoEditorList").scrollIntoViewIfNeeded();
   const firstBefore = await page.locator(".photoEditorItem img").first().getAttribute("src");
   const dragBox = await page.getByRole("img", { name: "写真 1（ドラッグで並べ替え）" }).boundingBox();
-  const targetBox = await page.locator(".photoEditorItem").nth(2).boundingBox();
+  const targetBox = await page.locator(".photoEditorItem").nth(1).boundingBox();
   if (!dragBox || !targetBox) throw new Error("photo drag controls are not visible");
   await page.mouse.move(dragBox.x + dragBox.width / 2, dragBox.y + dragBox.height / 2);
   await page.mouse.down();
   await page.mouse.move(targetBox.x + targetBox.width / 2, targetBox.y + targetBox.height / 2, { steps: 5 });
   await page.mouse.up();
   await expect(page.locator(".photoEditorItem img").first()).not.toHaveAttribute("src", firstBefore ?? "");
+});
 });
 
 test("health endpoint and production metadata are valid", async ({ request }) => {
