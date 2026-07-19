@@ -87,6 +87,7 @@ await check("/privacy", (_response, body) => {
     "運営者情報・苦情窓口",
     "最大30日間",
     "公開ページには常時掲載せず",
+    "GitHub Models",
   ]) {
     if (!body.includes(marker)) throw new Error(`privacy disclosure missing: ${marker}`);
   }
