@@ -12,7 +12,13 @@ async function check(path, inspect) {
 
 await check("/api/health", async (_response, body) => {
   const health = JSON.parse(body);
-  if (health.ok !== true || health.service !== "via-mi") throw new Error("invalid health response");
+  if (
+    health.ok !== true ||
+    health.service !== "via-mi" ||
+    health.dependencies?.database?.ok !== true
+  ) {
+    throw new Error("invalid health response");
+  }
 });
 
 await check("/", (response, body) => {

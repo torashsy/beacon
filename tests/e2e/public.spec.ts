@@ -370,7 +370,11 @@ test("profile photos keep their ratio, enlarge on tap, and expose a horizontal e
 test("health endpoint and production metadata are valid", async ({ request }) => {
   const health = await request.get("/api/health");
   expect(health.ok()).toBeTruthy();
-  expect(await health.json()).toMatchObject({ ok: true, service: "via-mi" });
+  expect(await health.json()).toMatchObject({
+    ok: true,
+    service: "via-mi",
+    dependencies: { database: { ok: true } },
+  });
 
   const home = await request.get("/");
   const html = await home.text();
