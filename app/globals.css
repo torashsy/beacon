@@ -2028,6 +2028,49 @@ textarea {
 .useCaseText strong { font-size: 13.5px; }
 .useCaseText span { color: var(--muted); font-weight: 500; white-space: pre-wrap; }
 .landingPoints { margin: 18px 0 6px; }
+.guideManual {
+  font-size: 13.5px;
+  line-height: 2.05;
+}
+.guideManual h2 {
+  margin: 28px 0 10px;
+}
+.guideManual h2:first-child {
+  margin-top: 0;
+}
+.guideManual p {
+  margin: 0 0 14px;
+}
+.guideManual ol,
+.guideManual ul {
+  margin: 0 0 14px 20px;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.guideNote {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--soft);
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.navTabRef {
+  display: inline-flex;
+  align-items: center;
+  margin: 0 2px;
+  padding: 3px 6px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--soft);
+  color: var(--emd);
+  vertical-align: -5px;
+}
+.navTabRef .navIcon {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.2;
+}
 .guideLink {
   display: flex;
   align-items: center;
