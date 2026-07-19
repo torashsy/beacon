@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Channel } from "@/lib/beacon/types";
 import {
   HEADING_TYPE,
@@ -555,30 +555,15 @@ function PhotosPane({
 }) {
   const content = normalizeProfileContent(me.profile.content);
   const [busy, setBusy] = useState(false);
-  const [draggingId, setDraggingId] = useState<string | null>(null);
-  const draggingIdRef = useRef<string | null>(null);
-  const pendingDragRef = useRef<{
-    id: string;
-    pointerId: number;
-    startX: number;
-    startY: number;
-    element: HTMLImageElement;
-    timer: number;
-  } | null>(null);
   const [draftPhotos, setDraftPhotos] = useState<ProfilePhoto[]>(content.photos);
   const draftPhotosRef = useRef(draftPhotos);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => () => {
-    if (pendingDragRef.current) window.clearTimeout(pendingDragRef.current.timer);
-  }, []);
-
   useEffect(() => {
-    if (draggingId) return;
     const next = normalizeProfileContent(me.profile.content).photos;
     draftPhotosRef.current = next;
     setDraftPhotos(next);
-  }, [me.profile.content, draggingId]);
+  }, [me.profile.content]);
 
   function setPhotoDraft(next: ProfilePhoto[]) {
     draftPhotosRef.current = next;
@@ -620,83 +605,12 @@ function PhotosPane({
     void onSaveContent({ photos });
   }
 
-  function reorder(dragId: string, targetId: string) {
-    if (dragId === targetId) return;
+  function movePhoto(index: number, direction: -1 | 1) {
     const photos = [...draftPhotosRef.current];
-    const from = photos.findIndex((photo) => photo.id === dragId);
-    const to = photos.findIndex((photo) => photo.id === targetId);
-    if (from < 0 || to < 0) return;
-    const [moving] = photos.splice(from, 1);
-    photos.splice(to, 0, moving);
+    const target = index + direction;
+    if (target < 0 || target >= photos.length) return;
+    [photos[index], photos[target]] = [photos[target], photos[index]];
     setPhotoDraft(photos);
-  }
-
-  function activateDrag(id: string, element: HTMLImageElement, pointerId: number) {
-    try {
-      element.setPointerCapture(pointerId);
-    } catch {
-      return;
-    }
-    draggingIdRef.current = id;
-    setDraggingId(id);
-  }
-
-  function clearPendingDrag() {
-    if (!pendingDragRef.current) return;
-    window.clearTimeout(pendingDragRef.current.timer);
-    pendingDragRef.current = null;
-  }
-
-  function startDrag(id: string, event: ReactPointerEvent<HTMLImageElement>) {
-    clearPendingDrag();
-    if (event.pointerType === "mouse") {
-      event.preventDefault();
-      activateDrag(id, event.currentTarget, event.pointerId);
-      return;
-    }
-    const pending = {
-      id,
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      element: event.currentTarget,
-      timer: 0,
-    };
-    pending.timer = window.setTimeout(() => {
-      if (pendingDragRef.current !== pending) return;
-      pendingDragRef.current = null;
-      activateDrag(id, pending.element, pending.pointerId);
-    }, 220);
-    pendingDragRef.current = pending;
-  }
-
-  function moveDrag(event: ReactPointerEvent<HTMLImageElement>) {
-    const pending = pendingDragRef.current;
-    if (pending && Math.hypot(
-      event.clientX - pending.startX,
-      event.clientY - pending.startY,
-    ) > 8) {
-      clearPendingDrag();
-      return;
-    }
-    const dragId = draggingIdRef.current;
-    if (!dragId) return;
-    event.preventDefault();
-    const target = document
-      .elementFromPoint(event.clientX, event.clientY)
-      ?.closest<HTMLElement>("[data-photo-id]")
-      ?.dataset.photoId;
-    if (target) reorder(dragId, target);
-  }
-
-  function endDrag(event: ReactPointerEvent<HTMLImageElement>) {
-    clearPendingDrag();
-    if (!draggingIdRef.current) return;
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
-    draggingIdRef.current = null;
-    setDraggingId(null);
     void onSaveContent({ photos: draftPhotosRef.current });
   }
 
@@ -710,23 +624,41 @@ function PhotosPane({
         <div className="photoEditorList">
           {draftPhotos.map((photo, index) => (
             <div
-              className={`photoEditorItem ${draggingId === photo.id ? "dragging" : ""}`}
+              className="photoEditorItem"
               key={photo.id}
-              data-photo-id={photo.id}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={photo.url}
-                alt={`写真 ${index + 1}（ドラッグで並べ替え）`}
+                alt={`写真 ${index + 1}`}
                 draggable={false}
-                onContextMenu={(event) => event.preventDefault()}
-                onDragStart={(event) => event.preventDefault()}
-                onPointerDown={(event) => startDrag(photo.id, event)}
-                onPointerMove={moveDrag}
-                onPointerUp={endDrag}
-                onPointerCancel={endDrag}
               />
+              {index > 0 && (
+                <button
+                  type="button"
+                  className="photoMoveButton previous"
+                  onClick={() => movePhoto(index, -1)}
+                  aria-label={`写真 ${index + 1} を左へ移動`}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="m14.5 6.5-5 5.5 5 5.5" />
+                  </svg>
+                </button>
+              )}
+              {index < draftPhotos.length - 1 && (
+                <button
+                  type="button"
+                  className="photoMoveButton next"
+                  onClick={() => movePhoto(index, 1)}
+                  aria-label={`写真 ${index + 1} を右へ移動`}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="m9.5 6.5 5 5.5-5 5.5" />
+                  </svg>
+                </button>
+              )}
               <button
+                type="button"
                 className="photoRemoveButton"
                 onClick={() => remove(photo.id)}
                 aria-label={`写真 ${index + 1} を削除`}
