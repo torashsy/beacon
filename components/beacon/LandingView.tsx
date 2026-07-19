@@ -19,16 +19,16 @@ export function LandingView({
 
   return (
     <section className="view">
-      <h1 className="landingTitle">あなたのSNS、全部ひとつに。</h1>
+      <h1 className="landingTitle">あなたのSNSを、全部ひとつに。</h1>
       <button className="btn sig" onClick={onCreate}>
-        無料でIDを作る
+        はじめる
       </button>
       <button className="btn ghost" onClick={onLogin}>
         ログイン
       </button>
 
-      <h2>見本</h2>
-      <p className="lead sampleIntro">使う人によって、こんなページになります。</p>
+      <h2>例えば、こんな風に。</h2>
+
       <div className="sampleTabs" role="group" aria-label="見本の切り替え">
         {SAMPLE_PROFILES.map((s) => (
           <button
