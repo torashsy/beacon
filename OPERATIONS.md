@@ -52,6 +52,7 @@ delete from accounts where handle = lower('対象ID');
 
 - Vercel の最新Production Deploymentが成功していること
 - GitHub Actionsの `main` CIが成功していること
+- Dependabotの脆弱性アラートと更新PRを確認し、CI成功後に取り込むこと
 - SupabaseのDatabase/Storage使用量とエラーログに急増がないこと
 - Supabase Edge Functions の `delete-account` と `create-avatar-upload` に継続的なエラーがないこと
 
