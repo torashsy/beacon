@@ -1,10 +1,21 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { NavIcon, type NavIconName } from "@/components/beacon/NavIcon";
 
 export const metadata: Metadata = {
   title: "使い方ガイド · via-mi",
   description: "via-miのはじめ方から、ページ作り・共有・フォローまでを順番に説明します。",
 };
+
+/** 下部ナビのタブを、実物と同じアイコンで文中に示すチップ。 */
+function NavTab({ name, label }: { name: NavIconName; label: string }) {
+  return (
+    <span className="navTabRef">
+      <NavIcon name={name} />
+      {label}
+    </span>
+  );
+}
 
 /**
  * 使い方マニュアル。/privacy・/terms と同じ静的ページ構成。
@@ -43,7 +54,7 @@ export default function GuidePage() {
 
         <h2 id="build" style={{ margin: "20px 0 8px" }}>2. ページを作る</h2>
         <p>
-          ログイン後、下のメニューの「me」タブが自分のページの編集画面です。
+          ログイン後、下のメニューの<NavTab name="profile" label="me" />タブが自分のページの編集画面です。
           載せたいものだけ選んで追加してください。すべて任意です。
         </p>
         <ul style={{ margin: "8px 0 0 18px" }}>
@@ -70,7 +81,7 @@ export default function GuidePage() {
 
         <h2 id="share" style={{ margin: "20px 0 8px" }}>3. ページを共有する</h2>
         <p>
-          「me」タブの「共有」からページのURLをコピーできます。「QRコード」を押すと
+          <NavTab name="profile" label="me" />タブの「共有」からページのURLをコピーできます。「QRコード」を押すと
           あなた専用のQRコードが表示されるので、その場で相手に見せて読み取ってもらえば
           すぐにページを渡せます。
         </p>
@@ -80,12 +91,12 @@ export default function GuidePage() {
 
         <h2 id="follow" style={{ margin: "20px 0 8px" }}>4. フォローする</h2>
         <p>
-          下のメニューの「Follow」タブで、相手のIDを入力するとその人のページを開けます。
+          下のメニューの<NavTab name="follows" label="Follow" />タブで、相手のIDを入力するとその人のページを開けます。
           フォローしておくと、相手がリンクや予定を更新したときに気づけます。
         </p>
         <p>
           プッシュ通知をオンにすると、フォロー中の人の更新が通知で届きます。
-          設定は「?」タブ（ヘルプ）のアカウント欄にあります。
+          設定は<NavTab name="help" label="ヘルプ" />タブのアカウント欄にあります。
         </p>
         <p>
           ※ 名前やキーワードでのあいまい検索はできません。IDが完全に一致した場合のみ
@@ -96,7 +107,7 @@ export default function GuidePage() {
         <ul style={{ margin: "8px 0 0 18px" }}>
           <li>
             <strong>機種変更・ログインできないときに備える</strong> —
-            「?」タブのアカウント欄から<strong>復旧用メールアドレス</strong>を登録しておくと、
+            <NavTab name="help" label="ヘルプ" />タブのアカウント欄から<strong>復旧用メールアドレス</strong>を登録しておくと、
             端末を失くしてもアカウントを取り戻せます。登録は数十秒で終わるので、
             早めの設定をおすすめします。確認が済むと、ページの名前の横に認証済みマークが付きます。
           </li>
@@ -106,7 +117,7 @@ export default function GuidePage() {
             （復旧用メールアドレスを登録済みの場合のみ）。
           </li>
           <li>
-            <strong>アカウントを削除したいとき</strong> — 「?」タブのアカウント欄の
+            <strong>アカウントを削除したいとき</strong> — <NavTab name="help" label="ヘルプ" />タブのアカウント欄の
             「アカウントを削除」から、いつでも削除できます。ページやデータは失われます。
           </li>
         </ul>

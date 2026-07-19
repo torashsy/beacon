@@ -2028,6 +2028,24 @@ textarea {
 .useCaseText strong { font-size: 13.5px; }
 .useCaseText span { color: var(--muted); font-weight: 500; white-space: pre-wrap; }
 .landingPoints { margin: 18px 0 6px; }
+.navTabRef {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 2px;
+  padding: 1px 8px 1px 6px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--soft);
+  color: var(--emd);
+  font-weight: 750;
+  vertical-align: -4px;
+}
+.navTabRef .navIcon {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.2;
+}
 .guideLink {
   display: flex;
   align-items: center;
