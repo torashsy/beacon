@@ -100,22 +100,18 @@ jobs:
         env:
           QUEUE_SUMMARY: ${{ steps.queue.outputs.summary }}
           GENERATED_DRAFTS: ${{ steps.drafts.outputs.generated }}
-          REPORT_GMAIL_ADDRESS: ${{ secrets.CONTACT_REPORT_GMAIL }}
-          REPORT_GMAIL_APP_PASSWORD: ${{ secrets.CONTACT_REPORT_GMAIL_APP_PASSWORD }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           REPORT_RECIPIENT: ${{ secrets.CONTACT_REPORT_RECIPIENT }}
         run: |
           set -euo pipefail
-          if [ -z "$REPORT_GMAIL_ADDRESS" ] || [ -z "$REPORT_GMAIL_APP_PASSWORD" ] || [ -z "$REPORT_RECIPIENT" ]; then
-            echo "Gmail送信の認証情報が未設定のため、今回のメール送信は保留しました。"
+          if [ -z "$RESEND_API_KEY" ] || [ -z "$REPORT_RECIPIENT" ]; then
+            echo "Resendの認証情報が未設定のため、今回のメール送信は保留しました。"
             exit 0
           fi
           python3 - <<'PY'
           import json
           import os
-          import smtplib
-          import ssl
           from datetime import datetime
-          from email.message import EmailMessage
           from zoneinfo import ZoneInfo
 
           summary = json.loads(os.environ["QUEUE_SUMMARY"])
@@ -129,11 +125,11 @@ jobs:
           if oldest:
               oldest_text = datetime.fromisoformat(oldest.replace("Z", "+00:00")).astimezone(ZoneInfo("Asia/Tokyo")).strftime("%Y/%m/%d %H:%M")
 
-          message = EmailMessage()
-          message["From"] = os.environ["REPORT_GMAIL_ADDRESS"]
-          message["To"] = os.environ["REPORT_RECIPIENT"]
-          message["Subject"] = f"[via-mi] 問い合わせ日次レポート — 未処理 {pending}件"
-          message.set_content("\n".join([
+          payload = {
+              "from": "via-mi <reports@notify.via-mi.com>",
+              "to": [os.environ["REPORT_RECIPIENT"]],
+              "subject": f"[via-mi] 問い合わせ日次レポート — 未処理 {pending}件",
+              "text": "\n".join([
               "via-mi 問い合わせ日次レポート",
               "",
               f"未処理: {pending}件",
@@ -144,10 +140,14 @@ jobs:
               "",
               "本文・メールアドレス・IPアドレスなどの個人情報は、このメールには含めていません。",
               "対応内容とAI返信案はSupabaseの contact_submissions で確認できます。",
-          ]))
-
-          password = os.environ["REPORT_GMAIL_APP_PASSWORD"].replace(" ", "")
-          with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=ssl.create_default_context()) as smtp:
-              smtp.login(os.environ["REPORT_GMAIL_ADDRESS"], password)
-              smtp.send_message(message)
+              ]),
+          }
+          with open("resend-payload.json", "w", encoding="utf-8") as output:
+              json.dump(payload, output, ensure_ascii=False)
           PY
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer $RESEND_API_KEY" \
+            --header "Content-Type: application/json" \
+            --data @resend-payload.json \
+            https://api.resend.com/emails
