@@ -19,11 +19,11 @@ export function LegalFooter() {
       <Link href="/terms" style={{ color: "var(--muted)" }}>
         利用規約
       </Link>
-      <span>·</span>
+      <span aria-hidden="true">·</span>
       <Link href="/privacy" style={{ color: "var(--muted)" }}>
         プライバシーポリシー
       </Link>
-      <span> · </span>
+      <span aria-hidden="true">·</span>
       <Link href="/contact" style={{ color: "var(--muted)" }}>
         お問い合わせ
       </Link>

@@ -30,6 +30,17 @@ test("public entry points and legal pages are reachable", async ({ page }) => {
   }
 });
 
+test("public documents match the current free service and data handling", async ({ page }) => {
+  await page.goto("/terms");
+  await expect(page.getByText("本サービスは現在、無料で利用できます。")).toBeVisible();
+  expect(await page.locator('meta[name="robots"][content*="noindex"]').count()).toBe(0);
+
+  await page.goto("/privacy");
+  await expect(page.getByText(/本人だけが確認できる、登録リンクごとのクリック数/)).toBeVisible();
+  await expect(page.locator("main")).toContainText("最大30日間");
+  expect(await page.locator('meta[name="robots"][content*="noindex"]').count()).toBe(0);
+});
+
 test("development-only UI tuning controls are excluded from production", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("button", { name: "UI調整" })).toHaveCount(0);
