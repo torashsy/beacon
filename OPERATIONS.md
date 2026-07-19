@@ -26,9 +26,13 @@
 
 ## 毎日の問い合わせ・通報確認
 
-GitHub Actions の `Contact queue monitor` が1時間ごとに未処理件数を確認する。未処理がある場合は
+GitHub Actions の `Contact queue monitor` が毎日07:11（日本時間）に未処理件数を確認する。未処理がある場合は
 `contact-queue` ラベルのIssueを自動作成・更新し、0件になると自動で閉じる。GitHubへ送るのは
 件数と最古の受付時刻だけで、本文・メールアドレス・URL・IPアドレスは送らない。
+
+AI返信案への同意がある未処理レコードは、種別と本文だけをGitHub Modelsへ送り、返信案を
+`contact_submissions.ai_draft` に保存する。AIは返信を送信しない。メールアドレス・対象URL・
+IPアドレスはAIへ渡さない。返信前に必ず本文と返信案を人が確認し、必要な修正を行う。
 
 Supabase Dashboard の Table Editor で `contact_submissions` を開き、`status = new`
 を確認する。確認中は `reviewing`、対応後は `resolved`、対象外は `rejected` にする。

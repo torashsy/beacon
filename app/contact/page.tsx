@@ -17,6 +17,7 @@ function ContactPageContent() {
     (searchParams.get("page") ?? "").slice(0, 2000),
   );
   const [website, setWebsite] = useState("");
+  const [aiConsent, setAiConsent] = useState(false);
   const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [error, setError] = useState("");
 
@@ -46,6 +47,7 @@ function ContactPageContent() {
       p_message: message,
       p_page_url: pageUrl,
       p_website: website,
+      p_ai_consent: aiConsent,
     });
     if (rpcError) {
       setState("error");
@@ -59,6 +61,7 @@ function ContactPageContent() {
     setState("sent");
     setMessage("");
     setPageUrl("");
+    setAiConsent(false);
   }
 
   return (
@@ -105,6 +108,17 @@ function ContactPageContent() {
         />
         <label className="f" htmlFor="contact-message">内容（20〜4000文字）</label>
         <textarea id="contact-message" value={message} minLength={20} maxLength={4000} required rows={9} onChange={(e) => setMessage(e.target.value)} />
+        <label className="checkRow">
+          <input
+            type="checkbox"
+            checked={aiConsent}
+            onChange={(event) => setAiConsent(event.target.checked)}
+          />
+          <span>内容をAIに送り、返信案を作成することに同意します（任意）</span>
+        </label>
+        <div className="hint">
+          AIが作るのは運営者向けの返信案だけです。メールアドレスとIPアドレスはAIへ送りません。
+        </div>
         <div aria-hidden="true" style={{ position: "absolute", left: "-10000px" }}>
           <label>Website<input tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} /></label>
         </div>
