@@ -436,6 +436,17 @@ test("report links prefill the target page", async ({ page }) => {
   await expect(page.getByLabel("対象ページURL")).toHaveAttribute("required", "");
 });
 
+test("privacy requests explain the procedure and require a reply address", async ({ page }) => {
+  await page.goto("/privacy");
+  await expect(page.getByRole("heading", { name: "安全管理措置" })).toBeVisible();
+  await expect(page.getByText("手数料はかかりません")).toBeVisible();
+
+  await page.getByRole("link", { name: "お問い合わせフォーム" }).first().click();
+  await expect(page.getByLabel("種別")).toHaveValue("privacy");
+  await expect(page.getByLabel("返信先メールアドレス（必須）")).toHaveAttribute("required", "");
+  await expect(page.getByText(/対象IDと、開示・訂正・利用停止・削除/)).toBeVisible();
+});
+
 test("account creation only asks for an ID and passkey", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "無料でIDを作る", exact: true }).click();

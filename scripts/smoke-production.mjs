@@ -74,6 +74,18 @@ await check("/contact", (_response, body) => {
   if (body.includes("my-ideal.example")) throw new Error("placeholder contact address detected");
 });
 
+await check("/privacy", (_response, body) => {
+  for (const marker of ["安全管理措置", "手数料はかかりません", "運営者情報・苦情窓口"]) {
+    if (!body.includes(marker)) throw new Error(`privacy disclosure missing: ${marker}`);
+  }
+});
+
+await check("/terms", (_response, body) => {
+  for (const marker of ["未成年の方は、法定代理人の同意", "運営者に軽過失がある場合", "規約の変更"]) {
+    if (!body.includes(marker)) throw new Error(`terms disclosure missing: ${marker}`);
+  }
+});
+
 await check("/@via_mi", (_response, body) => {
   const forbiddenLaunchContent = [
     "800文字がどれぐらいなのかを検証しています",
