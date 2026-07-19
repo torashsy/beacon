@@ -89,7 +89,8 @@ function ContactPageContent() {
         />
         {category === "privacy" && (
           <div className="hint">
-            対象IDと、開示・訂正・利用停止・削除など希望する対応を本文に入力してください。
+            運営者情報の確認、または開示・訂正・利用停止・削除など希望する対応を本文に入力してください。
+            登録情報に関する請求では対象IDも入力してください。
           </div>
         )}
         <label className="f" htmlFor="contact-page">対象ページURL{category === "report" ? "" : "（任意）"}</label>
