@@ -42,7 +42,7 @@ export const SAMPLE_PROFILES: SampleProfile[] = [
   },
   {
     id: "talent",
-    label: "アイドル・配信者",
+    label: "アイドル",
     data: {
       handle: "mihon_official",
       profile: {

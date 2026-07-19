@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { PublicProfileCard, type PublicCardData } from "./PublicProfileCard";
 import { LegalFooter } from "./LegalFooter";
 import { SAMPLE_PROFILES } from "@/lib/beacon/sampleProfiles";
+import { SELLING_POINTS } from "@/lib/beacon/sellingPoints";
 import { createClient } from "@/lib/supabase/client";
 import { getPublicPage } from "@/lib/beacon/rpc";
 
@@ -20,30 +21,6 @@ function hasContent(data: PublicCardData): boolean {
     Boolean(data.profile.bio)
   );
 }
-
-/** トップに置くセールスポイント。競合のリンク集サービスとの違いを短く伝える。 */
-const SELLING_POINTS = [
-  {
-    emoji: "🔗",
-    title: "ぜんぶ、ひとつのURLに",
-    text: "SNS・連絡先・写真を1ページに。QRコードでその場で渡せる。",
-  },
-  {
-    emoji: "🗓",
-    title: "予定ものせられる、更新は伝わる",
-    text: "ライブや営業日もページに。フォローした人には更新が届く。",
-  },
-  {
-    emoji: "🔑",
-    title: "Face ID・指紋でログイン",
-    text: "パスワードもメール登録も不要。30秒ではじめられる。",
-  },
-  {
-    emoji: "🕊",
-    title: "渡した人にだけ届く",
-    text: "検索エンジンにもユーザー検索にも載らない設計。",
-  },
-];
 
 export function LandingView({
   onCreate,
