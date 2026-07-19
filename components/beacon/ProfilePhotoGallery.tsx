@@ -1,12 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { ProfilePhoto } from "@/lib/beacon/profile-content";
 
 export function ProfilePhotoGallery({ photos }: { photos: ProfilePhoto[] }) {
   const [active, setActive] = useState<ProfilePhoto | null>(null);
   const [loaded, setLoaded] = useState<Set<string>>(() => new Set());
+  const railRef = useRef<HTMLDivElement>(null);
+  const markLoaded = useCallback((id: string) => {
+    setLoaded((current) => {
+      if (current.has(id)) return current;
+      const next = new Set(current);
+      next.add(id);
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    railRef.current?.querySelectorAll<HTMLImageElement>("img").forEach((image, index) => {
+      if (image.complete && image.naturalWidth > 0) markLoaded(photos[index].id);
+    });
+  }, [markLoaded, photos]);
 
   useEffect(() => {
     if (!active) return;
@@ -24,7 +39,7 @@ export function ProfilePhotoGallery({ photos }: { photos: ProfilePhoto[] }) {
 
   return (
     <>
-      <div className="profilePhotoRail" aria-label="写真">
+      <div className="profilePhotoRail" aria-label="写真" ref={railRef}>
         {photos.map((photo, index) => (
           <button
             type="button"
@@ -37,11 +52,7 @@ export function ProfilePhotoGallery({ photos }: { photos: ProfilePhoto[] }) {
             <img
               src={photo.url}
               alt=""
-              onLoad={() => setLoaded((current) => {
-                const next = new Set(current);
-                next.add(photo.id);
-                return next;
-              })}
+              onLoad={() => markLoaded(photo.id)}
             />
           </button>
         ))}
