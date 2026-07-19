@@ -112,6 +112,72 @@ function fitText(
   return size;
 }
 
+function drawCenteredGlyph(
+  context: CanvasRenderingContext2D,
+  glyph: string,
+  centerX: number,
+  centerY: number,
+) {
+  context.textAlign = "center";
+  context.textBaseline = "alphabetic";
+  const metrics = context.measureText(glyph);
+  const hasHorizontalBounds =
+    Number.isFinite(metrics.actualBoundingBoxLeft) &&
+    Number.isFinite(metrics.actualBoundingBoxRight) &&
+    metrics.actualBoundingBoxLeft + metrics.actualBoundingBoxRight > 0;
+  const hasVerticalBounds =
+    Number.isFinite(metrics.actualBoundingBoxAscent) &&
+    Number.isFinite(metrics.actualBoundingBoxDescent) &&
+    metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent > 0;
+  const horizontalOffset = hasHorizontalBounds
+    ? (metrics.actualBoundingBoxRight - metrics.actualBoundingBoxLeft) / 2
+    : 0;
+  const baselineY = hasVerticalBounds
+    ? centerY + (metrics.actualBoundingBoxAscent - metrics.actualBoundingBoxDescent) / 2
+    : centerY;
+  context.fillText(glyph, centerX - horizontalOffset, baselineY);
+}
+
+function drawShareBackdrop(
+  context: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  foreground: string,
+) {
+  context.save();
+
+  const glow = context.createRadialGradient(width * 0.9, 80, 0, width * 0.9, 80, 430);
+  glow.addColorStop(0, "rgba(255,255,255,.72)");
+  glow.addColorStop(1, "rgba(255,255,255,0)");
+  context.fillStyle = glow;
+  context.fillRect(0, 0, width, 520);
+
+  context.globalAlpha = 0.045;
+  context.fillStyle = foreground;
+  context.beginPath();
+  context.moveTo(-100, 865);
+  context.bezierCurveTo(210, 730, 390, 955, 620, 910);
+  context.bezierCurveTo(845, 865, 940, 695, 1180, 760);
+  context.lineTo(1180, 1125);
+  context.bezierCurveTo(850, 1040, 690, 1190, 440, 1115);
+  context.bezierCurveTo(205, 1045, 85, 1135, -100, 1090);
+  context.closePath();
+  context.fill();
+
+  context.globalAlpha = 0.34;
+  context.fillStyle = "#fff";
+  context.beginPath();
+  context.moveTo(-120, 1110);
+  context.bezierCurveTo(190, 980, 400, 1210, 660, 1135);
+  context.bezierCurveTo(870, 1075, 1010, 970, 1200, 1030);
+  context.lineTo(1200, height + 80);
+  context.lineTo(-120, height + 80);
+  context.closePath();
+  context.fill();
+
+  context.restore();
+}
+
 export async function renderQrSharePng(
   options: QrShareImageOptions,
 ): Promise<Blob> {
@@ -133,16 +199,7 @@ export async function renderQrSharePng(
   gradient.addColorStop(1, accent2);
   context.fillStyle = gradient;
   context.fillRect(0, 0, width, height);
-
-  context.globalAlpha = 0.14;
-  context.fillStyle = "#fff";
-  context.beginPath();
-  context.arc(90, 1180, 360, 0, Math.PI * 2);
-  context.fill();
-  context.beginPath();
-  context.arc(1010, 190, 250, 0, Math.PI * 2);
-  context.fill();
-  context.globalAlpha = 1;
+  drawShareBackdrop(context, width, height, foreground);
 
   let brandIcon: HTMLImageElement | null = null;
   try {
@@ -233,12 +290,11 @@ export async function renderQrSharePng(
   } else {
     context.fillStyle = "#ffffff";
     context.font = '58px -apple-system, BlinkMacSystemFont, "Segoe UI Emoji", sans-serif';
-    context.textAlign = "center";
-    context.textBaseline = "middle";
-    context.fillText(
+    drawCenteredGlyph(
+      context,
       options.emoji || (options.handle[0] ?? "?").toUpperCase(),
       width / 2,
-      identityY + identitySize / 2 + 2,
+      identityY + identitySize / 2,
     );
   }
   context.restore();
