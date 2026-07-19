@@ -16,8 +16,8 @@ const appearanceBootstrap = `
       const fallback = ${JSON.stringify(DEFAULT_APPEARANCE)};
       const stored = JSON.parse(localStorage.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEY)}) || "null") || fallback;
       const modes = ["system", "light", "dark"];
-      const themes = ["peach", "sweet", "mint", "sky", "lilac", "citrus", "mono"];
-      const legacyThemes = { cobalt: "sky", magenta: "peach" };
+      const themes = ["peach", "mint", "sky", "lilac", "citrus", "mono"];
+      const legacyThemes = { cobalt: "sky", magenta: "peach", sweet: "peach" };
       const mode = modes.includes(stored.mode) ? stored.mode : fallback.mode;
       const theme = themes.includes(stored.theme)
         ? stored.theme
@@ -61,8 +61,8 @@ export const viewport: Viewport = {
   viewportFit: "cover",
   colorScheme: "light dark",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f2fbff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0b151a" },
+    { media: "(prefers-color-scheme: light)", color: "#f7fcff" },
+    { media: "(prefers-color-scheme: dark)", color: "#101a20" },
   ],
 };
 

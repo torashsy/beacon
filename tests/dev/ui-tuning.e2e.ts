@@ -9,7 +9,7 @@ test("development UI tuning panel previews, saves, and resets changes", async ({
   await expect(page.locator("html")).toHaveAttribute("data-color-theme", "mint");
   await expect.poll(() =>
     page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--page").trim()),
-  ).toBe("#fbfefc");
+  ).toBe("#f8fffc");
 
   const accentRow = page.getByText("ボタン・丸数字", { exact: true }).locator("..");
   await accentRow.locator('input[type="text"]').fill("#245c50");
