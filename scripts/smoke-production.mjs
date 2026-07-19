@@ -74,6 +74,19 @@ await check("/contact", (_response, body) => {
   if (body.includes("my-ideal.example")) throw new Error("placeholder contact address detected");
 });
 
+await check("/@via_mi", (_response, body) => {
+  const forbiddenLaunchContent = [
+    "800文字がどれぐらいなのかを検証しています",
+    "ただいま公開準備中",
+    "https://x.com/yuxijk",
+  ];
+  for (const marker of forbiddenLaunchContent) {
+    if (body.includes(marker)) {
+      throw new Error(`official profile still contains launch-test content: ${marker}`);
+    }
+  }
+});
+
 async function checkCanonicalRedirect(url) {
   const response = await fetch(url, {
     redirect: "manual",
