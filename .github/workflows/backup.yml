@@ -55,7 +55,9 @@ jobs:
             echo "database_files=$(find backup/database -type f | wc -l)"
             echo "storage_files=$(find backup/storage -type f | wc -l)"
           } > backup/manifest.txt
-          find backup -type f -print0 | sort -z | xargs -0 sha256sum > backup/SHA256SUMS
+          find backup -type f ! -name SHA256SUMS -print0 \
+            | sort -z \
+            | xargs -0 sha256sum > backup/SHA256SUMS
           tar -czf "via-mi-backup-${timestamp}.tar.gz" backup
           openssl cms -encrypt -binary -aes-256-cbc -outform DER \
             -in "via-mi-backup-${timestamp}.tar.gz" \
