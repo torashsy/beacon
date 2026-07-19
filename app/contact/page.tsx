@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { FormEvent, Suspense, useState } from "react";
+import { FormEvent, Suspense, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 function ContactPageContent() {
   const searchParams = useSearchParams();
-  const [category, setCategory] = useState(
-    searchParams.get("category") === "report" ? "report" : "inquiry",
-  );
+  const requestedCategory = ["report", "privacy"].includes(searchParams.get("category") ?? "")
+    ? searchParams.get("category")!
+    : "inquiry";
+  const [category, setCategory] = useState(requestedCategory);
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [pageUrl, setPageUrl] = useState(() =>
@@ -19,8 +20,16 @@ function ContactPageContent() {
   const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    setCategory(requestedCategory);
+  }, [requestedCategory]);
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (category === "privacy" && !email.trim()) {
+      setError("個人情報に関するご請求には、返信先メールアドレスが必要です。");
+      return;
+    }
     if (category === "report" && !pageUrl.trim()) {
       setError("通報するページのURLを入力してください");
       return;
@@ -67,8 +76,22 @@ function ContactPageContent() {
           <option value="privacy">個人情報・削除のご請求</option>
           <option value="other">その他</option>
         </select>
-        <label className="f" htmlFor="contact-email">返信先メールアドレス（任意）</label>
-        <input id="contact-email" type="email" value={email} maxLength={254} onChange={(e) => setEmail(e.target.value)} />
+        <label className="f" htmlFor="contact-email">
+          返信先メールアドレス{category === "privacy" ? "（必須）" : "（任意）"}
+        </label>
+        <input
+          id="contact-email"
+          type="email"
+          value={email}
+          maxLength={254}
+          required={category === "privacy"}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        {category === "privacy" && (
+          <div className="hint">
+            対象IDと、開示・訂正・利用停止・削除など希望する対応を本文に入力してください。
+          </div>
+        )}
         <label className="f" htmlFor="contact-page">対象ページURL{category === "report" ? "" : "（任意）"}</label>
         <input
           id="contact-page"
