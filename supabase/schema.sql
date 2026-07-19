@@ -701,6 +701,58 @@ returns bigint language sql security definer stable as $$
 $$;
 revoke all on function get_follower_count(text) from public, authenticated;
 grant execute on function get_follower_count(text) to anon;
+
+-- ---- 問い合わせキュー監視（個人情報を返さない） ----
+alter table contact_submissions
+  add column if not exists ai_consent boolean not null default false,
+  add column if not exists ai_draft text not null default '',
+  add column if not exists ai_drafted_at timestamptz;
+
+create or replace function get_contact_queue_summary()
+returns jsonb language sql security definer stable set search_path = public as $$
+  select jsonb_build_object(
+    'pending_count', count(*) filter (where status in ('new', 'reviewing')),
+    'new_count', count(*) filter (where status = 'new'),
+    'reviewing_count', count(*) filter (where status = 'reviewing'),
+    'ai_waiting_count', count(*) filter (
+      where status in ('new', 'reviewing') and ai_consent and ai_draft = ''
+    ),
+    'ai_drafted_count', count(*) filter (
+      where status in ('new', 'reviewing') and ai_draft <> ''
+    ),
+    'oldest_pending_at', min(created_at) filter (where status in ('new', 'reviewing'))
+  )
+  from contact_submissions;
+$$;
+revoke all on function get_contact_queue_summary() from public, anon, authenticated;
+grant execute on function get_contact_queue_summary() to service_role;
+
+-- ---- 任意同意による問い合わせAI返信案 ----
+create or replace function get_contact_draft_queue(p_limit integer default 20)
+returns table(id uuid, category text, message text)
+language sql security definer stable set search_path = public as $$
+  select c.id, c.category, c.message
+  from contact_submissions c
+  where c.status in ('new', 'reviewing') and c.ai_consent and c.ai_draft = ''
+  order by c.created_at
+  limit least(greatest(coalesce(p_limit, 20), 1), 20);
+$$;
+revoke all on function get_contact_draft_queue(integer) from public, anon, authenticated;
+grant execute on function get_contact_draft_queue(integer) to service_role;
+
+create or replace function save_contact_ai_draft(p_id uuid, p_draft text)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if length(trim(coalesce(p_draft, ''))) < 1 or length(p_draft) > 2000 then
+    raise exception 'invalid draft';
+  end if;
+  update contact_submissions set ai_draft=trim(p_draft), ai_drafted_at=now()
+  where id=p_id and ai_consent and status in ('new', 'reviewing');
+  if not found then raise exception 'submission not available'; end if;
+end;
+$$;
+revoke all on function save_contact_ai_draft(uuid, text) from public, anon, authenticated;
+grant execute on function save_contact_ai_draft(uuid, text) to service_role;
 revoke all on function authorize_avatar_upload(text, text) from public, anon, authenticated;
 grant execute on function authorize_avatar_upload(text, text) to service_role;
 

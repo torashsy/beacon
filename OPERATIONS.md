@@ -2,9 +2,9 @@
 
 ## 自動監視
 
-- GitHub Actions の `Production smoke` が6時間ごとにトップ、ヘルスチェック、問い合わせ画面、CSPを確認する。
+- GitHub Actions の `Production smoke` が6時間ごとにトップ、DB疎通を含むヘルスチェック、問い合わせ画面、CSPを確認する。
 - 失敗時はActionsの失敗通知を確認し、Vercelの直近デプロイとSupabaseの稼働状況を確認する。
-- `/api/health` はアプリ自体の応答確認であり、DB疎通までは保証しない。
+- `/api/health` は公開プロフィール用RPCまで確認する。HTTP 503または `dependencies.database.ok = false` はDB障害として扱う。
 - ID検索はアプリ側でIPごとに10分20回へ制限する。サーバーレス環境ではインスタンス間で
   カウントが共有されないため、異常アクセスが見えたらVercel Firewall側にもレート制限を追加する。
 
@@ -17,7 +17,22 @@
 - 画像アップロード用Edge Functionの `BEACON_ALLOWED_ORIGINS` は
   `https://via-mi.com,https://www.via-mi.com` を維持する。
 
+## バックアップ
+
+- GitHub Actions の `Encrypted production backup` が毎日03:30（日本時間）に実行される。
+- 失敗した場合は当日中に原因を確認し、Actionsから手動で再実行する。
+- 復号鍵はリポジトリ外に保管する。鍵を更新するときは、旧バックアップの復号鍵も保存期間中は残す。
+- 復元方法と制約は [BACKUP_RESTORE.md](./BACKUP_RESTORE.md) を参照する。
+
 ## 毎日の問い合わせ・通報確認
+
+GitHub Actions の `Contact queue monitor` が毎日07:11（日本時間）に未処理件数を確認する。未処理がある場合は
+`contact-queue` ラベルのIssueを自動作成・更新し、0件になると自動で閉じる。GitHubへ送るのは
+件数と最古の受付時刻だけで、本文・メールアドレス・URL・IPアドレスは送らない。
+
+AI返信案への同意がある未処理レコードは、種別と本文だけをGitHub Modelsへ送り、返信案を
+`contact_submissions.ai_draft` に保存する。AIは返信を送信しない。メールアドレス・対象URL・
+IPアドレスはAIへ渡さない。返信前に必ず本文と返信案を人が確認し、必要な修正を行う。
 
 Supabase Dashboard の Table Editor で `contact_submissions` を開き、`status = new`
 を確認する。確認中は `reviewing`、対応後は `resolved`、対象外は `rejected` にする。
@@ -26,6 +41,10 @@ Supabase Dashboard の Table Editor で `contact_submissions` を開き、`statu
 `category = privacy` は優先して確認する。対象IDと請求内容を特定し、パスキーでのログイン、
 確認済み復旧メール等により本人確認を行う。必要以上の本人確認資料は取得しない。
 開示等は原則として電磁的方法で行い、判断・対応・回答日を記録する。
+
+運営者の正式な氏名または名称・住所の確認請求も `category = privacy` で受け付ける。
+請求者が本サービスの本人であることを合理的な方法で確認したうえで、遅滞なく返信先メールへ回答する。
+運営者情報の確認だけを目的とする請求に、本人確認上不要な資料や対象IDを求めない。
 
 ## 問題アカウントを直ちに非公開にする
 

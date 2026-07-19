@@ -1,34 +1,49 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { PublicProfileCard, type PublicCardData } from "./PublicProfileCard";
 import { LegalFooter } from "./LegalFooter";
+import { SAMPLE_PROFILES } from "@/lib/beacon/sampleProfiles";
+import { createClient } from "@/lib/supabase/client";
+import { getPublicPage } from "@/lib/beacon/rpc";
 
 /** 未ログイン時のトップ。操作と完成イメージだけを見せる。 */
 
-const DEMO: PublicCardData = {
-  handle: "via_mi_sample",
-  profile: {
-    name: "みほん",
-    bio: "連絡先はここにまとめています🌸",
-    emoji: "🌸",
-    theme: 0,
-    av_theme: 5,
-    av_url: "",
-    bn_url: "",
+/**
+ * 見本ハンドルの実アカウントに表示できる中身があるか。
+ * アカウントを作った直後の空プロフィールを見本に出さないためのガード。
+ */
+function hasContent(data: PublicCardData): boolean {
+  return (
+    data.channels.some((c) => c.status === "live") ||
+    data.pubcal.length > 0 ||
+    Boolean(data.profile.bio)
+  );
+}
+
+/** トップに置くセールスポイント。競合のリンク集サービスとの違いを短く伝える。 */
+const SELLING_POINTS = [
+  {
+    emoji: "🔗",
+    title: "ぜんぶ、ひとつのURLに",
+    text: "SNS・連絡先・写真を1ページに。QRコードでその場で渡せる。",
   },
-  channels: [
-    {
-      type: "x",
-      url: "#",
-      label: "メイン垢",
-      descr: "DMはこちらへ",
-      status: "live",
-    },
-    { type: "instagram", url: "#", label: "", descr: "", status: "live" },
-    { type: "line", url: "#", label: "", descr: "", status: "live" },
-  ],
-  pubcal: [{ d: "2026-07-12", memo: "ライブ出演 19:00〜 @渋谷" }],
-};
+  {
+    emoji: "🗓",
+    title: "予定ものせられる、更新は伝わる",
+    text: "ライブや営業日もページに。フォローした人には更新が届く。",
+  },
+  {
+    emoji: "🔑",
+    title: "Face ID・指紋でログイン",
+    text: "パスワードもメール登録も不要。30秒ではじめられる。",
+  },
+  {
+    emoji: "🕊",
+    title: "渡した人にだけ届く",
+    text: "検索エンジンにもユーザー検索にも載らない設計。",
+  },
+];
 
 export function LandingView({
   onCreate,
@@ -37,19 +52,85 @@ export function LandingView({
   onCreate: () => void;
   onLogin: () => void;
 }) {
+  const [sampleId, setSampleId] = useState(SAMPLE_PROFILES[0].id);
+  const sample = SAMPLE_PROFILES.find((s) => s.id === sampleId) ?? SAMPLE_PROFILES[0];
+
+  // 見本ハンドルと同名の実アカウントが存在すればその公開内容を優先表示する
+  // （運営が実アカウント側を編集するだけで見本を更新できる）。
+  // null = 取得済みだが実データなし（静的見本のまま）。
+  const [live, setLive] = useState<Record<string, PublicCardData | null>>({});
+
+  const handle = sample.data.handle;
+  useEffect(() => {
+    if (live[handle] !== undefined) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const db = createClient();
+        const page = await Promise.race([
+          getPublicPage(db, handle),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 4000)),
+        ]);
+        if (cancelled) return;
+        const data: PublicCardData | null = page
+          ? { handle, profile: page.profile, channels: page.channels, pubcal: page.cal }
+          : null;
+        setLive((prev) => ({
+          ...prev,
+          [handle]: data && hasContent(data) ? data : null,
+        }));
+      } catch {
+        if (!cancelled) {
+          setLive((prev) => ({ ...prev, [handle]: null }));
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [handle, live]);
+
+  const card = live[handle] ?? sample.data;
+
   return (
     <section className="view">
-      <h1 className="landingTitle">あなたのSNS、全部ひとつに。</h1>
+      <h1 className="landingTitle">あなたのSNSを、全部ひとつに。</h1>
       <button className="btn sig" onClick={onCreate}>
-        無料でIDを作る
+        はじめる
       </button>
       <button className="btn ghost" onClick={onLogin}>
         ログイン
       </button>
 
-      <h2>見本</h2>
+      <div className="guideUseCases landingPoints">
+        {SELLING_POINTS.map((p) => (
+          <div className="useCase" key={p.title}>
+            <span className="useCaseEmoji" aria-hidden>{p.emoji}</span>
+            <div className="useCaseText">
+              <strong>{p.title}</strong>
+              <span>{p.text}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <h2>例えば、こんな風に。</h2>
+
+      <div className="sampleTabs" role="group" aria-label="見本の切り替え">
+        {SAMPLE_PROFILES.map((s) => (
+          <button
+            type="button"
+            key={s.id}
+            className={sampleId === s.id ? "on" : ""}
+            aria-pressed={sampleId === s.id}
+            onClick={() => setSampleId(s.id)}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
       <div style={{ pointerEvents: "none", userSelect: "none" }} aria-hidden>
-        <PublicProfileCard data={DEMO} />
+        <PublicProfileCard data={card} />
       </div>
       <LegalFooter />
     </section>

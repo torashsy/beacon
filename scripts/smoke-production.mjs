@@ -12,7 +12,13 @@ async function check(path, inspect) {
 
 await check("/api/health", async (_response, body) => {
   const health = JSON.parse(body);
-  if (health.ok !== true || health.service !== "via-mi") throw new Error("invalid health response");
+  if (
+    health.ok !== true ||
+    health.service !== "via-mi" ||
+    health.dependencies?.database?.ok !== true
+  ) {
+    throw new Error("invalid health response");
+  }
 });
 
 await check("/", (response, body) => {
@@ -70,18 +76,25 @@ for (const icon of ["/icon-192.png", "/icon-512.png", "/apple-touch-icon.png"]) 
   });
 }
 
-await check("/contact", (_response, body) => {
+await check("/contact?category=privacy", (_response, body) => {
   if (body.includes("my-ideal.example")) throw new Error("placeholder contact address detected");
 });
 
 await check("/privacy", (_response, body) => {
-  for (const marker of ["安全管理措置", "手数料はかかりません", "運営者情報・苦情窓口"]) {
+  for (const marker of [
+    "安全管理措置",
+    "手数料はかかりません",
+    "運営者情報・苦情窓口",
+    "最大30日間",
+    "公開ページには常時掲載せず",
+    "GitHub Models",
+  ]) {
     if (!body.includes(marker)) throw new Error(`privacy disclosure missing: ${marker}`);
   }
 });
 
 await check("/terms", (_response, body) => {
-  for (const marker of ["未成年の方は、法定代理人の同意", "運営者に軽過失がある場合", "規約の変更"]) {
+  for (const marker of ["未成年の方は、法定代理人の同意", "運営者に軽過失がある場合", "規約の変更", "現在、無料"]) {
     if (!body.includes(marker)) throw new Error(`terms disclosure missing: ${marker}`);
   }
 });

@@ -3,7 +3,6 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "利用規約 · via-mi",
-  robots: { index: false, follow: false },
 };
 
 export default function TermsPage() {
@@ -15,7 +14,7 @@ export default function TermsPage() {
         </Link>
       </div>
       <h1>利用規約</h1>
-      <div className="lead">最終更新日: 2026年7月</div>
+      <div className="lead">制定・最終更新日: 2026年7月19日</div>
 
       <div className="card" style={{ fontSize: 13.5, lineHeight: 1.9 }}>
         <h2 style={{ margin: "0 0 8px" }}>1. サービス概要</h2>
@@ -28,6 +27,10 @@ export default function TermsPage() {
           <li>名前・属性・ハッシュタグ等による利用者の横断検索、一覧表示、おすすめ表示</li>
           <li>金銭のやり取りを仲介する決済機能</li>
         </ul>
+        <p>
+          本サービスは現在、無料で利用できます。有料機能を導入する場合は、申込み前に料金、
+          支払方法、提供条件および解約条件を分かりやすく表示します。
+        </p>
 
         <h2 style={{ margin: "20px 0 8px" }}>2. アカウント</h2>
         <p>
@@ -55,8 +58,9 @@ export default function TermsPage() {
         <h2 style={{ margin: "20px 0 8px" }}>4. コンテンツの取扱い</h2>
         <p>
           利用者が登録したプロフィール・表示中のリンク・カレンダー予定・画像等の情報は
-          URLを知る第三者が閲覧できる状態になります。運営者は、禁止事項に該当すると判断した
-          コンテンツやアカウントを、事前の通知なく削除・停止できるものとします。
+          URLを知る第三者が閲覧できる状態になります。運営者は、禁止事項への違反、安全上の問題、
+          権利侵害の申告など合理的な理由がある場合、コンテンツの非表示、削除またはアカウント停止を
+          行うことがあります。緊急の対応が必要な場合を除き、可能な範囲で理由を通知します。
         </p>
         <p>
           利用者は、登録するコンテンツについて必要な権利を有することを保証します。
@@ -88,7 +92,8 @@ export default function TermsPage() {
         <h2 style={{ margin: "20px 0 8px" }}>8. 準拠法・管轄</h2>
         <p>
           本規約の解釈にあたっては日本法を準拠法とします。本サービスに関して紛争が生じた場合には、
-          運営者の所在地を管轄する裁判所を第一審の専属的合意管轄裁判所とします。
+          法令に別段の定めがある場合を除き、運営者の所在地を管轄する裁判所を第一審の
+          専属的合意管轄裁判所とします。
         </p>
 
         <h2 style={{ margin: "20px 0 8px" }}>9. お問い合わせ・通報</h2>

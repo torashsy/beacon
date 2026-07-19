@@ -6,6 +6,9 @@ create table if not exists contact_submissions (
   message text not null,
   page_url text default '',
   client_ip text default 'unknown',
+  ai_consent boolean not null default false,
+  ai_draft text not null default '',
+  ai_drafted_at timestamptz,
   status text not null default 'new'
     check (status in ('new','reviewing','resolved','rejected')),
   created_at timestamptz not null default now()
@@ -27,7 +30,8 @@ create or replace function submit_contact(
   p_email text,
   p_message text,
   p_page_url text default '',
-  p_website text default ''
+  p_website text default '',
+  p_ai_consent boolean default false
 )
 returns uuid language plpgsql security definer as $$
 declare
@@ -45,7 +49,13 @@ begin
      and trim(p_email) !~* '^[^[:space:]@]+@[^[:space:]@]+[.][^[:space:]@]+$'
     then raise exception 'invalid email';
   end if;
+  if p_category = 'privacy' and length(trim(coalesce(p_email,''))) = 0
+    then raise exception 'email required';
+  end if;
   if length(coalesce(p_page_url,'')) > 2000 then raise exception 'url too long'; end if;
+  if p_category = 'report' and length(trim(coalesce(p_page_url,''))) = 0
+    then raise exception 'url required';
+  end if;
 
   begin
     client_ip := trim(split_part(
@@ -59,11 +69,11 @@ begin
     returning n into attempts;
   if attempts > 5 then raise exception 'contact rate limit'; end if;
 
-  insert into contact_submissions(category,email,message,page_url,client_ip)
-    values (p_category,trim(coalesce(p_email,'')),trim(p_message),trim(coalesce(p_page_url,'')),client_ip)
+  insert into contact_submissions(category,email,message,page_url,client_ip,ai_consent)
+    values (p_category,trim(coalesce(p_email,'')),trim(p_message),trim(coalesce(p_page_url,'')),client_ip,coalesce(p_ai_consent,false))
     returning id into submission_id;
   return submission_id;
 end $$;
 
-revoke all on function submit_contact(text,text,text,text,text) from public, anon, authenticated;
-grant execute on function submit_contact(text,text,text,text,text) to anon;
+revoke all on function submit_contact(text,text,text,text,text,boolean) from public, anon, authenticated;
+grant execute on function submit_contact(text,text,text,text,text,boolean) to anon;

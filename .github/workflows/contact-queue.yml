@@ -1,0 +1,153 @@
+name: Contact daily email report
+
+on:
+  schedule:
+    # 07:11 JST
+    - cron: "11 22 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  models: read
+
+concurrency:
+  group: contact-queue-monitor
+  cancel-in-progress: true
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SUPABASE_PROJECT_ID: ${{ vars.SUPABASE_PROJECT_ID }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - name: Read non-sensitive queue summary
+        id: queue
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_PROJECT_ID"
+          test -n "$SUPABASE_SERVICE_ROLE_KEY"
+          summary="$(
+            curl --fail-with-body --silent --show-error \
+              --request POST \
+              --header "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+              --header "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+              --header "Content-Type: application/json" \
+              --data '{}' \
+              "https://${SUPABASE_PROJECT_ID}.supabase.co/rest/v1/rpc/get_contact_queue_summary"
+          )"
+          echo "summary=$(jq -c . <<<"$summary")" >> "$GITHUB_OUTPUT"
+
+      - name: Create consented AI reply drafts
+        id: drafts
+        continue-on-error: true
+        env:
+          GH_MODELS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          queue="$(
+            curl --fail-with-body --silent --show-error \
+              --request POST \
+              --header "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+              --header "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+              --header "Content-Type: application/json" \
+              --data '{"p_limit":20}' \
+              "https://${SUPABASE_PROJECT_ID}.supabase.co/rest/v1/rpc/get_contact_draft_queue"
+          )"
+          generated=0
+          while IFS= read -r item; do
+            id="$(jq -r '.id' <<<"$item")"
+            category="$(jq -r '.category' <<<"$item")"
+            message="$(jq -r '.message' <<<"$item")"
+            request="$(
+              jq -n --arg category "$category" --arg message "$message" '{
+                model: "openai/gpt-4o",
+                temperature: 0.2,
+                max_tokens: 500,
+                messages: [
+                  {
+                    role: "system",
+                    content: "あなたはvia-mi運営の返信案作成補助です。丁寧で簡潔な日本語で、事実を断定せず、個人情報・支払い情報・本人確認書類などを求めず、必要なら運営確認後に回答する旨を伝えてください。返信案は400文字以内にしてください。"
+                  },
+                  { role: "user", content: ("種別: " + $category + "\n問い合わせ内容:\n" + $message) }
+                ]
+              }'
+            )"
+            response="$(
+              curl --fail-with-body --silent --show-error \
+                --request POST \
+                --header "Authorization: Bearer $GH_MODELS_TOKEN" \
+                --header "Content-Type: application/json" \
+                --data "$request" \
+                "https://models.github.ai/inference/chat/completions"
+            )"
+            draft="$(jq -er '.choices[0].message.content | strings | select(length > 0)' <<<"$response")"
+            payload="$(jq -n --arg id "$id" --arg draft "$draft" '{p_id:$id,p_draft:$draft}')"
+            curl --fail-with-body --silent --show-error \
+              --request POST \
+              --header "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+              --header "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+              --header "Content-Type: application/json" \
+              --data "$payload" \
+              "https://${SUPABASE_PROJECT_ID}.supabase.co/rest/v1/rpc/save_contact_ai_draft" \
+              >/dev/null
+            generated=$((generated + 1))
+          done < <(jq -c '.[]' <<<"$queue")
+          echo "generated=$generated" >> "$GITHUB_OUTPUT"
+
+      - name: Send daily report to operations inbox
+        env:
+          QUEUE_SUMMARY: ${{ steps.queue.outputs.summary }}
+          GENERATED_DRAFTS: ${{ steps.drafts.outputs.generated }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          REPORT_RECIPIENT: ${{ secrets.CONTACT_REPORT_RECIPIENT }}
+        run: |
+          set -euo pipefail
+          if [ -z "$RESEND_API_KEY" ] || [ -z "$REPORT_RECIPIENT" ]; then
+            echo "Resendの認証情報が未設定のため、今回のメール送信は保留しました。"
+            exit 0
+          fi
+          python3 - <<'PY'
+          import json
+          import os
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+
+          summary = json.loads(os.environ["QUEUE_SUMMARY"])
+          generated = int(os.environ.get("GENERATED_DRAFTS") or 0)
+          pending = int(summary.get("pending_count") or 0)
+          new = int(summary.get("new_count") or 0)
+          reviewing = int(summary.get("reviewing_count") or 0)
+          drafted = int(summary.get("ai_drafted_count") or 0) + generated
+          oldest = summary.get("oldest_pending_at")
+          oldest_text = "なし"
+          if oldest:
+              oldest_text = datetime.fromisoformat(oldest.replace("Z", "+00:00")).astimezone(ZoneInfo("Asia/Tokyo")).strftime("%Y/%m/%d %H:%M")
+
+          payload = {
+              "from": "via-mi <reports@notify.via-mi.com>",
+              "to": [os.environ["REPORT_RECIPIENT"]],
+              "subject": f"[via-mi] 問い合わせ日次レポート — 未処理 {pending}件",
+              "text": "\n".join([
+              "via-mi 問い合わせ日次レポート",
+              "",
+              f"未処理: {pending}件",
+              f"新規: {new}件",
+              f"確認中: {reviewing}件",
+              f"AI返信案あり: {drafted}件",
+              f"最古の未処理: {oldest_text}",
+              "",
+              "本文・メールアドレス・IPアドレスなどの個人情報は、このメールには含めていません。",
+              "対応内容とAI返信案はSupabaseの contact_submissions で確認できます。",
+              ]),
+          }
+          with open("resend-payload.json", "w", encoding="utf-8") as output:
+              json.dump(payload, output, ensure_ascii=False)
+          PY
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer $RESEND_API_KEY" \
+            --header "Content-Type: application/json" \
+            --data @resend-payload.json \
+            https://api.resend.com/emails

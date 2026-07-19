@@ -30,6 +30,17 @@ test("public entry points and legal pages are reachable", async ({ page }) => {
   }
 });
 
+test("public documents match the current free service and data handling", async ({ page }) => {
+  await page.goto("/terms");
+  await expect(page.getByText("本サービスは現在、無料で利用できます。")).toBeVisible();
+  expect(await page.locator('meta[name="robots"][content*="noindex"]').count()).toBe(0);
+
+  await page.goto("/privacy");
+  await expect(page.getByText(/本人だけが確認できる、登録リンクごとのクリック数/)).toBeVisible();
+  await expect(page.locator("main")).toContainText("最大30日間");
+  expect(await page.locator('meta[name="robots"][content*="noindex"]').count()).toBe(0);
+});
+
 test("development-only UI tuning controls are excluded from production", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("button", { name: "UI調整" })).toHaveCount(0);
@@ -370,7 +381,11 @@ test("profile photos keep their ratio, enlarge on tap, and expose a horizontal e
 test("health endpoint and production metadata are valid", async ({ request }) => {
   const health = await request.get("/api/health");
   expect(health.ok()).toBeTruthy();
-  expect(await health.json()).toMatchObject({ ok: true, service: "via-mi" });
+  expect(await health.json()).toMatchObject({
+    ok: true,
+    service: "via-mi",
+    dependencies: { database: { ok: true } },
+  });
 
   const home = await request.get("/");
   const html = await home.text();
@@ -444,12 +459,16 @@ test("privacy requests explain the procedure and require a reply address", async
   await page.getByRole("link", { name: "お問い合わせフォーム" }).first().click();
   await expect(page.getByLabel("種別")).toHaveValue("privacy");
   await expect(page.getByLabel("返信先メールアドレス（必須）")).toHaveAttribute("required", "");
-  await expect(page.getByText(/対象IDと、開示・訂正・利用停止・削除/)).toBeVisible();
+  await expect(page.getByText(/運営者情報の確認/)).toBeVisible();
+  await expect(page.getByText(/登録情報に関する請求では対象ID/)).toBeVisible();
+  const aiConsent = page.getByRole("checkbox", { name: /内容をAIに送り、返信案を作成/ });
+  await expect(aiConsent).not.toBeChecked();
+  await expect(page.getByText(/メールアドレスとIPアドレスはAIへ送りません/)).toBeVisible();
 });
 
 test("account creation only asks for an ID and passkey", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "無料でIDを作る", exact: true }).click();
+  await page.getByRole("button", { name: "はじめる", exact: true }).click();
 
   await page.getByLabel("ID", { exact: true }).fill("new_user");
   const create = page.getByRole("button", { name: "パスキーで作成", exact: true });
