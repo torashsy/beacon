@@ -2028,6 +2028,22 @@ textarea {
 .useCaseText strong { font-size: 13.5px; }
 .useCaseText span { color: var(--muted); font-weight: 500; white-space: pre-wrap; }
 .landingPoints { margin: 18px 0 6px; }
+.guideLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  color: var(--emd);
+  font-size: 13px;
+  font-weight: 750;
+  text-decoration: none;
+}
 .settingsView {
   display: grid;
   gap: 14px;
