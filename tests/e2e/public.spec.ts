@@ -482,8 +482,8 @@ test("help explains the main flow in plain language", async ({ page }) => {
   await page.getByRole("button", { name: "Help", exact: true }).click();
 
   await expect(page.getByRole("heading", { name: "via-miの使い方", exact: true })).toBeVisible();
-  await expect(page.getByText("me → 追加したい項目を選ぶ", { exact: true })).toBeVisible();
-  await expect(page.getByText("Follow → ID検索", { exact: true })).toBeVisible();
+  await expect(page.getByText("ぜんぶ、ひとつのURLに。", { exact: true })).toBeVisible();
+  await expect(page.getByText("渡した人だけに届く。", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "ログインできないとき", exact: true })).toHaveCount(0);
 });
 

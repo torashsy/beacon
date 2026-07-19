@@ -2012,8 +2012,6 @@ textarea {
   border-color: var(--em);
 }
 .guideIntro { margin: -4px 0 16px; }
-.guideSteps { display: grid; gap: 10px; }
-.guideUseCasesTitle { margin: 22px 0 10px; }
 .guideUseCases { display: grid; gap: 8px; margin-bottom: 14px; }
 .useCase {
   display: flex;
@@ -2028,48 +2026,8 @@ textarea {
 .useCaseEmoji { font-size: 22px; flex: 0 0 auto; }
 .useCaseText { display: grid; gap: 2px; font-size: 12.5px; }
 .useCaseText strong { font-size: 13.5px; }
-.useCaseText span { color: var(--muted); font-weight: 500; }
-.guideSampleHint { margin: 4px 0 0; font-size: 12px; color: var(--muted); }
+.useCaseText span { color: var(--muted); font-weight: 500; white-space: pre-wrap; }
 .landingPoints { margin: 18px 0 6px; }
-.step {
-  display: flex;
-  gap: 14px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px 18px;
-  box-shadow: var(--shadow);
-  margin-bottom: 0;
-}
-.step .no {
-  width: 32px;
-  height: 32px;
-  flex: 0 0 32px;
-  border-radius: 50%;
-  background: var(--em);
-  color: var(--on-em);
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 15px;
-}
-.step .stx .t {
-  margin: 0;
-  font-weight: 800;
-  font-size: 14.5px;
-}
-.step .stx .d {
-  margin-bottom: 0;
-  font-size: 12.5px;
-  color: var(--muted);
-  font-weight: 500;
-  margin-top: 2px;
-}
-.guidePath {
-  width: fit-content; margin-top: 9px; padding: 4px 8px; border-radius: 8px;
-  background: var(--soft); color: var(--emd); font-size: 10.5px; font-weight: 750;
-}
 .settingsView {
   display: grid;
   gap: 14px;
