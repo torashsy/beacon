@@ -105,9 +105,10 @@ jobs:
           REPORT_RECIPIENT: ${{ secrets.CONTACT_REPORT_RECIPIENT }}
         run: |
           set -euo pipefail
-          test -n "$REPORT_GMAIL_ADDRESS"
-          test -n "$REPORT_GMAIL_APP_PASSWORD"
-          test -n "$REPORT_RECIPIENT"
+          if [ -z "$REPORT_GMAIL_ADDRESS" ] || [ -z "$REPORT_GMAIL_APP_PASSWORD" ] || [ -z "$REPORT_RECIPIENT" ]; then
+            echo "Gmail送信の認証情報が未設定のため、今回のメール送信は保留しました。"
+            exit 0
+          fi
           python3 - <<'PY'
           import json
           import os
