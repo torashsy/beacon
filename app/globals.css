@@ -965,18 +965,25 @@ textarea {
 }
 .profilePhotoItem {
   flex: 0 0 auto;
-  min-width: 140px;
+  min-width: 0;
+  width: max-content;
   height: 210px;
   overflow: hidden;
   border-radius: 16px;
-  background: var(--eml);
+  background: transparent;
   scroll-snap-align: start;
   border: 0;
   padding: 0;
   cursor: zoom-in;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
+}
+.profilePhotoItem.loading {
+  width: 140px;
+  background: var(--eml);
+}
+.profilePhotoItem.loaded {
+  width: max-content;
+  background: transparent;
 }
 .profilePhotoItem img {
   width: auto;
