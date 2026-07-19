@@ -76,8 +76,9 @@ for (const icon of ["/icon-192.png", "/icon-512.png", "/apple-touch-icon.png"]) 
   });
 }
 
-await check("/contact", (_response, body) => {
+await check("/contact?category=privacy", (_response, body) => {
   if (body.includes("my-ideal.example")) throw new Error("placeholder contact address detected");
+  if (!body.includes("運営者情報の確認")) throw new Error("operator disclosure request path missing");
 });
 
 await check("/privacy", (_response, body) => {

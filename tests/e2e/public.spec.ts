@@ -459,7 +459,8 @@ test("privacy requests explain the procedure and require a reply address", async
   await page.getByRole("link", { name: "お問い合わせフォーム" }).first().click();
   await expect(page.getByLabel("種別")).toHaveValue("privacy");
   await expect(page.getByLabel("返信先メールアドレス（必須）")).toHaveAttribute("required", "");
-  await expect(page.getByText(/対象IDと、開示・訂正・利用停止・削除/)).toBeVisible();
+  await expect(page.getByText(/運営者情報の確認/)).toBeVisible();
+  await expect(page.getByText(/登録情報に関する請求では対象ID/)).toBeVisible();
 });
 
 test("account creation only asks for an ID and passkey", async ({ page }) => {
