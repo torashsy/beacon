@@ -17,6 +17,8 @@ export function QrShareModal({
   name,
   avatarUrl,
   emoji,
+  avatarAccent,
+  avatarAccent2,
   onClose,
   toast,
 }: {
@@ -25,6 +27,8 @@ export function QrShareModal({
   name: string;
   avatarUrl?: string;
   emoji?: string;
+  avatarAccent: string;
+  avatarAccent2: string;
   onClose: () => void;
   toast: ToastFn;
 }) {
@@ -43,6 +47,8 @@ export function QrShareModal({
         onAccent: qr.onAccent,
         avatarUrl,
         emoji,
+        avatarAccent,
+        avatarAccent2,
       });
       const file = new File([blob], `via-mi-${handle}.png`, {
         type: "image/png",
@@ -91,6 +97,8 @@ export function QrShareModal({
             "--qr-accent": qr.accent,
             "--qr-accent-2": qr.accent2,
             "--qr-on-accent": qr.onAccent,
+            "--qr-avatar-accent": avatarAccent,
+            "--qr-avatar-accent-2": avatarAccent2,
           } as CSSProperties
         }
       >
@@ -128,7 +136,7 @@ export function QrShareModal({
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={avatarUrl} alt="" />
               ) : (
-                <span>{emoji || "•"}</span>
+                <span>{emoji || (handle[0] ?? "?").toUpperCase()}</span>
               )}
             </span>
           </div>
