@@ -21,6 +21,30 @@ function hasContent(data: PublicCardData): boolean {
   );
 }
 
+/** トップに置くセールスポイント。競合のリンク集サービスとの違いを短く伝える。 */
+const SELLING_POINTS = [
+  {
+    emoji: "🔗",
+    title: "ぜんぶ、ひとつのURLに",
+    text: "SNS・連絡先・写真を1ページに。QRコードでその場で渡せる。",
+  },
+  {
+    emoji: "🗓",
+    title: "予定ものせられる、更新は伝わる",
+    text: "ライブや営業日もページに。フォローした人には更新が届く。",
+  },
+  {
+    emoji: "🔑",
+    title: "Face ID・指紋でログイン",
+    text: "パスワードもメール登録も不要。30秒ではじめられる。",
+  },
+  {
+    emoji: "🕊",
+    title: "渡した人にだけ届く",
+    text: "検索エンジンにもユーザー検索にも載らない設計。",
+  },
+];
+
 export function LandingView({
   onCreate,
   onLogin,
@@ -77,6 +101,18 @@ export function LandingView({
       <button className="btn ghost" onClick={onLogin}>
         ログイン
       </button>
+
+      <div className="guideUseCases landingPoints">
+        {SELLING_POINTS.map((p) => (
+          <div className="useCase" key={p.title}>
+            <span className="useCaseEmoji" aria-hidden>{p.emoji}</span>
+            <div className="useCaseText">
+              <strong>{p.title}</strong>
+              <span>{p.text}</span>
+            </div>
+          </div>
+        ))}
+      </div>
 
       <h2>例えば、こんな風に。</h2>
 
