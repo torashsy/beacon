@@ -137,6 +137,13 @@ test("a profile QR is personalized and shareable as an image", async ({ page }) 
     "background-image",
     "linear-gradient(135deg, rgb(252, 231, 243), rgb(243, 232, 255))",
   );
+  const qrCard = dialog.locator(".qrShareCard");
+  await expect.poll(() =>
+    qrCard.evaluate((element) =>
+      getComputedStyle(element).getPropertyValue("--qr-accent").trim(),
+    ),
+  ).toBe("#e4f7fd");
+  await expect(qrCard).toHaveCSS("color", "rgb(23, 50, 62)");
   const qrImage = dialog.getByRole("img", { name: "@qr_user のQRコード" });
   await expect(qrImage).toHaveAttribute("src", /^data:image\/svg\+xml/);
   const svg = decodeURIComponent((await qrImage.getAttribute("src")) ?? "");
