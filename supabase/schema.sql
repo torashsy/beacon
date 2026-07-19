@@ -607,7 +607,8 @@ grant execute on function get_public_page(text)                                 
 grant execute on function reissue_recovery(text,text)                                 to anon;
 grant execute on function get_my_follows(text,text)                                   to anon;
 grant execute on function save_my_follows(text,text,jsonb)                            to anon;
-grant execute on function delete_account(text,text)                                   to anon;
+revoke all on function delete_account(text,text) from public, anon, authenticated;
+grant execute on function delete_account(text,text)                                   to service_role;
 grant execute on function create_session(text,text)                                   to anon;
 grant execute on function delete_session(text,text)                                   to anon;
 revoke all on function revoke_other_sessions(text,text) from public, authenticated;
@@ -805,6 +806,22 @@ end $$;
 
 -- 毎週日曜 4:00 UTC に実行
 select cron.schedule('cleanup-orphaned-avatars', '0 4 * * 0', $$select cleanup_orphaned_avatars();$$);
+
+-- Superseded by the delete-account Edge Function. It deletes every object in
+-- avatars/{handle} before database deletion and leaves the account retryable
+-- when Storage is unavailable.
+do $$
+declare
+  cleanup_job_id bigint;
+begin
+  for cleanup_job_id in
+    select jobid from cron.job where jobname = 'cleanup-orphaned-avatars'
+  loop
+    perform cron.unschedule(cleanup_job_id);
+  end loop;
+end
+$$;
+drop function if exists cleanup_orphaned_avatars();
 
 -- フォローリストはサーバーに置かない（端末ローカル保存）。
 -- 未フォロー利用者の取得はID完全一致に限定する。名前・属性・ハッシュタグ等による

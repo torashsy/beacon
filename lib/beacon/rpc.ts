@@ -189,7 +189,13 @@ export async function deleteAccount(
   handle: string,
   pass: string,
 ): Promise<void> {
-  unwrap(await db.rpc("delete_account", { p_handle: handle, p_pass: pass }));
+  const { data, error } = await db.functions.invoke("delete-account", {
+    body: { handle, secret: pass },
+  });
+  if (error) throw new Error(error.message);
+  if (data?.deleted !== true) {
+    throw new Error(data?.error ?? "account deletion failed");
+  }
 }
 
 // ---- プロフィール ----
