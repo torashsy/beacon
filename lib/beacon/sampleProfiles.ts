@@ -99,7 +99,7 @@ export const SAMPLE_PROFILES: SampleProfile[] = [
     id: "restaurant",
     label: "お店",
     data: {
-      handle: "cafe_mihon",
+      handle: "mihon_cafe",
       profile: {
         name: "喫茶みほん",
         bio: "駅から徒歩3分の小さな喫茶店☕ 手作りケーキと自家焙煎コーヒーのお店です。11:00-19:00(水曜定休)。一人でものんびり過ごせる空間です。",
