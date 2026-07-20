@@ -139,12 +139,6 @@ export function PublicProfileCard({
         ) : null}
       </div>
 
-      {content.photos.length > 0 && (
-        <section className="profileContentSection">
-          <ProfilePhotoGallery photos={content.photos} />
-        </section>
-      )}
-
       {pubcal.length > 0 && (
         <div className="calpub" style={{ padding: "0 16px 18px" }}>
           <h2 style={{ margin: "8px 4px 10px" }}>カレンダー</h2>
@@ -155,6 +149,12 @@ export function PublicProfileCard({
             </div>
           ))}
         </div>
+      )}
+
+      {content.photos.length > 0 && (
+        <section className="profileContentSection">
+          <ProfilePhotoGallery photos={content.photos} />
+        </section>
       )}
     </div>
   );
