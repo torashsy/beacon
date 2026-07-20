@@ -1,5 +1,7 @@
+import type { FeatureIconName } from "@/components/beacon/icons";
+
 export interface SellingPoint {
-  emoji: string;
+  icon: FeatureIconName;
   title: string;
   text: string;
 }
@@ -7,17 +9,17 @@ export interface SellingPoint {
 /** トップページと使い方ページで共通して見せるセールスポイント。 */
 export const SELLING_POINTS: SellingPoint[] = [
   {
-    emoji: "🔗",
+    icon: "link",
     title: "ぜんぶ、ひとつのURLに。",
     text: "SNSやリンクを1ページに。\nあなたのページはQRコードで簡単に共有できます。",
   },
   {
-    emoji: "🔑",
+    icon: "key",
     title: "Face ID・生体認証で3秒ログイン。",
     text: "パスワードは要りません。\n生体認証（パスキー）で今すぐはじめましょう。",
   },
   {
-    emoji: "🗓",
+    icon: "calendar",
     title: "カレンダーも載せられる。更新も伝わる。",
     text: "イベントや予定を共有しましょう。\n更新すると、あなたのフォロワーに通知が届きます。",
   },

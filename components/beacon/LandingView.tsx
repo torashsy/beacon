@@ -7,6 +7,7 @@ import { SAMPLE_PROFILES } from "@/lib/beacon/sampleProfiles";
 import { SELLING_POINTS } from "@/lib/beacon/sellingPoints";
 import { createClient } from "@/lib/supabase/client";
 import { getPublicPage } from "@/lib/beacon/rpc";
+import { FeatureIcon } from "./icons";
 
 /** 未ログイン時のトップ。操作と完成イメージだけを見せる。 */
 
@@ -85,7 +86,9 @@ export function LandingView({
       <div className="guideUseCases landingPoints">
         {SELLING_POINTS.map((p) => (
           <div className="useCase" key={p.title}>
-            <span className="useCaseEmoji" aria-hidden>{p.emoji}</span>
+            <span className="useCaseEmoji">
+              <FeatureIcon name={p.icon} />
+            </span>
             <div className="useCaseText">
               <strong>{p.title}</strong>
               <span>{p.text}</span>
