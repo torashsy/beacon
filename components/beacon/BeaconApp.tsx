@@ -837,6 +837,10 @@ export function BeaconApp() {
               style={{
                 marginLeft: "auto",
                 marginRight: 10,
+                minWidth: 0,
+                overflow: "hidden",
+                whiteSpace: "nowrap",
+                textOverflow: "ellipsis",
                 fontSize: 11,
                 fontWeight: 700,
                 color:
@@ -849,7 +853,7 @@ export function BeaconApp() {
             >
               {saveStatus === "saving" && "保存中…"}
               {saveStatus === "saved" && "保存済み ✓"}
-              {saveStatus === "error" && "保存できませんでした"}
+              {saveStatus === "error" && "保存失敗"}
             </span>
           )}
           {session && overlay === "none" && (
