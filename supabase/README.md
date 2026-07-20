@@ -35,12 +35,22 @@
 
 検証は `node scripts/conn-test.mjs` を実行する。テスト用アカウントは最後に削除される。
 
-## 今後の変更
+## 今後の変更（自動適用）
 
-1. 既存SQLを直接編集するだけでなく、目的単位の `YYYYMMDDHHMM_name.sql` を追加する。
+`supabase/migrations/` にファイルを追加して `main` にマージすると、
+`.github/workflows/supabase-migrate.yml` が自動で本番に適用する
+（`supabase db push`。認証は既存の `SUPABASE_ACCESS_TOKEN` / `SUPABASE_PROJECT_ID`）。
+SQL Editorへ手動で貼る必要はない。
+
+1. `supabase migration new <name>` 相当のファイル名（`YYYYMMDDHHMMSS_name.sql`）で
+   `supabase/migrations/` に追加する。
 2. SQLは可能な限り冪等にする（`if exists` / `if not exists`）。
-3. ステージングへ適用して `conn-test.mjs` を通す。
-4. 本番適用後にこのREADMEの適用済み一覧を更新する。
-5. Edge Function変更時は対象名を指定して `npx supabase functions deploy <name>` を実行する。
+3. `main` にマージすると自動適用される。適用後にこのREADMEの一覧を更新する。
+4. Edge Function変更時は対象名を指定して `npx supabase functions deploy <name>` を実行する（未自動化）。
+
+ルート直下の `*-migration.sql`（このディレクトリ直下、`migrations/` 配下ではない方）は
+自動適用の仕組み以前に手動適用してきた履歴で、`.github/workflows/supabase-baseline.yml`
+（一度だけ実行）が本番の現在のスキーマを `supabase/migrations/` の最初の1本として
+取り込み済み。今後は参照用に残すのみ。
 
 アクセストークン、DBパスワード、service role keyはリポジトリへ保存しない。
