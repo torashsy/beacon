@@ -21,10 +21,13 @@ export function dkey(y: number, m: number, d: number): string {
   );
 }
 
-/** "YYYY-MM-DD" → "M/D" 表示。 */
+const DOW_JA = ["日", "月", "火", "水", "木", "金", "土"];
+
+/** "YYYY-MM-DD" → "M/D(曜)" 表示。 */
 export function fmtMd(k: string): string {
-  const [, m, d] = k.split("-");
-  return `${+m}/${+d}`;
+  const [y, m, d] = k.split("-").map(Number);
+  const dow = DOW_JA[new Date(y, m - 1, d).getDay()];
+  return `${m}/${d}(${dow})`;
 }
 
 /** 復旧コードの入力を正規化（空白・ハイフン除去 → 大文字）。 */
