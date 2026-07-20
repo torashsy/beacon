@@ -712,6 +712,7 @@ function CalendarPane({
   const [m, setM] = useState(now.getMonth());
   const [sel, setSel] = useState<string | null>(null);
   const [memo, setMemo] = useState("");
+  const [pub, setPub] = useState(true);
   const [busy, setBusy] = useState(false);
 
   const first = new Date(y, m, 1).getDay();
@@ -721,6 +722,7 @@ function CalendarPane({
     setSel(k);
     const e = me.cal[k];
     setMemo(e?.memo ?? "");
+    setPub(e?.pub ?? true);
   }
   function nav(d: -1 | 1) {
     let nm = m + d;
@@ -736,6 +738,7 @@ function CalendarPane({
     setY(ny);
     setSel(null);
     setMemo("");
+    setPub(true);
   }
   async function save() {
     if (!sel) {
@@ -744,7 +747,7 @@ function CalendarPane({
     }
     setBusy(true);
     try {
-      if (await onSaveCal(sel, memo.trim(), true)) toast("保存しました");
+      if (await onSaveCal(sel, memo.trim(), pub)) toast("保存しました");
     } finally {
       setBusy(false);
     }
@@ -796,7 +799,7 @@ function CalendarPane({
               onClick={() => selectDay(k)}
             >
               {d}
-              {entry?.memo && <span className="dot" />}
+              {entry?.memo && <span className={`dot ${entry.pub ? "" : "priv"}`} />}
             </div>
           );
         })}
@@ -812,6 +815,10 @@ function CalendarPane({
         placeholder="例: ライブ 19:00〜"
         maxLength={100}
       />
+      <label className="checkRow" style={{ margin: "10px 0 14px" }}>
+        <input type="checkbox" checked={pub} onChange={(e) => setPub(e.target.checked)} />
+        公開する（オフにすると自分だけのメモになります）
+      </label>
       <button className="btn sig" disabled={busy} onClick={save}>
         {busy ? "保存中…" : "保存する"}
       </button>
