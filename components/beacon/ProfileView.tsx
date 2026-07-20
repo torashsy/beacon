@@ -89,9 +89,13 @@ export function ProfileView({
 
   // OS共有シートが使えない環境（デスクトップ等）ではURLコピーにフォールバック
   async function share() {
+    // text を渡すことで、Xなどシェア先アプリの投稿本文に定型メッセージが
+    // 自動で入る（urlだけだとリンクのみ貼られ、文面が空になるため）。
+    const displayName = me.profile.name.trim();
+    const shareText = `${displayName ? `${displayName}（@${handle}）` : `@${handle}`}のvia-miページ`;
     if (typeof navigator.share === "function") {
       try {
-        await navigator.share({ title: `@${handle} · via-mi`, url: pageUrl() });
+        await navigator.share({ title: `@${handle} · via-mi`, text: shareText, url: pageUrl() });
       } catch {
         /* キャンセルは無視 */
       }
@@ -740,6 +744,14 @@ function CalendarPane({
     setMemo("");
     setPub(true);
   }
+  function goToday() {
+    setY(now.getFullYear());
+    setM(now.getMonth());
+    setSel(null);
+    setMemo("");
+    setPub(true);
+  }
+  const isCurrentMonth = y === now.getFullYear() && m === now.getMonth();
   async function save() {
     if (!sel) {
       toast("日付を選んでください");
@@ -766,8 +778,15 @@ function CalendarPane({
         <button className="calnav" onClick={() => nav(-1)}>
           ‹
         </button>
-        <div className="calmon">
-          {y}年{m + 1}月
+        <div className="calmonWrap">
+          <div className="calmon">
+            {y}年{m + 1}月
+          </div>
+          {!isCurrentMonth && (
+            <button className="calToday" onClick={goToday}>
+              今日
+            </button>
+          )}
         </div>
         <button className="calnav" onClick={() => nav(1)}>
           ›

@@ -716,6 +716,50 @@ h1 {
     box-shadow var(--motion-quick) var(--ease-state);
 }
 .followAction.line { animation: follow-settle var(--motion-ui) var(--ease-ui); }
+/* 更新通知の「ランプ」表示: ひと目でわかるよう発光する丸ドットにする。 */
+.navLamp {
+  position: absolute;
+  top: 4px;
+  right: 50%;
+  margin-right: -19px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--alert);
+  box-shadow: 0 0 0 2px var(--surface);
+  animation: lamp-glow 1.8s ease-in-out infinite;
+}
+.followLamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 3px 0 1px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.followLamp .bulb {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  background: var(--em);
+  box-shadow: 0 0 5px 1px color-mix(in srgb, var(--em) 70%, transparent);
+  animation: lamp-glow 1.8s ease-in-out infinite;
+}
+.followLamp.changed .bulb { background: var(--em); }
+.followLamp.deleted { color: var(--alert); }
+.followLamp.deleted .bulb {
+  background: var(--alert);
+  box-shadow: 0 0 5px 1px color-mix(in srgb, var(--alert) 70%, transparent);
+}
+@keyframes lamp-glow {
+  0%, 100% { filter: brightness(1); opacity: .85; }
+  50% { filter: brightness(1.35); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .navLamp, .followLamp .bulb { animation: none; }
+}
 @keyframes follow-settle {
   from { transform: scale(.96); }
   to { transform: scale(1); }
@@ -1294,6 +1338,11 @@ textarea {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+.qrBrandWordmark {
+  display: block;
+  height: 15px;
+  width: auto;
 }
 .qrProfileName {
   max-width: 100%;
@@ -2447,6 +2496,27 @@ textarea {
 .calmon {
   font-weight: 800;
   font-size: 15px;
+}
+.calmonWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  justify-content: center;
+}
+.calToday {
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--emd);
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.calToday:hover {
+  border-color: var(--em);
 }
 .calnav {
   width: 32px;

@@ -243,6 +243,12 @@ export async function renderQrSharePng(
   } catch {
     brandIcon = null;
   }
+  let brandWordmark: HTMLImageElement | null = null;
+  try {
+    brandWordmark = await loadImage("/via-mi-logo.png");
+  } catch {
+    brandWordmark = null;
+  }
 
   if (brandIcon) {
     context.save();
@@ -251,10 +257,18 @@ export async function renderQrSharePng(
     context.drawImage(brandIcon, 88, 58, 60, 60);
     context.restore();
   }
-  context.fillStyle = foreground;
-  context.font = '800 56px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-  context.textAlign = "left";
-  context.fillText("via-mi", brandIcon ? 168 : 88, 108);
+  const wordmarkX = brandIcon ? 168 : 88;
+  if (brandWordmark) {
+    const wordmarkHeight = 46;
+    const wordmarkWidth =
+      wordmarkHeight * (brandWordmark.width / brandWordmark.height);
+    context.drawImage(brandWordmark, wordmarkX, 65, wordmarkWidth, wordmarkHeight);
+  } else {
+    context.fillStyle = foreground;
+    context.font = '800 56px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    context.textAlign = "left";
+    context.fillText("via-mi", wordmarkX, 108);
+  }
 
   const displayName = options.name.trim() || `@${options.handle}`;
   fitText(context, displayName, 860, 64);

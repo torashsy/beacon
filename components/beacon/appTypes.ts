@@ -43,7 +43,16 @@ export function authErrorMessage(e: unknown): string {
   if (m.includes("bad recovery")) return "IDまたは復旧コードが違います";
   if (m.includes("pass too short")) return "パスコードは10文字以上にしてください";
   if (m.includes("pass too long")) return "パスコードは72バイト以内にしてください";
+  if (m.includes("account not ready") || m.includes("suspended")) {
+    return "このIDのアカウントが見つかりません。削除されている可能性があります";
+  }
   if (m.includes("auth")) return "ログインを確認できませんでした";
+  // サーバーが応答した上での却下（AuthApiError）は、この端末に残っていたパスキーの
+  // アカウントがすでに削除された場合にも起こる。真の通信断（fetch失敗など）と
+  // 区別し、「通信エラー」と誤解させない案内にする。
+  if (name === "AuthApiError" || m.toLowerCase().includes("credential") || m.toLowerCase().includes("invalid login")) {
+    return "このパスキーに対応するIDが見つかりません。アカウントが削除されている可能性があります";
+  }
   return "通信に失敗しました。しばらくして再度お試しください";
 }
 
