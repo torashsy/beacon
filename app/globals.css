@@ -578,6 +578,30 @@ h1 {
   margin: 4px 4px 2px;
   letter-spacing: -0.01em;
 }
+/* 「via-miとは」見出し: ラテン文字と日本語の混植でフォントの高さ・位置が
+   そろわないため、ブランドロゴ画像＋「とは」の組み合わせにする。 */
+.brandHeading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.brandWordmark {
+  display: inline-block;
+  width: 126px;
+  height: 24px;
+  background-image: url("/via-mi-wordmark.png");
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: left center;
+}
+html[data-color-mode="dark"] .brandWordmark {
+  background-image: url("/via-mi-wordmark-dark.png");
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-color-mode="light"]) .brandWordmark {
+    background-image: url("/via-mi-wordmark-dark.png");
+  }
+}
 .lead {
   font-size: 12.5px;
   color: var(--muted);
