@@ -11,7 +11,7 @@
 
 ## 現行 via-mi プロジェクト
 
-2026-07-16時点で以下を適用・検証済み。
+2026-07-20時点で以下を適用・検証済み。
 
 - `remove-legacy-update-profile.sql`
 - `authenticated-storage-migration.sql`
@@ -27,6 +27,7 @@
 - `recovery-contact-migration.sql`
 - `email-only-recovery-migration.sql`
 - `push-notifications-migration.sql`
+- `hide-past-calendar-migration.sql`
 - `create-avatar-upload` Edge Function
 - `create-passkey-user` Edge Function（Verify JWT off）
 - `send-follow-update` Edge Function（Verify JWT off、VAPID秘密鍵を使用）

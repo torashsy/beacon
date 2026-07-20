@@ -12,6 +12,18 @@ export interface SampleProfile {
   };
 }
 
+/**
+ * 「今日から n 日後」を YYYY-MM-DD で返す。
+ * 見本の予定は常に未来日で見せたいが、実アカウントの予定を編集し続けるのは
+ * 運用が面倒なので、固定の絶対日付ではなくこの相対日付で自動的に鮮度を保つ。
+ * （get_public_page は過去日の予定を返さないため、絶対日付だと日が経つと消える）
+ */
+function daysFromNow(offset: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  return d.toISOString().slice(0, 10);
+}
+
 export const SAMPLE_PROFILES: SampleProfile[] = [
   {
     id: "personal",
@@ -34,9 +46,9 @@ export const SAMPLE_PROFILES: SampleProfile[] = [
         { type: "line", url: "#", label: "オープンチャット", descr: "同担さんと交流してます", status: "live" },
       ],
       pubcal: [
-        { d: "2026-08-08", memo: "みほんずワンマン参戦🩷" },
-        { d: "2026-08-23", memo: "特典会、当選しますように🙏" },
-        { d: "2026-09-01", memo: "新曲MV公開、朝から待機" },
+        { d: daysFromNow(2), memo: "みほんずワンマン参戦🩷" },
+        { d: daysFromNow(12), memo: "特典会、当選しますように🙏" },
+        { d: daysFromNow(25), memo: "新曲MV公開、朝から待機" },
       ],
     },
   },
@@ -53,7 +65,7 @@ export const SAMPLE_PROFILES: SampleProfile[] = [
         av_theme: 5,
         av_url: "",
         bn_url: "",
-        status: "8/8ワンマンのチケット発売中🎫 残りわずかです！",
+        status: "ワンマンのチケット発売中🎫 残りわずかです！",
       },
       channels: [
         { type: "x", url: "#", label: "メイン垢", descr: "日常とお知らせを毎日更新", status: "live" },
@@ -62,9 +74,10 @@ export const SAMPLE_PROFILES: SampleProfile[] = [
         { type: "line", url: "#", label: "公式LINE", descr: "ライブの先行案内・特典情報はこちら", status: "live" },
       ],
       pubcal: [
-        { d: "2026-08-08", memo: "ワンマンライブ 19:00〜 @渋谷" },
-        { d: "2026-08-23", memo: "特典会 14:00〜 @秋葉原" },
-        { d: "2026-09-01", memo: "新曲MV公開予定🎥" },
+        // 「趣味」ペルソナ（推し活オタク）が参戦する予定と同じ日程にしている。
+        { d: daysFromNow(2), memo: "ワンマンライブ 19:00〜 @渋谷" },
+        { d: daysFromNow(12), memo: "特典会 14:00〜 @秋葉原" },
+        { d: daysFromNow(25), memo: "新曲MV公開予定🎥" },
       ],
     },
   },
@@ -90,8 +103,8 @@ export const SAMPLE_PROFILES: SampleProfile[] = [
         { type: "mail", url: "#", label: "お仕事のご依頼", descr: "商用利用のご相談はこちらへ", status: "live" },
       ],
       pubcal: [
-        { d: "2026-08-05", memo: "夏コミ新刊の入稿締切📮" },
-        { d: "2026-08-30", memo: "デザインフェスタ出展 @ビッグサイト" },
+        { d: daysFromNow(5), memo: "夏コミ新刊の入稿締切📮" },
+        { d: daysFromNow(20), memo: "デザインフェスタ出展 @ビッグサイト" },
       ],
     },
   },
@@ -117,9 +130,9 @@ export const SAMPLE_PROFILES: SampleProfile[] = [
         { type: "other", url: "#", label: "地図・アクセス", descr: "Googleマップで開く", status: "live" },
       ],
       pubcal: [
-        { d: "2026-08-01", memo: "夏限定・かき氷はじめました🍧" },
-        { d: "2026-08-15", memo: "臨時休業をいただきます" },
-        { d: "2026-08-28", memo: "秋の新作ケーキ、試作中です🍂" },
+        { d: daysFromNow(1), memo: "季節限定・かき氷はじめました🍧" },
+        { d: daysFromNow(9), memo: "臨時休業をいただきます" },
+        { d: daysFromNow(16), memo: "新作ケーキ、試作中です🍰" },
       ],
     },
   },
@@ -136,7 +149,7 @@ export const SAMPLE_PROFILES: SampleProfile[] = [
         av_theme: 9,
         av_url: "",
         bn_url: "",
-        status: "秋の新商品を発表しました✏️",
+        status: "新商品を発表しました✏️",
       },
       channels: [
         { type: "heading", url: "", label: "採用情報", descr: "", status: "live" },
@@ -148,8 +161,8 @@ export const SAMPLE_PROFILES: SampleProfile[] = [
         { type: "mail", url: "#", label: "お問い合わせ", descr: "広報窓口(平日10:00-17:00)", status: "live" },
       ],
       pubcal: [
-        { d: "2026-08-05", memo: "オンライン会社説明会 14:00〜" },
-        { d: "2026-09-10", memo: "新商品「するするノート」発売" },
+        { d: daysFromNow(7), memo: "オンライン会社説明会 14:00〜" },
+        { d: daysFromNow(30), memo: "新商品「するするノート」発売" },
       ],
     },
   },

@@ -13,13 +13,10 @@ import { getPublicPage } from "@/lib/beacon/rpc";
 /**
  * 見本ハンドルの実アカウントに表示できる中身があるか。
  * アカウントを作った直後の空プロフィールを見本に出さないためのガード。
+ * カレンダーは常に自動生成の相対日付を使う（下記参照）ため判定には含めない。
  */
 function hasContent(data: PublicCardData): boolean {
-  return (
-    data.channels.some((c) => c.status === "live") ||
-    data.pubcal.length > 0 ||
-    Boolean(data.profile.bio)
-  );
+  return data.channels.some((c) => c.status === "live") || Boolean(data.profile.bio);
 }
 
 export function LandingView({
@@ -67,7 +64,13 @@ export function LandingView({
     };
   }, [handle, live]);
 
-  const card = live[handle] ?? sample.data;
+  // カレンダーだけは実アカウントの内容に関わらず、常に見本側の相対日付を使う。
+  // 実アカウントの予定は日が経つと過去日として非公開ページから消えるため、
+  // 見本の鮮度維持を運営者の手動更新に依存させない。
+  const liveData = live[handle];
+  const card: PublicCardData = liveData
+    ? { ...liveData, pubcal: sample.data.pubcal }
+    : sample.data;
 
   return (
     <section className="view">
