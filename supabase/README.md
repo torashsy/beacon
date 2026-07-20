@@ -28,6 +28,7 @@
 - `email-only-recovery-migration.sql`
 - `push-notifications-migration.sql`
 - `hide-past-calendar-migration.sql`
+- `abolish-private-calendar-migration.sql`
 - `create-avatar-upload` Edge Function
 - `create-passkey-user` Edge Function（Verify JWT off）
 - `send-follow-update` Edge Function（Verify JWT off、VAPID秘密鍵を使用）

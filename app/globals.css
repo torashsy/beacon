@@ -438,7 +438,7 @@ body {
   width: 132px;
   height: 42px;
   overflow: hidden;
-  background-image: url("/via-mi-logo.png");
+  background-image: url("/via-mi-logo.svg");
   background-repeat: no-repeat;
   background-size: contain;
   background-position: center;
@@ -448,11 +448,11 @@ body {
 }
 /* ダークモードでは文字部分が読みにくいため、文字を白くした差し替え画像を使う。 */
 html[data-color-mode="dark"] .logo {
-  background-image: url("/via-mi-logo-dark.png");
+  background-image: url("/via-mi-logo-dark.svg");
 }
 @media (prefers-color-scheme: dark) {
   html:not([data-color-mode="light"]) .logo {
-    background-image: url("/via-mi-logo-dark.png");
+    background-image: url("/via-mi-logo-dark.svg");
   }
 }
 
