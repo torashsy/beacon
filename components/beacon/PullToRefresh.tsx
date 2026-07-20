@@ -184,7 +184,9 @@ export function PullToRefresh({
       </div>
       <div
         className={`pullRefreshSurface ${phase}`}
-        style={{ transform: `translate3d(0, ${distance}px, 0)` }}
+        // distance 0 のとき transform を残すと、恒等変換でも子孫の position: fixed の
+        // 基準がこの要素になり、モーダルが画面外(ページ下端)に配置されてしまう。
+        style={distance > 0 ? { transform: `translate3d(0, ${distance}px, 0)` } : undefined}
       >
         {children}
       </div>

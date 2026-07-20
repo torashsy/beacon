@@ -615,7 +615,7 @@ test("pulling down from the top offers a refresh", async ({ page }) => {
   expect(deepPullY).toBeLessThan(118);
   await page.evaluate(() => document.dispatchEvent(new Event("touchcancel", { bubbles: true })));
   await expect(page.locator(".pullRefresh")).not.toHaveClass(/show/);
-  await expect(page.locator(".pullRefreshSurface")).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
+  await expect(page.locator(".pullRefreshSurface")).toHaveCSS("transform", "none");
 
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.evaluate(() => {
@@ -656,7 +656,7 @@ test("pulling down from the top offers a refresh", async ({ page }) => {
   expect(spinnerAfter).not.toBe(spinnerBefore);
   await expect(page.locator(".pullRefresh")).toHaveClass(/returning/, { timeout: 1200 });
   await expect(page.locator(".pullRefreshSurface")).toHaveClass(/returning/);
-  await expect(page.locator(".pullRefreshSurface")).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
+  await expect(page.locator(".pullRefreshSurface")).toHaveCSS("transform", "none");
   // A second pull can take over while the previous return animation is still
   // settling, so rapid manual refreshes never feel locked out.
   await page.evaluate(() => {
