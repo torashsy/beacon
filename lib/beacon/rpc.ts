@@ -257,14 +257,13 @@ export async function saveChannels(
 
 // ---- カレンダー ----
 
-/** 1 日分のメモを保存。pub=true で公開、false で非公開。memo が空なら削除。 */
+/** 1 日分のメモを保存（すべて公開）。memo が空なら削除。 */
 export async function saveCal(
   db: DB,
   handle: string,
   pass: string,
   date: string,
   memo: string,
-  pub: boolean,
 ): Promise<void> {
   unwrap(
     await db.rpc("save_cal", {
@@ -272,20 +271,8 @@ export async function saveCal(
       p_pass: pass,
       p_date: date,
       p_memo: memo,
-      p_pub: pub,
     }),
   );
-}
-
-/** 自分の非公開カレンダーを取得（要パスコード）。 */
-export async function getPrivateCal(
-  db: DB,
-  handle: string,
-  pass: string,
-): Promise<CalMemo[]> {
-  return (unwrap(
-    await db.rpc("get_private_cal", { p_handle: handle, p_pass: pass }),
-  ) ?? []) as CalMemo[];
 }
 
 // ---- クリック数（本人だけが見られる簡易アナリティクス）----

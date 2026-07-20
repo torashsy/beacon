@@ -207,8 +207,7 @@ grant execute on function get_public_page(text) to anon, authenticated;
 -- recovery contact is being verified. Existing RPCs still require the bst_ token.
 grant execute on function update_profile(text,text,text,text,text,int,text,text,text,int) to authenticated;
 grant execute on function save_channels(text,text,jsonb) to authenticated;
-grant execute on function save_cal(text,text,date,text,boolean) to authenticated;
-grant execute on function get_private_cal(text,text) to authenticated;
+grant execute on function save_cal(text,text,date,text) to authenticated;
 grant execute on function get_my_follows(text,text) to authenticated;
 grant execute on function save_my_follows(text,text,jsonb) to authenticated;
 grant execute on function get_clicks(text,text) to authenticated;

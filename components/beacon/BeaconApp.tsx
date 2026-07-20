@@ -10,7 +10,6 @@ import {
   getAccountSecurity,
   getClicks,
   getMyFollows,
-  getPrivateCal,
   getPublicPage,
   saveMyFollows,
   saveCal as rpcSaveCal,
@@ -182,8 +181,6 @@ export function BeaconApp() {
     void notifyFollowers(db, session.handle, session.pass).catch(() => {});
   }, [db, session]);
 
-  const calLoading = useRef(false);
-
   useEffect(() => {
     const badgeNavigator = navigator as Navigator & {
       setAppBadge?: (count?: number) => Promise<void>;
@@ -255,14 +252,11 @@ export function BeaconApp() {
   const loadMe = useCallback(
     async (handle: string, pass: string): Promise<Me> => {
       // カレンダーもログイン時に読み込んでおく（プレビュー/自己フォローの
-      // スナップショットが公開メモを正しく含むように）。公開分は get_public_page に
-      // 含まれるので、非公開分だけ追加取得する。失敗時は calLoaded=false で遅延ロードへ。
+      // スナップショットが公開メモを正しく含むように）。すべて公開のため
+      // get_public_page の cal だけで完結する。
       const cal: CalMap = {};
-      const [page, privateCal, clicks, security] = await Promise.all([
+      const [page, clicks, security] = await Promise.all([
         getPublicPage(db, handle),
-        getPrivateCal(db, handle, pass)
-          .then((entries) => ({ entries, loaded: true }))
-          .catch(() => ({ entries: [], loaded: false })),
         getClicks(db, handle, pass).catch(() => ({})),
         getAccountSecurity(db, handle, pass).catch(() => ({
           passkey_linked: false,
@@ -271,14 +265,12 @@ export function BeaconApp() {
           recovery_email_masked: null,
         })),
       ]);
-      (page?.cal ?? []).forEach((e) => (cal[e.d] = { memo: e.memo, pub: true }));
-      privateCal.entries.forEach((e) => (cal[e.d] = { memo: e.memo, pub: false }));
+      (page?.cal ?? []).forEach((e) => (cal[e.d] = { memo: e.memo }));
       return {
         profile: page?.profile ?? emptyProfile(handle),
         followerCount: page?.follower_count ?? 0,
         channels: ensureIds(page?.channels ?? []),
         cal,
-        calLoaded: privateCal.loaded,
         clicks,
         passkeyLinked: security.passkey_linked,
         recoveryVerified: security.recovery_verified,
@@ -528,22 +520,21 @@ export function BeaconApp() {
   );
 
   const persistCal = useCallback(
-    async (date: string, memo: string, pub: boolean): Promise<boolean> => {
+    async (date: string, memo: string): Promise<boolean> => {
       if (!session) return false;
       const previous = me?.cal[date];
-      const wasPublic = Boolean(previous?.pub);
       setMe((current) => {
         if (!current) return current;
         const cal = { ...current.cal };
-        if (memo) cal[date] = { memo, pub };
+        if (memo) cal[date] = { memo };
         else delete cal[date];
         return { ...current, cal };
       });
       const ok = await runWrite(() =>
-        rpcSaveCal(db, session.handle, session.pass, date, memo, pub),
+        rpcSaveCal(db, session.handle, session.pass, date, memo),
       );
       if (ok) {
-        if (pub || wasPublic) pushFollowUpdate();
+        pushFollowUpdate();
       } else {
         setMe((current) => {
           if (!current) return current;
@@ -595,25 +586,6 @@ export function BeaconApp() {
     },
     [db, session, toast],
   );
-
-  const loadCal = useCallback(async () => {
-    if (!session || !me || me.calLoaded || calLoading.current) return;
-    calLoading.current = true;
-    try {
-      const [page, privList] = await Promise.all([
-        getPublicPage(db, session.handle),
-        getPrivateCal(db, session.handle, session.pass),
-      ]);
-      const cal: CalMap = {};
-      (page?.cal ?? []).forEach((e) => (cal[e.d] = { memo: e.memo, pub: true }));
-      privList.forEach((e) => (cal[e.d] = { memo: e.memo, pub: false }));
-      setMe((m) => (m ? { ...m, cal, calLoaded: true } : m));
-    } catch {
-      toast("カレンダーの読み込みに失敗しました");
-    } finally {
-      calLoading.current = false;
-    }
-  }, [db, session, me, toast]);
 
   const saveProfile = useCallback(
     async (edit: EditResult): Promise<void> => {
@@ -938,7 +910,6 @@ export function BeaconApp() {
                   onSaveCal={persistCal}
                   onSaveContent={persistProfileContent}
                   onUploadPhoto={uploadProfilePhoto}
-                  onLoadCal={loadCal}
                   toast={toast}
                 />
               </div>
@@ -951,7 +922,6 @@ export function BeaconApp() {
                   onSaveCal={persistCal}
                   onSaveContent={persistProfileContent}
                   onUploadPhoto={uploadProfilePhoto}
-                  onLoadCal={loadCal}
                   toast={toast}
                 />
             )
