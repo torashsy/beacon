@@ -9,8 +9,8 @@ export interface Session {
   pass: string;
 }
 
-/** dkey(YYYY-MM-DD) → メモと公開フラグ。 */
-export type CalMap = Record<string, { memo: string; pub: boolean }>;
+/** dkey(YYYY-MM-DD) → メモ（すべて公開）。 */
+export type CalMap = Record<string, { memo: string }>;
 
 /** ログイン中ユーザーの編集対象データ。 */
 export interface Me {
@@ -18,7 +18,6 @@ export interface Me {
   followerCount: number;
   channels: Channel[]; // 各要素は React key 用に id を必ず持たせる
   cal: CalMap;
-  calLoaded: boolean;
   clicks: Record<string, number>; // URL → クリック数（本人だけが取得可能）
   passkeyLinked: boolean;
   recoveryVerified: boolean;

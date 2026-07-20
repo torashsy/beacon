@@ -45,7 +45,6 @@ export function ProfileView({
   onSaveCal,
   onSaveContent,
   onUploadPhoto,
-  onLoadCal,
   toast,
 }: {
   me: Me;
@@ -54,8 +53,7 @@ export function ProfileView({
   editing?: boolean;
   focusSection?: ContentTab;
   onSaveChannels: (next: Channel[]) => Promise<boolean>;
-  onSaveCal: (date: string, memo: string, pub: boolean) => Promise<boolean>;
-  onLoadCal: () => void;
+  onSaveCal: (date: string, memo: string) => Promise<boolean>;
   onSaveContent: (next: ProfileContent) => Promise<boolean>;
   onUploadPhoto: (file: File) => Promise<string | null>;
   toast: ToastFn;
@@ -68,13 +66,9 @@ export function ProfileView({
   // 公開ページ側（get_public_page）も過去日を自動で除外するため、プレビューも合わせる。
   const today = new Date().toISOString().slice(0, 10);
   const publicCal = Object.entries(me.cal)
-    .filter(([d, value]) => value.pub && value.memo && d >= today)
+    .filter(([d, value]) => value.memo && d >= today)
     .map(([d, value]) => ({ d, memo: value.memo }))
     .sort((a, b) => a.d.localeCompare(b.d));
-
-  useEffect(() => {
-    if (tab === "cal" && !me.calLoaded) onLoadCal();
-  }, [tab, me.calLoaded, onLoadCal]);
 
   useEffect(() => {
     if (!editing || !focusSection) return;
@@ -708,7 +702,7 @@ function CalendarPane({
   toast,
 }: {
   me: Me;
-  onSaveCal: (date: string, memo: string, pub: boolean) => Promise<boolean>;
+  onSaveCal: (date: string, memo: string) => Promise<boolean>;
   toast: ToastFn;
 }) {
   const now = new Date();
@@ -716,7 +710,6 @@ function CalendarPane({
   const [m, setM] = useState(now.getMonth());
   const [sel, setSel] = useState<string | null>(null);
   const [memo, setMemo] = useState("");
-  const [pub, setPub] = useState(true);
   const [busy, setBusy] = useState(false);
 
   const first = new Date(y, m, 1).getDay();
@@ -724,9 +717,7 @@ function CalendarPane({
 
   function selectDay(k: string) {
     setSel(k);
-    const e = me.cal[k];
-    setMemo(e?.memo ?? "");
-    setPub(e?.pub ?? true);
+    setMemo(me.cal[k]?.memo ?? "");
   }
   function nav(d: -1 | 1) {
     let nm = m + d;
@@ -742,14 +733,12 @@ function CalendarPane({
     setY(ny);
     setSel(null);
     setMemo("");
-    setPub(true);
   }
   function goToday() {
     setY(now.getFullYear());
     setM(now.getMonth());
     setSel(null);
     setMemo("");
-    setPub(true);
   }
   const isCurrentMonth = y === now.getFullYear() && m === now.getMonth();
   async function save() {
@@ -759,7 +748,7 @@ function CalendarPane({
     }
     setBusy(true);
     try {
-      if (await onSaveCal(sel, memo.trim(), pub)) toast("保存しました");
+      if (await onSaveCal(sel, memo.trim())) toast("保存しました");
     } finally {
       setBusy(false);
     }
@@ -771,22 +760,19 @@ function CalendarPane({
 
   return (
     <div className="xpane">
-      {!me.calLoaded && (
-        <div className="sub">カレンダーを読み込んでいます…</div>
-      )}
       <div className="calhead">
         <button className="calnav" onClick={() => nav(-1)}>
           ‹
         </button>
-        <div className="calmonWrap">
-          <div className="calmon">
-            {y}年{m + 1}月
-          </div>
+        <div className="calmonRow">
           {!isCurrentMonth && (
             <button className="calToday" onClick={goToday}>
               今日
             </button>
           )}
+          <div className="calmon">
+            {y}年{m + 1}月
+          </div>
         </div>
         <button className="calnav" onClick={() => nav(1)}>
           ›
@@ -818,7 +804,7 @@ function CalendarPane({
               onClick={() => selectDay(k)}
             >
               {d}
-              {entry?.memo && <span className={`dot ${entry.pub ? "" : "priv"}`} />}
+              {entry?.memo && <span className="dot" />}
             </div>
           );
         })}
@@ -834,11 +820,7 @@ function CalendarPane({
         placeholder="例: ライブ 19:00〜"
         maxLength={100}
       />
-      <label className="checkRow" style={{ margin: "10px 0 14px" }}>
-        <input type="checkbox" checked={pub} onChange={(e) => setPub(e.target.checked)} />
-        公開する（オフにすると自分だけのメモになります）
-      </label>
-      <button className="btn sig" disabled={busy} onClick={save}>
+      <button className="btn sig" disabled={busy} onClick={save} style={{ marginTop: 14 }}>
         {busy ? "保存中…" : "保存する"}
       </button>
     </div>

@@ -45,15 +45,8 @@ create table if not exists channels (
   position int  default 0
 );
 
--- 公開カレンダー（pub=true のメモのみこのテーブルに置く。非公開メモは別テーブル）
+-- カレンダー（すべて公開）
 create table if not exists cal_public (
-  handle  text references accounts(handle) on delete cascade,
-  d       date not null,
-  memo    text not null,
-  primary key (handle, d)
-);
-
-create table if not exists cal_private (
   handle  text references accounts(handle) on delete cascade,
   d       date not null,
   memo    text not null,
@@ -92,7 +85,6 @@ alter table accounts      enable row level security;
 alter table profiles      enable row level security;
 alter table channels      enable row level security;
 alter table cal_public    enable row level security;
-alter table cal_private   enable row level security;
 alter table auth_attempts   enable row level security;
 alter table login_attempts  enable row level security;
 alter table signup_attempts enable row level security;
@@ -106,7 +98,7 @@ drop policy if exists pub_channels on channels;
 create policy pub_channels on channels for select using (true);
 drop policy if exists pub_calpub on cal_public;
 create policy pub_calpub on cal_public for select using (true);
--- accounts / cal_private / auth_attempts は誰も直接読めない（RPC経由のみ）
+-- accounts / auth_attempts は誰も直接読めない（RPC経由のみ）
 --
 -- 【重要・列挙防止】profiles / channels / cal_public には anon の直接 SELECT 権限を
 -- 与えない。PostgREST 経由の直接 select を許すと anon キー（公開）で
@@ -414,29 +406,17 @@ begin
   update accounts set updated_at=now() where handle=lower(p_handle);
 end $$;
 
--- ---- RPC: カレンダー保存 ----
+-- ---- RPC: カレンダー保存（すべて公開） ----
 create or replace function save_cal(p_handle text, p_pass text,
-  p_date date, p_memo text, p_pub boolean)
+  p_date date, p_memo text)
 returns void language plpgsql security definer as $$
 begin
   if not _check_pass(p_handle,p_pass) then raise exception 'auth'; end if;
   if length(coalesce(p_memo,'')) > 500 then raise exception 'memo too long'; end if;
-  delete from cal_public  where handle=lower(p_handle) and d=p_date;
-  delete from cal_private where handle=lower(p_handle) and d=p_date;
+  delete from cal_public where handle=lower(p_handle) and d=p_date;
   if p_memo <> '' then
-    if p_pub then insert into cal_public(handle,d,memo)  values (lower(p_handle),p_date,p_memo);
-    else          insert into cal_private(handle,d,memo) values (lower(p_handle),p_date,p_memo);
-    end if;
+    insert into cal_public(handle,d,memo) values (lower(p_handle),p_date,p_memo);
   end if;
-end $$;
-
--- ---- RPC: 自分の非公開カレンダー取得 ----
-create or replace function get_private_cal(p_handle text, p_pass text)
-returns table(d date, memo text) language plpgsql security definer as $$
-begin
-  if not _check_pass(p_handle,p_pass) then raise exception 'auth'; end if;
-  return query select cal_private.d, cal_private.memo
-    from cal_private where handle=lower(p_handle);
 end $$;
 
 -- ---- RPC: 公開ページ取得（ハンドル1件のみ。列挙不可）----
@@ -601,8 +581,7 @@ grant execute on function reset_pass(text,text,text)                            
 grant execute on function update_profile(text,text,text,text,text,int,text,text,text,int) to anon;
 grant execute on function update_profile_content(text,text,jsonb) to anon;
 grant execute on function save_channels(text,text,jsonb)                              to anon;
-grant execute on function save_cal(text,text,date,text,boolean)                       to anon;
-grant execute on function get_private_cal(text,text)                                  to anon;
+grant execute on function save_cal(text,text,date,text)                               to anon;
 grant execute on function get_public_page(text)                                       to anon;
 grant execute on function reissue_recovery(text,text)                                 to anon;
 grant execute on function get_my_follows(text,text)                                   to anon;

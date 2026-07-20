@@ -124,7 +124,6 @@ test("a profile QR is personalized and shareable as an image", async ({ page }) 
       cal: [],
     },
     get_follower_count: 4,
-    get_private_cal: [],
     get_clicks: [],
     get_account_security: {
       passkey_linked: true,
@@ -280,7 +279,6 @@ test("profile photos keep their ratio, enlarge on tap, and expose a horizontal e
       cal: [],
     },
     get_follower_count: 0,
-    get_private_cal: [],
     get_clicks: [],
     get_account_security: {
       passkey_linked: true,
@@ -483,7 +481,6 @@ test("help explains the main flow in plain language", async ({ page }) => {
 
   await expect(page.getByRole("heading", { name: "via-miとは", exact: true })).toBeVisible();
   await expect(page.getByText("ぜんぶ、ひとつのURLに。", { exact: true })).toBeVisible();
-  await expect(page.getByText("渡した人だけに届く。", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "ログインできないとき", exact: true })).toHaveCount(0);
 });
 

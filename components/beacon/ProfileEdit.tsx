@@ -292,7 +292,7 @@ export function ProfileEdit({
                   setEmoji(candidate);
                   setAv({ mode: "remove" });
                 }}
-                placeholder="絵文字を入力"
+                placeholder="絵文字"
                 autoComplete="off"
               />
               <span className="emojiPreview" style={{ background: grad(avTheme) }}>

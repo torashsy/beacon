@@ -446,6 +446,15 @@ body {
   font-size: 0;
   text-indent: -9999px;
 }
+/* ダークモードでは文字部分が読みにくいため、文字を白くした差し替え画像を使う。 */
+html[data-color-mode="dark"] .logo {
+  background-image: url("/via-mi-logo-dark.png");
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-color-mode="light"]) .logo {
+    background-image: url("/via-mi-logo-dark.png");
+  }
+}
 
 .reportLink {
   display: inline-flex;
@@ -2438,7 +2447,8 @@ textarea {
   font-size: 14.5px;
 }
 .efield textarea {
-  min-height: 64px;
+  min-height: 96px;
+  resize: vertical;
 }
 .efield input:focus,
 .efield textarea:focus {
@@ -2516,13 +2526,11 @@ textarea {
   font-weight: 800;
   font-size: 15px;
 }
-.calmonWrap {
+.calmonRow {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 4px;
-  min-height: 32px;
   justify-content: center;
+  gap: 8px;
 }
 .calToday {
   border: 1.5px solid var(--border);
@@ -2605,9 +2613,6 @@ textarea {
   background: var(--em);
   position: absolute;
   bottom: 5px;
-}
-.day .dot.priv {
-  background: var(--faint);
 }
 .vfoot {
   margin-top: 18px;
@@ -2739,6 +2744,10 @@ textarea {
   padding: 10px 6px;
   text-align: center;
   font-size: 22px;
+}
+.emojiFreeInput::placeholder {
+  font-size: 10px;
+  color: var(--muted);
 }
 .efield input:focus-visible,
 .efield textarea:focus-visible,

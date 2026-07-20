@@ -245,7 +245,7 @@ export async function renderQrSharePng(
   }
   let brandWordmark: HTMLImageElement | null = null;
   try {
-    brandWordmark = await loadImage("/via-mi-logo.png");
+    brandWordmark = await loadImage("/via-mi-wordmark.png");
   } catch {
     brandWordmark = null;
   }

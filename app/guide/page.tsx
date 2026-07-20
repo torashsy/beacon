@@ -87,7 +87,7 @@ export default function GuidePage() {
             <strong>カレンダー</strong>
             <br />
             イベントや予定を載せられます。
-            予定ごとに公開・非公開を選べるので、自分だけのメモにも使えます。
+            載せた予定は、ページを見られる人には公開されます。
           </li>
           <li>
             <strong>写真</strong>
