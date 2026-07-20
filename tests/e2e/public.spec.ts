@@ -607,11 +607,15 @@ test("pulling down from the top offers a refresh", async ({ page }) => {
     Object.defineProperty(event, "touches", { value: [{ clientY: 600 }] });
     document.dispatchEvent(event);
   });
-  await page.waitForTimeout(100);
+  // 距離は requestAnimationFrame でバッチ反映されるため、固定待ちではなくポーリングで待つ
+  await expect.poll(
+    () => page.locator(".pullRefreshSurface").evaluate(
+      (element) => new DOMMatrix(getComputedStyle(element).transform).m42,
+    ),
+  ).toBeGreaterThan(regularPullY);
   const deepPullY = await page.locator(".pullRefreshSurface").evaluate(
     (element) => new DOMMatrix(getComputedStyle(element).transform).m42,
   );
-  expect(deepPullY).toBeGreaterThan(regularPullY);
   expect(deepPullY).toBeLessThan(118);
   await page.evaluate(() => document.dispatchEvent(new Event("touchcancel", { bubbles: true })));
   await expect(page.locator(".pullRefresh")).not.toHaveClass(/show/);
