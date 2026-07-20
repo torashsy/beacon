@@ -41,7 +41,7 @@ export default function GuidePage() {
         <p>
           via-miに、パスワードはありません。
           <br />
-          IDを決めて、いつもの顔や指紋の認証を登録するだけ。
+          IDを決めて、Face IDや生体認証でパスキーを登録するだけ。
           <br />
           1分もかからずに始められます。
         </p>
@@ -68,21 +68,20 @@ export default function GuidePage() {
         <p>
           ログインしたら、下のメニューの<NavTab name="profile" label="me" />を開いてみましょう。
           <br />
-          ここが、あなたのページの編集画面です。
+          ここが、あなたのページです。
         </p>
-        <p>載せるものは、ぜんぶ自由。使いたいものだけ選んでください。</p>
         <ul>
           <li>
             <strong>リンク</strong>
             <br />
             XやInstagram、LINEなどのリンクを載せられます。
-            並べ替えたり、一時的に隠したりもできます。
+            並べ替えたり、一時的に非表示にすることもできます。
           </li>
           <li>
             <strong>ひとこと</strong>
             <br />
-            ページの上に表示される、短いメッセージです。
-            今日の気分やお知らせをどうぞ。
+            アイコンの上に表示される、短いメッセージです。
+            今日の気分やお知らせなど、自由に書いてみましょう。
           </li>
           <li>
             <strong>カレンダー</strong>
@@ -93,7 +92,7 @@ export default function GuidePage() {
           <li>
             <strong>写真</strong>
             <br />
-            お気に入りの写真を、5枚まで飾れます。
+            お気に入りの写真を、5枚まで投稿できます。
           </li>
           <li>
             <strong>プロフィール</strong>
@@ -103,7 +102,7 @@ export default function GuidePage() {
           </li>
         </ul>
 
-        <h2 id="share">3. だれかに渡す</h2>
+        <h2 id="share">3. 共有する</h2>
         <p>ページができたら、だれかに渡してみましょう。</p>
         <p>
           <NavTab name="profile" label="me" />の「共有」から、URLをコピーできます。
@@ -111,14 +110,14 @@ export default function GuidePage() {
           メッセージに貼って送るだけで、相手に届きます。
         </p>
         <p>
-          目の前にいる相手には、QRコードが便利です。
+          QRコードもすぐに作成できます。
           <br />
           「QRコード」を押して、画面を見せるだけ。
         </p>
         <p>
           渡したページは、URLを知っている人ならだれでも見られます。
           <br />
-          相手にアカウントは要りません。
+          閲覧にアカウント作成は要りません。
         </p>
 
         <h2 id="follow">4. 相手をフォローする</h2>
@@ -130,15 +129,16 @@ export default function GuidePage() {
         <p>
           プッシュ通知をオンにすれば、更新が通知で届きます。
           <br />
+          （iPhoneはホーム画面に追加した場合のみ。Androidやパソコンはそのままお使いいただけます）
+          <br />
           設定は<NavTab name="help" label="ヘルプ" />のアカウント欄から。
         </p>
         <p className="guideNote">
           名前などでのあいまい検索はできません。
-          IDがぴったり合ったときだけ、ページが表示されます。
-          「知っている人にだけ届く」ための、via-miの設計です。
+          IDが完全一致したときのみ、ページが表示されます。
         </p>
 
-        <h2 id="trouble">5. こまったとき</h2>
+        <h2 id="trouble">5. その他</h2>
         <p>
           <strong>機種変更にそなえたい</strong>
           <br />
@@ -163,7 +163,7 @@ export default function GuidePage() {
         <p>
           <strong>Q. お金はかかりますか？</strong>
           <br />
-          かかりません。すべての機能を、無料で使えます。
+          かかりません。現在、すべての機能を無料で使えます。
         </p>
         <p>
           <strong>Q. 自分のページが検索に出ませんか？</strong>
@@ -172,10 +172,12 @@ export default function GuidePage() {
           ページを見られるのは、IDやURLを知っている人だけです。
         </p>
         <p>
-          <strong>Q. パスキーってなんですか？</strong>
+          <strong>Q. パスキーとは？</strong>
           <br />
           パスワードの代わりに、顔や指紋で本人確認するしくみです。
-          覚えるのは自分のIDだけ。盗まれて困るパスワードが、そもそも存在しません。
+          盗まれたり、忘れたりすることが仕組み上あり得ません。
+          鍵はあなたの端末だけに保存され、via-miを含むどこにも送信されないので、
+          他のサービスの情報漏えいに巻き込まれる心配もありません。
         </p>
         <p>
           <strong>Q. メールアドレスは必要ですか？</strong>
