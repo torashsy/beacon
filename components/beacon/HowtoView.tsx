@@ -5,10 +5,9 @@ import { FeatureIcon } from "./icons";
 export function HowtoView() {
   return (
     <section className="view guideView">
-      <h1>via-miとは</h1>
+      <h1 className="guideHeading">via-miとは</h1>
       <p className="lead guideIntro">
         SNSアカウントやリンク、カレンダーや写真をひとつのページにまとめて、
-        <br />
         IDやQRコードで簡単に共有できるサービスです。
       </p>
       <div className="guideUseCases">
