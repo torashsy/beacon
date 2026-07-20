@@ -2090,6 +2090,7 @@ textarea {
 }
 /* "via-mi" の v の字形の空白分、他の行より右にずれて見えるため補正する。 */
 .guideHeading { margin-left: -1px; }
+.viaWordmark { font-weight: 600; }
 .guideIntro { margin: -4px 0 16px; }
 .guideUseCases { display: grid; gap: 8px; margin-bottom: 14px; }
 .useCase {
