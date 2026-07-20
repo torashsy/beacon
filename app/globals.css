@@ -1221,7 +1221,7 @@ textarea {
   padding: 0 12px;
   border: 0;
   border-radius: 19px;
-  background: rgba(31, 41, 48, .88);
+  background: rgba(31, 41, 48, .68);
   color: #fff;
   box-shadow: 0 4px 12px rgba(15, 23, 42, .18);
   font-size: 11.5px;
@@ -1245,7 +1245,7 @@ textarea {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: rgba(31, 41, 48, .88);
+  background: rgba(31, 41, 48, .68);
 }
 .statusBubble::after,
 .editStatusBubble::after {
@@ -1256,7 +1256,7 @@ textarea {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: rgba(31, 41, 48, .88);
+  background: rgba(31, 41, 48, .68);
 }
 .editMode,
 .editMode button,
@@ -2487,7 +2487,7 @@ textarea {
   width: min(210px, calc(100% - 105px));
   height: 38px;
   border-radius: 19px;
-  background: rgba(31, 41, 48, .88);
+  background: rgba(31, 41, 48, .68);
   box-shadow: 0 4px 12px rgba(15, 23, 42, .18);
   display: flex;
   align-items: center;
