@@ -19,8 +19,10 @@ const HOST_RULES: [RegExp, string][] = [
   [/(^|\.)bsky\.app$/i, "bluesky"],
   [/(^|\.)pixiv\.net$/i, "pixiv"],
   [/(^|\.)booth\.pm$/i, "booth"],
-  [/(^|\.)lit\.link$/i, "litlink"],
   [/(^|\.)note\.com$/i, "other"],
+  [/(^|\.)maps\.google\.[a-z.]+$/i, "map"],
+  [/(^|\.)goo\.gl$/i, "map"],
+  [/(^|\.)maps\.app\.goo\.gl$/i, "map"],
 ];
 
 /** 種別キーを返す。判定できなければ "other"。 */
@@ -31,15 +33,19 @@ export function detectType(raw: string): string {
   if (/^mailto:/i.test(s)) return "mail";
   if (/^[^\s@:/]+@[^\s@:/]+\.[^\s@:/]+$/.test(s)) return "mail";
 
-  let host = "";
+  let url: URL;
   try {
-    host = new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(s) ? s : "https://" + s)
-      .hostname;
+    url = new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(s) ? s : "https://" + s);
   } catch {
     return "other";
   }
+  const { hostname, pathname } = url;
+  // google.com 単体は検索・ドライブ等と衝突するため、/maps 配下のみ地図として扱う。
+  if (/(^|\.)google\.[a-z.]+$/i.test(hostname) && /^\/maps(\/|$)/i.test(pathname)) {
+    return "map";
+  }
   for (const [re, type] of HOST_RULES) {
-    if (re.test(host) && (type === "other" || type in TYPES)) return type;
+    if (re.test(hostname) && (type === "other" || type in TYPES)) return type;
   }
   return "other";
 }

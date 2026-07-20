@@ -27,14 +27,21 @@ describe("normalizeLinkInput", () => {
     });
   });
 
-  it("detects URL-only platforms and keeps generic support links", () => {
+  it("detects URL-only platforms and keeps generic website links", () => {
     expect(normalizeLinkInput("discord.gg/example", "discord")?.type).toBe("discord");
-    expect(normalizeLinkInput("https://ko-fi.com/example", "support")?.type).toBe("support");
+    expect(normalizeLinkInput("https://example.com", "website")?.type).toBe("website");
     expect(normalizeLinkInput("hello@example.com", "mail")).toEqual({
       type: "mail",
       url: "mailto:hello@example.com",
       source: "url",
     });
+  });
+
+  it("detects Google Maps links by path, not just host", () => {
+    expect(normalizeLinkInput("https://maps.google.com/?q=喫茶みほん", "other")?.type).toBe("map");
+    expect(normalizeLinkInput("https://maps.app.goo.gl/abc123", "other")?.type).toBe("map");
+    expect(normalizeLinkInput("https://www.google.com/maps/place/x", "other")?.type).toBe("map");
+    expect(normalizeLinkInput("https://www.google.com/search?q=x", "other")?.type).toBe("other");
   });
 
   it("rejects invalid IDs and distinguishes IDs from known URLs", () => {

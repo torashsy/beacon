@@ -49,14 +49,9 @@ const USER_ID_PLATFORMS: Record<string, UserIdPlatform> = {
     example: "ショップID",
     toUrl: (id) => `https://${id}.booth.pm/`,
   },
-  litlink: {
-    pattern: /^[a-z0-9._-]{1,50}$/i,
-    example: "ユーザーID",
-    toUrl: (id) => `https://lit.link/${id}`,
-  },
 };
 
-const KNOWN_HOST = /^(?:www\.)?(?:x\.com|twitter\.com|instagram\.com|tiktok\.com|youtube\.com|youtu\.be|twitch\.tv|bsky\.app|pixiv\.net|lit\.link)(?:\/|$)|^(?:[a-z0-9-]+\.)?booth\.pm(?:\/|$)/i;
+const KNOWN_HOST = /^(?:www\.)?(?:x\.com|twitter\.com|instagram\.com|tiktok\.com|youtube\.com|youtu\.be|twitch\.tv|bsky\.app|pixiv\.net)(?:\/|$)|^(?:[a-z0-9-]+\.)?booth\.pm(?:\/|$)/i;
 
 export type NormalizedLinkInput = {
   type: string;
@@ -91,8 +86,9 @@ export function normalizeLinkInput(raw: string, selectedType: string): Normalize
   const email = /^[^\s@:/]+@[^\s@:/]+\.[^\s@:/]+$/.test(value);
   const normalizedUrl = email ? `mailto:${value}` : safeUrl(value);
   if (!isValidLinkUrl(normalizedUrl)) return null;
+  // ホストから判定できない場合は、ユーザーが選んだ種別（Webサイト/その他）を尊重する。
   const detected = detectType(normalizedUrl);
-  const type = detected === "other" && (selectedType === "support" || selectedType === "other")
+  const type = detected === "other" && (selectedType === "website" || selectedType === "other")
     ? selectedType
     : detected;
   return { type, url: normalizedUrl, source: "url" };

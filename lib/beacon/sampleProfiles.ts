@@ -44,7 +44,7 @@ export const SAMPLE_PROFILES: SampleProfile[] = [
     id: "talent",
     label: "アイドル",
     data: {
-      handle: "mihon_official",
+      handle: "mihon_idol",
       profile: {
         name: "みほん",
         bio: "3人組アイドルユニット「みほんず」ピンク担当🌸 歌とダンスと、たまにゲーム実況も。応援してくれる方はぜひ繋がってください！",
@@ -72,7 +72,7 @@ export const SAMPLE_PROFILES: SampleProfile[] = [
     id: "creator",
     label: "クリエイター",
     data: {
-      handle: "mihon_art",
+      handle: "mihon_creator",
       profile: {
         name: "みほん🎨",
         bio: "フリーでイラストを描いています🎨\n女の子と動物のイラストが得意です。お仕事のご依頼はXのDMまで、お気軽にどうぞ！",
@@ -99,7 +99,7 @@ export const SAMPLE_PROFILES: SampleProfile[] = [
     id: "restaurant",
     label: "お店",
     data: {
-      handle: "cafe_mihon",
+      handle: "mihon_cafe",
       profile: {
         name: "喫茶みほん",
         bio: "駅から徒歩3分の小さな喫茶店☕ 手作りケーキと自家焙煎コーヒーのお店です。11:00-19:00(水曜定休)。一人でものんびり過ごせる空間です。",
@@ -127,7 +127,7 @@ export const SAMPLE_PROFILES: SampleProfile[] = [
     id: "company",
     label: "会社",
     data: {
-      handle: "mihon_inc",
+      handle: "mihon_official",
       profile: {
         name: "みほん株式会社",
         bio: "文房具の企画・製造をしている小さなメーカーです。「毎日使いたくなる文房具」をコンセプトに商品開発しています。採用情報とお知らせをまとめています。",
