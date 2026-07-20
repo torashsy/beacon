@@ -38,19 +38,22 @@
 ## 今後の変更（自動適用）
 
 `supabase/migrations/` にファイルを追加して `main` にマージすると、
-`.github/workflows/supabase-migrate.yml` が自動で本番に適用する
-（`supabase db push`。認証は既存の `SUPABASE_ACCESS_TOKEN` / `SUPABASE_PROJECT_ID`）。
+`.github/workflows/supabase-migrate.yml` が `SUPABASE_DB_URL`（direct connection
+string、GitHub Secretsに登録済み）を使い `psql` で本番に直接適用する。
 SQL Editorへ手動で貼る必要はない。
 
-1. `supabase migration new <name>` 相当のファイル名（`YYYYMMDDHHMMSS_name.sql`）で
-   `supabase/migrations/` に追加する。
-2. SQLは可能な限り冪等にする（`if exists` / `if not exists`）。
-3. `main` にマージすると自動適用される。適用後にこのREADMEの一覧を更新する。
-4. Edge Function変更時は対象名を指定して `npx supabase functions deploy <name>` を実行する（未自動化）。
+- `supabase db push`（CLIのマイグレーション履歴追跡）は不採用。このプロジェクトは
+  `schema.sql` を土台に手動適用してきた経緯があり、CLIのシャドウDB方式では
+  ゼロから全マイグレーションを再現できないため。
+- 代わりに `supabase/migrations/` 内の全ファイルを毎回そのまま実行する。
+  そのため **SQLは必ず冪等に書く**（`if exists` / `if not exists` / `create or replace`
+  / `on conflict do update` など。同じ内容で2回実行してもエラーにならず、
+  結果が変わらないこと）。
+- ファイル名は `YYYYMMDDHHMMSS_name.sql`。`main` にマージすると自動適用される。
+  適用後にこのREADMEの一覧を更新する。
+- Edge Function変更時は対象名を指定して `npx supabase functions deploy <name>` を実行する（未自動化）。
 
 ルート直下の `*-migration.sql`（このディレクトリ直下、`migrations/` 配下ではない方）は
-自動適用の仕組み以前に手動適用してきた履歴で、`.github/workflows/supabase-baseline.yml`
-（一度だけ実行）が本番の現在のスキーマを `supabase/migrations/` の最初の1本として
-取り込み済み。今後は参照用に残すのみ。
+この自動化以前に手動適用してきた履歴。参照用に残すのみで、以後は使わない。
 
 アクセストークン、DBパスワード、service role keyはリポジトリへ保存しない。
