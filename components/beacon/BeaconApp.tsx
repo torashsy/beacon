@@ -867,7 +867,7 @@ export function BeaconApp() {
         {session && me && !me.recoveryVerified && overlay === "none" && (
           <button type="button" className="recoveryBanner" onClick={goRecoverySetup}>
             <span>未認証</span>
-            <span className="recoveryBannerText">復旧用の連絡先を設定</span>
+            <span className="recoveryBannerText">復旧用のメールアドレスを設定</span>
             <b aria-hidden="true">›</b>
           </button>
         )}

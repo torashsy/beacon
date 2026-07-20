@@ -136,7 +136,11 @@ export function RecoverySetup({
   return (
     <div className="recoveryCard">
       <div className="recoveryState warning">復旧用メールが未認証です</div>
-      <div className="lead">パスキーを失った場合に備えて、復旧できるメールアドレスを追加してください。</div>
+      <div className="lead">
+        パスキーが使えない場合に備えて、
+        <br />
+        復旧用のメールアドレスを追加してください。
+      </div>
       {editor}
     </div>
   );

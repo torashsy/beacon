@@ -122,7 +122,7 @@ export function PushNotificationSetting({
       ? "端末の設定でvia-miの通知を許可してください。"
       : enabled
         ? "フォロー中の相手が更新すると、この端末に通知します。"
-        : "フォロー中の相手の更新を、この端末で受け取れます。";
+        : "フォローしたユーザーの更新を、プッシュ通知で受け取れます。";
 
   return (
     <div className="pushSetting">

@@ -734,13 +734,6 @@ function CalendarPane({
     setSel(null);
     setMemo("");
   }
-  function goToday() {
-    setY(now.getFullYear());
-    setM(now.getMonth());
-    setSel(null);
-    setMemo("");
-  }
-  const isCurrentMonth = y === now.getFullYear() && m === now.getMonth();
   async function save() {
     if (!sel) {
       toast("日付を選んでください");
@@ -764,15 +757,8 @@ function CalendarPane({
         <button className="calnav" onClick={() => nav(-1)}>
           ‹
         </button>
-        <div className="calmonRow">
-          {!isCurrentMonth && (
-            <button className="calToday" onClick={goToday}>
-              今日
-            </button>
-          )}
-          <div className="calmon">
-            {y}年{m + 1}月
-          </div>
+        <div className="calmon">
+          {y}年{m + 1}月
         </div>
         <button className="calnav" onClick={() => nav(1)}>
           ›

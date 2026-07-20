@@ -578,30 +578,6 @@ h1 {
   margin: 4px 4px 2px;
   letter-spacing: -0.01em;
 }
-/* 「via-miとは」見出し: ラテン文字と日本語の混植でフォントの高さ・位置が
-   そろわないため、ブランドロゴ画像＋「とは」の組み合わせにする。 */
-.brandHeading {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.brandWordmark {
-  display: inline-block;
-  width: 126px;
-  height: 24px;
-  background-image: url("/via-mi-wordmark.png");
-  background-repeat: no-repeat;
-  background-size: contain;
-  background-position: left center;
-}
-html[data-color-mode="dark"] .brandWordmark {
-  background-image: url("/via-mi-wordmark-dark.png");
-}
-@media (prefers-color-scheme: dark) {
-  html:not([data-color-mode="light"]) .brandWordmark {
-    background-image: url("/via-mi-wordmark-dark.png");
-  }
-}
 .lead {
   font-size: 12.5px;
   color: var(--muted);
@@ -2124,7 +2100,27 @@ textarea {
   padding: 12px 14px;
   box-shadow: var(--shadow);
 }
-.useCaseEmoji { font-size: 22px; flex: 0 0 auto; }
+.useCaseEmoji {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--eml);
+  color: var(--emd);
+}
+.useCaseEmoji .inlineIcon { width: 20px; height: 20px; }
+.inlineIcon {
+  width: 24px;
+  height: 24px;
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 .useCaseText { display: grid; gap: 2px; font-size: 12.5px; }
 .useCaseText strong { font-size: 13.5px; }
 .useCaseText span { color: var(--muted); font-weight: 500; white-space: pre-wrap; }
@@ -2188,6 +2184,7 @@ textarea {
   font-weight: 750;
   text-decoration: none;
 }
+.guideLink .inlineIcon { width: 17px; height: 17px; }
 .settingsView {
   display: grid;
   gap: 14px;
@@ -2549,25 +2546,6 @@ textarea {
 .calmon {
   font-weight: 800;
   font-size: 15px;
-}
-.calmonRow {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-.calToday {
-  border: 1.5px solid var(--border);
-  background: var(--surface);
-  color: var(--emd);
-  font-size: 10.5px;
-  font-weight: 700;
-  padding: 2px 9px;
-  border-radius: 999px;
-  cursor: pointer;
-}
-.calToday:hover {
-  border-color: var(--em);
 }
 .calnav {
   width: 32px;

@@ -21,6 +21,24 @@ export function LinkThumb({ type }: { type: string }) {
   return <TypeBadge type={type} />;
 }
 
+export type FeatureIconName = "link" | "key" | "calendar" | "book";
+
+const FEATURE_ICON_PATHS: Record<FeatureIconName, string> = {
+  link: "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71",
+  key: "M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4",
+  calendar: "M5 4h14a2 2 0 0 1 2 2v13H3V6a2 2 0 0 1 2-2Zm2-2v4m10-4v4M3 9h18m-9 3v5m-2.5-2.5h5",
+  book: "M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zm20 0h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z",
+};
+
+/** 絵文字の代わりに使う、線画スタイルのSVGアイコン。 */
+export function FeatureIcon({ name }: { name: FeatureIconName }) {
+  return (
+    <svg className="inlineIcon" viewBox="0 0 24 24" aria-hidden="true">
+      <path d={FEATURE_ICON_PATHS[name]} />
+    </svg>
+  );
+}
+
 /** 画像変更用カメラアイコン（編集オーバーレイ内）。 */
 export function CameraIcon() {
   return (
