@@ -65,8 +65,10 @@ export function ProfileView({
   const [qrCard, setQrCard] = useState<QrCard | null>(null);
   const avatarColors = COLORS[me.profile.av_theme ?? 0] ?? COLORS[0];
 
+  // 公開ページ側（get_public_page）も過去日を自動で除外するため、プレビューも合わせる。
+  const today = new Date().toISOString().slice(0, 10);
   const publicCal = Object.entries(me.cal)
-    .filter(([, value]) => value.pub && value.memo)
+    .filter(([d, value]) => value.pub && value.memo && d >= today)
     .map(([d, value]) => ({ d, memo: value.memo }))
     .sort((a, b) => a.d.localeCompare(b.d));
 
