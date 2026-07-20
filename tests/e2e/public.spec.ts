@@ -477,7 +477,7 @@ test("account creation only asks for an ID and passkey", async ({ page }) => {
 
 test("help explains the main flow in plain language", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Help", exact: true }).click();
+  await page.getByRole("button", { name: "ヘルプ", exact: true }).click();
 
   await expect(page.getByRole("heading", { name: "via-miとは", exact: true })).toBeVisible();
   await expect(page.getByText("ぜんぶ、ひとつのURLに。", { exact: true })).toBeVisible();
@@ -495,7 +495,7 @@ test("appearance settings support dark mode and six saved color themes", async (
   });
   await page.goto("/");
   await expect(page.locator("html")).toHaveAttribute("data-color-theme", "peach");
-  await page.getByRole("button", { name: "Help", exact: true }).click();
+  await page.getByRole("button", { name: "ヘルプ", exact: true }).click();
 
   await expect(page.getByRole("heading", { name: "表示", exact: true })).toBeVisible();
   const themes = page.getByRole("group", { name: "カラーテーマ" });
@@ -555,8 +555,8 @@ test("appearance settings support dark mode and six saved color themes", async (
 
 test("bottom tabs slide in the direction of travel", async ({ page }) => {
   await page.goto("/");
-  const followTab = page.getByRole("button", { name: "Follow", exact: true });
-  const meTab = page.getByRole("button", { name: "me", exact: true });
+  const followTab = page.getByRole("button", { name: "フォロー中", exact: true });
+  const meTab = page.getByRole("button", { name: "プロフィール", exact: true });
   const followPath = await followTab.locator(".navIcon path").getAttribute("d");
   const mePath = await meTab.locator(".navIcon path").getAttribute("d");
   expect(followPath).toContain("M23 21");
@@ -567,7 +567,7 @@ test("bottom tabs slide in the direction of travel", async ({ page }) => {
   await expect(page.locator(".tabStage")).toHaveClass(/from-left/);
   await expect(page.locator(".tabStage")).toHaveCSS("animation-name", "tab-slide-from-left");
 
-  await page.getByRole("button", { name: "Help", exact: true }).click();
+  await page.getByRole("button", { name: "ヘルプ", exact: true }).click();
   await expect(page.locator(".tabStage")).toHaveClass(/from-right/);
   await expect(page.locator(".tabStage")).toHaveCSS("animation-name", "tab-slide-from-right");
 });

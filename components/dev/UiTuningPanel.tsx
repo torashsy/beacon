@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   COLOR_THEMES,
   DEFAULT_APPEARANCE,
@@ -82,6 +82,11 @@ export function UiTuningPanel() {
   const [values, setValues] = useState<TokenValues>({});
   const [customCss, setCustomCssValue] = useState("");
   const [message, setMessage] = useState("");
+  // このパネルを一度も開かず触っていない限り、実際のダーク/ライト切り替えを
+  // 邪魔しないようにするフラグ。true にした後だけ values をインラインstyleとして
+  // 固定・永続化する（そうしないと、単にマウントしただけで現在の色をその場で
+  // 固定してしまい、後から表示モードを切り替えても反映されなくなる）。
+  const explicit = useRef(false);
 
   useEffect(() => {
     let saved: SavedTuning | null = null;
@@ -102,12 +107,13 @@ export function UiTuningPanel() {
           ? "dark"
           : "light";
 
-    document.documentElement.dataset.colorTheme = initialTheme;
-    document.documentElement.dataset.colorMode = initialMode;
     setTheme(initialTheme);
     setMode(initialMode);
 
     if (saved?.values) {
+      explicit.current = true;
+      document.documentElement.dataset.colorTheme = initialTheme;
+      document.documentElement.dataset.colorMode = initialMode;
       for (const [name, value] of Object.entries(saved.values)) {
         document.documentElement.style.setProperty(name, value);
       }
@@ -122,6 +128,7 @@ export function UiTuningPanel() {
   }, []);
 
   useEffect(() => {
+    if (!explicit.current) return;
     if (!Object.keys(values).length) return;
     for (const [name, value] of Object.entries(values)) {
       document.documentElement.style.setProperty(name, value);
@@ -141,11 +148,13 @@ export function UiTuningPanel() {
   }, [customCss, mode, theme, values]);
 
   function updateToken(name: TokenName, value: string) {
+    explicit.current = true;
     setValues((current) => ({ ...current, [name]: value }));
     setMessage("");
   }
 
   function changeTheme(nextTheme: ColorThemeId) {
+    explicit.current = true;
     removeInlineTokens();
     document.documentElement.dataset.colorTheme = nextTheme;
     setTheme(nextTheme);
@@ -154,6 +163,7 @@ export function UiTuningPanel() {
   }
 
   function changeMode(nextMode: ColorMode) {
+    explicit.current = true;
     removeInlineTokens();
     document.documentElement.dataset.colorMode = nextMode;
     setMode(nextMode);
@@ -176,6 +186,7 @@ export function UiTuningPanel() {
   }
 
   function resetTuning() {
+    explicit.current = false;
     localStorage.removeItem(STORAGE_KEY);
     removeInlineTokens();
     setCustomCss("");

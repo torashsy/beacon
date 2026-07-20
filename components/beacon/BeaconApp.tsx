@@ -1003,7 +1003,7 @@ export function BeaconApp() {
           <button
             className={`ni ${navTab === "profile" ? "on" : ""}`}
             onClick={() => goNav("profile")}
-            aria-label="me"
+            aria-label="プロフィール"
             aria-current={navTab === "profile" ? "page" : undefined}
             style={{ order: 2 }}
           >
@@ -1012,7 +1012,7 @@ export function BeaconApp() {
           <button
             className={`ni ${navTab === "follows" ? "on" : ""}`}
             onClick={() => goNav("follows")}
-            aria-label="Follow"
+            aria-label="フォロー中"
             aria-current={navTab === "follows" ? "page" : undefined}
             style={{ position: "relative", order: 1 }}
           >
@@ -1024,7 +1024,7 @@ export function BeaconApp() {
           <button
             className={`ni ${navTab === "help" ? "on" : ""}`}
             onClick={() => goNav("help")}
-            aria-label="Help"
+            aria-label="ヘルプ"
             aria-current={navTab === "help" ? "page" : undefined}
             style={{ order: 3 }}
           >
