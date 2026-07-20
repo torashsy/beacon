@@ -7,6 +7,7 @@ import { LinkThumb } from "./icons";
 import { TrackedLink } from "./TrackedLink";
 import { normalizeProfileContent } from "@/lib/beacon/profile-content";
 import { ProfilePhotoGallery } from "./ProfilePhotoGallery";
+import { CollapsibleBio } from "./CollapsibleBio";
 
 /**
  * 公開プロフィールの見た目（X風カード）。beacon.html の renderPublicFor を移植。
@@ -94,7 +95,7 @@ export function PublicProfileCard({
             <strong>{data.followerCount.toLocaleString("ja-JP")}</strong> フォロワー
           </div>
         )}
-        {profile.bio && <div className="xbio">{profile.bio}</div>}
+        {profile.bio && <CollapsibleBio bio={profile.bio} />}
       </div>
 
       <div className="xpane" style={{ paddingTop: 4, paddingBottom: 0 }}>
@@ -140,8 +141,7 @@ export function PublicProfileCard({
       </div>
 
       {pubcal.length > 0 && (
-        <div className="calpub" style={{ padding: "0 16px 18px" }}>
-          <h2 style={{ margin: "8px 4px 10px" }}>カレンダー</h2>
+        <div className="calpub" style={{ padding: "8px 16px 18px" }}>
           {pubcal.map((e) => (
             <div key={e.d} className="pi">
               <span className="d">{fmtMd(e.d)}</span>
