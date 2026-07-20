@@ -955,7 +955,7 @@ returns jsonb language sql security definer stable set search_path = public as $
       'channels', coalesce((select jsonb_agg(to_jsonb(c) order by c.position, c.id)
         from channels c where c.handle = lower(p_handle)), '[]'::jsonb),
       'cal', coalesce((select jsonb_agg(jsonb_build_object('d', cp.d, 'memo', cp.memo) order by cp.d)
-        from cal_public cp where cp.handle = lower(p_handle)), '[]'::jsonb)
+        from cal_public cp where cp.handle = lower(p_handle) and cp.d >= current_date), '[]'::jsonb)
     )
   end;
 $$;
