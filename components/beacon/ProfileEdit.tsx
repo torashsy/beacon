@@ -45,6 +45,13 @@ function firstCharacter(value: string): string {
   return Array.from(segmenter.segment(value))[0]?.segment ?? "";
 }
 
+/** 国旗（地域指示記号2つ）・キーキャップ（数字/#/*+combining）・その他の絵文字を判定する。 */
+function isEmojiGrapheme(segment: string): boolean {
+  if (/^\p{Regional_Indicator}\p{Regional_Indicator}$/u.test(segment)) return true;
+  if (/^[0-9#*]️?⃣$/u.test(segment)) return true;
+  return /\p{Extended_Pictographic}/u.test(segment);
+}
+
 export function ProfileEdit({
   profile,
   onCancel,
@@ -269,7 +276,7 @@ export function ProfileEdit({
               </>
             )}
             <div className="iconChoiceDivider">または</div>
-            <label className="f" htmlFor="profile-emoji">1文字を使う</label>
+            <label className="f" htmlFor="profile-emoji">絵文字を使う</label>
             <div className="emojiInputRow">
               <input
                 id="profile-emoji"
@@ -277,17 +284,22 @@ export function ProfileEdit({
                 type="text"
                 value={emoji}
                 onChange={(e) => {
-                  setEmoji(firstCharacter(e.target.value));
+                  const candidate = firstCharacter(e.target.value);
+                  if (candidate && !isEmojiGrapheme(candidate)) {
+                    e.target.value = emoji; // 絵文字以外の入力は表示を元に戻す
+                    return;
+                  }
+                  setEmoji(candidate);
                   setAv({ mode: "remove" });
                 }}
-                placeholder="文字を入力"
+                placeholder="絵文字を入力"
                 autoComplete="off"
               />
               <span className="emojiPreview" style={{ background: grad(avTheme) }}>
                 {emoji || "🙂"}
               </span>
             </div>
-            <div className="fieldHint">絵文字を含む好きな1文字を入力できます。</div>
+            <div className="fieldHint">絵文字を1つだけ入力できます。</div>
             <label className="f">アイコンの背景色</label>
             <div className="emojis colorPalette" aria-label="アイコンの背景色">
               {COLORS.map((c, i) => (

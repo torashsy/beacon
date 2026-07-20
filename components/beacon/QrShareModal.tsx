@@ -119,7 +119,8 @@ export function QrShareModal({
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/icon-192.png" alt="" />
             </span>
-            <span>via-mi</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img className="qrBrandWordmark" src="/via-mi-logo.png" alt="via-mi" />
           </div>
           <div className="qrProfileName">{name.trim() || `@${handle}`}</div>
           <div className="qrProfileId">@{handle}</div>

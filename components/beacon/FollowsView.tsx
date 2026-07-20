@@ -245,45 +245,26 @@ export function FollowsView({
 }
 
 function FollowBadge({ st }: { st: FollowStatus }) {
-  const base = {
-    display: "inline-block" as const,
-    whiteSpace: "nowrap" as const,
-    margin: "3px 0 1px",
-    fontSize: 10.5,
-    fontWeight: 700,
-    borderRadius: 999,
-  };
   if (st.state === "new") {
     return (
-      <span style={{ ...base, color: "#fff", background: "var(--em)", padding: "2px 8px" }}>
+      <span className="followLamp new">
+        <span className="bulb" aria-hidden />
         新しい連絡先{st.addedLive > 1 ? ` +${st.addedLive}` : ""}
       </span>
     );
   }
   if (st.state === "changed") {
     return (
-      <span
-        style={{
-          ...base,
-          color: "var(--emd)",
-          border: "1.5px solid color-mix(in srgb, var(--em) 45%, transparent)",
-          padding: "1px 8px",
-        }}
-      >
+      <span className="followLamp changed">
+        <span className="bulb" aria-hidden />
         更新あり
       </span>
     );
   }
   if (st.state === "deleted") {
     return (
-      <span
-        style={{
-          ...base,
-          color: "var(--alert)",
-          border: "1.5px solid rgba(224,87,107,.45)",
-          padding: "1px 8px",
-        }}
-      >
+      <span className="followLamp deleted">
+        <span className="bulb" aria-hidden />
         削除ずみ
       </span>
     );

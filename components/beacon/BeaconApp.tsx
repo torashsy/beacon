@@ -1044,27 +1044,7 @@ export function BeaconApp() {
           >
             <NavIcon name="follows" />
             {followUpdates > 0 && (
-              <span
-                aria-label={`${followUpdates}件の更新`}
-                style={{
-                  position: "absolute",
-                  top: 2,
-                  right: "50%",
-                  marginRight: -18,
-                  minWidth: 16,
-                  height: 16,
-                  padding: "0 4px",
-                  borderRadius: 999,
-                  background: "var(--alert)",
-                  color: "#fff",
-                  fontSize: 10,
-                  fontWeight: 800,
-                  lineHeight: "16px",
-                  textAlign: "center",
-                }}
-              >
-                {followUpdates}
-              </span>
+              <span className="navLamp" role="img" aria-label={`${followUpdates}件の更新`} />
             )}
           </button>
           <button
