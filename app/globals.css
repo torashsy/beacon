@@ -1329,6 +1329,17 @@ textarea {
   from { opacity: 0; transform: translateY(8px) scale(.99); }
   to { opacity: 1; transform: none; }
 }
+.modalScrim.closing {
+  animation: scrim-out 140ms var(--ease-state) forwards;
+}
+.modalScrim.closing > * {
+  animation: modal-out 140ms var(--ease-ios-out) forwards;
+}
+@keyframes scrim-out { to { opacity: 0; } }
+@keyframes modal-out {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateY(8px) scale(.99); }
+}
 .qrScrim {
   padding-inline: 16px;
 }

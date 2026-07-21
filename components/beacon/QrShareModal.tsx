@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { renderQrSharePng } from "@/lib/beacon/brand-qr";
 import type { ToastFn } from "./appTypes";
 
@@ -33,6 +33,16 @@ export function QrShareModal({
   toast: ToastFn;
 }) {
   const [sharing, setSharing] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const closeTimer = useRef<number | undefined>(undefined);
+
+  function requestClose() {
+    if (closing) return;
+    setClosing(true);
+    closeTimer.current = window.setTimeout(onClose, 140);
+  }
+
+  useEffect(() => () => window.clearTimeout(closeTimer.current), []);
 
   async function shareImage() {
     if (sharing) return;
@@ -85,7 +95,7 @@ export function QrShareModal({
   }
 
   return (
-    <div className="modalScrim qrScrim" onClick={onClose}>
+    <div className={`modalScrim qrScrim${closing ? " closing" : ""}`} onClick={requestClose}>
       <div
         className="qrModal"
         role="dialog"
@@ -106,7 +116,7 @@ export function QrShareModal({
           type="button"
           className="qrClose"
           aria-label="閉じる"
-          onClick={onClose}
+          onClick={requestClose}
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="m6 6 12 12M18 6 6 18" />
@@ -157,7 +167,7 @@ export function QrShareModal({
             </svg>
             <span>{sharing ? "画像を作成中…" : "QR画像を共有"}</span>
           </button>
-          <button type="button" className="btn ghost qrCloseButton" onClick={onClose}>
+          <button type="button" className="btn ghost qrCloseButton" onClick={requestClose}>
             閉じる
           </button>
         </div>
