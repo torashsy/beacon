@@ -53,6 +53,21 @@ export const metadata: Metadata = {
   description:
     "X・Instagram・LINEなどの連絡先とイベント予定をひとつの公開ページに。IDとパスキーですぐ始められます。",
   alternates: { canonical: "/" },
+  // OGP画像は app/opengraph-image.tsx が動的生成（ブランドカード）。
+  openGraph: {
+    type: "website",
+    siteName: "via-mi",
+    title: "via-mi — あなたのSNS、全部ひとつに。",
+    description:
+      "X・Instagram・LINEなどの連絡先とイベント予定をひとつの公開ページに。IDとパスキーですぐ始められます。",
+    url: "/",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "via-mi — あなたのSNS、全部ひとつに。",
+    description:
+      "X・Instagram・LINEなどの連絡先とイベント予定をひとつの公開ページに。IDとパスキーですぐ始められます。",
+  },
 };
 
 export const viewport: Viewport = {

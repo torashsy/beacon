@@ -575,20 +575,18 @@ begin
   delete from accounts where handle=lower(p_handle);
 end $$;
 
-grant execute on function create_account(text,text)                                   to anon;
-grant execute on function verify_login(text,text)                                     to anon;
-grant execute on function reset_pass(text,text,text)                                  to anon;
+-- 旧パスワード方式のRPC（create_account / verify_login / reset_pass /
+-- create_session / reissue_recovery）は現行のパスキー専用UIから呼ばれないため、
+-- 裏口を作らないよう anon には grant しない。定義は互換のため残すが実行権限は与えない。
 grant execute on function update_profile(text,text,text,text,text,int,text,text,text,int) to anon;
 grant execute on function update_profile_content(text,text,jsonb) to anon;
 grant execute on function save_channels(text,text,jsonb)                              to anon;
 grant execute on function save_cal(text,text,date,text)                               to anon;
 grant execute on function get_public_page(text)                                       to anon;
-grant execute on function reissue_recovery(text,text)                                 to anon;
 grant execute on function get_my_follows(text,text)                                   to anon;
 grant execute on function save_my_follows(text,text,jsonb)                            to anon;
 revoke all on function delete_account(text,text) from public, anon, authenticated;
 grant execute on function delete_account(text,text)                                   to service_role;
-grant execute on function create_session(text,text)                                   to anon;
 grant execute on function delete_session(text,text)                                   to anon;
 revoke all on function revoke_other_sessions(text,text) from public, authenticated;
 grant execute on function revoke_other_sessions(text,text)                            to anon;

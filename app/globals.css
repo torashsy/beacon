@@ -501,6 +501,46 @@ html[data-color-mode="dark"] .logo {
   cursor: pointer;
   transform-origin: left center;
 }
+.notFound {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 6px;
+  padding: 24px;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+}
+.notFound .logo {
+  margin-bottom: 20px;
+}
+.notFoundCode {
+  font-size: 56px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--em);
+  letter-spacing: 0.02em;
+}
+.notFoundTitle {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text);
+  margin-top: 4px;
+}
+.notFoundText {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--muted);
+  max-width: 320px;
+}
+.notFound .btn {
+  display: inline-block;
+  width: auto;
+  min-width: 200px;
+  text-align: center;
+  text-decoration: none;
+}
 .appBoot {
   min-height: calc(100dvh - 92px - env(safe-area-inset-bottom));
   display: grid;

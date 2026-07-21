@@ -33,7 +33,9 @@
 - `create-passkey-user` Edge Function（Verify JWT off）
 - `send-follow-update` Edge Function（Verify JWT off、VAPID秘密鍵を使用）
 
-検証は `node scripts/conn-test.mjs` を実行する。テスト用アカウントは最後に削除される。
+疎通確認は本番の `/api/health`（`get_public_page` の往復）と e2e（`npm run test:e2e`）で行う。
+`scripts/conn-test.mjs` は旧パスワード方式のRPCを使う通し検証で、パスキー専用化に伴い
+それらのRPCを anon から revoke したため現在は動かない（参照用に残置）。
 
 ## 今後の変更（自動適用）
 

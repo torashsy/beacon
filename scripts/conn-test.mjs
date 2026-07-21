@@ -1,12 +1,13 @@
-// Supabase 疎通スモークテスト（ローカル実行用）。
+// Supabase 疎通スモークテスト（ローカル実行用・アーカイブ）。
 //
 //   node scripts/conn-test.mjs
 //
-// .env.local の URL / publishable key（旧 anon key も可）を使い、
-// 全RPC（create_account〜delete_account）・RLS 公開読み取り・Storage(avatars)を
-// ランダムなハンドルで通しで検証し、最後に退会して後片付けする。
-// SETUP.md 手順2（schema.sql 適用）・手順3（avatars バケット+anonポリシー）が
-// 済んでいれば「全項目 OK」になる。
+// ⚠️ このスクリプトは旧パスワード方式のRPC（create_account / verify_login /
+// reset_pass / create_session）でテスト用アカウントを作って通しで検証していたが、
+// 現行はパスキー専用でこれらのRPCは anon から revoke 済みのため、そのままでは
+// 動かない（step1 の create_account で権限エラーになる）。パスキーのWebAuthn儀式は
+// ブラウザなしに再現できないため、この通し検証は歴史的経緯の参照用に残すのみ。
+// 疎通確認は本番の /api/health（get_public_page の往復）と e2e で行う。
 import { createClient } from "@supabase/supabase-js";
 import { readFileSync } from "node:fs";
 
