@@ -3419,3 +3419,61 @@ a {
 .cropFrame img {
   max-width: none;
 }
+
+/* ---- 運営用 管理画面（/admin） ---- */
+.adminView {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px calc(40px + env(safe-area-inset-bottom));
+}
+.adminView h1 { font-size: 22px; font-weight: 800; margin-bottom: 14px; }
+.adminNote { color: var(--muted); font-size: 13px; line-height: 1.7; }
+.adminInline { display: inline-block; width: auto; margin-top: 14px; text-decoration: none; }
+.adminMsg { margin: 10px 0; font-size: 12.5px; color: var(--emd); font-weight: 600; }
+.pill.solid.danger { background: var(--alert); box-shadow: 0 4px 12px color-mix(in srgb, var(--alert) 32%, transparent); }
+.pill.solid.danger:hover:not(:disabled) { background: color-mix(in srgb, var(--alert) 92%, #000); }
+.adminTabs { display: flex; gap: 8px; margin-bottom: 12px; }
+.adminTabs button {
+  flex: 1;
+  min-height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font: inherit; font-size: 13px; font-weight: 700;
+  cursor: pointer;
+}
+.adminTabs button.on { background: var(--em); color: var(--on-em); border-color: var(--em); }
+.adminSearch { display: flex; gap: 8px; margin-bottom: 12px; }
+.adminSearch input {
+  flex: 1; min-width: 0; height: 42px; padding: 0 14px;
+  border: 1px solid var(--border); border-radius: 12px;
+  background: var(--surface); color: var(--text); font: inherit; font-size: 14px;
+}
+.adminList { display: grid; gap: 8px; }
+.adminRow {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; border: 1px solid var(--border);
+  border-radius: var(--radius); background: var(--surface);
+}
+.adminRow.suspended { border-color: color-mix(in srgb, var(--alert) 45%, var(--border)); background: color-mix(in srgb, var(--alert) 6%, var(--surface)); }
+.adminRowMain { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+.adminHandle { font-weight: 700; font-size: 14px; color: var(--emd); text-decoration: none; word-break: break-all; }
+.adminMeta { font-size: 11.5px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+.adminReason { font-size: 11.5px; color: var(--alert); }
+.adminBadge {
+  display: inline-block; padding: 2px 8px; border-radius: 999px;
+  background: var(--eml); color: var(--emd); font-size: 11px; font-weight: 700;
+}
+.adminRow.suspended .adminBadge { background: color-mix(in srgb, var(--alert) 16%, transparent); color: var(--alert); }
+.adminReport {
+  padding: 14px; border: 1px solid var(--border);
+  border-radius: var(--radius); background: var(--surface);
+  display: grid; gap: 8px;
+}
+.adminReport.status-resolved, .adminReport.status-rejected { opacity: .62; }
+.adminReportHead { display: flex; align-items: center; gap: 10px; }
+.adminStatus { margin-left: auto; font-size: 11.5px; font-weight: 700; color: var(--muted); }
+.adminReportBody { font-size: 13px; line-height: 1.6; color: var(--text); white-space: pre-wrap; word-break: break-word; }
+.adminReportActions { display: flex; flex-wrap: wrap; gap: 8px; }
+.adminReportActions .pill { padding: 7px 14px; font-size: 12.5px; }
