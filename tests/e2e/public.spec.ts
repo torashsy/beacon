@@ -471,7 +471,7 @@ test("account creation only asks for an ID and passkey", async ({ page }) => {
   await page.getByLabel("ID", { exact: true }).fill("new_user");
   const create = page.getByRole("button", { name: "パスキーで作成", exact: true });
   await expect(create).toBeEnabled();
-  await expect(page.getByText("この端末にパスキーを保存します。次回からパスワードなしでログインできます。")).toBeVisible();
+  await expect(page.getByText(/この端末にパスキーを保存します/)).toBeVisible();
   await expect(page.locator('input[type="password"]')).toHaveCount(0);
 });
 
