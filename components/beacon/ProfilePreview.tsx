@@ -50,39 +50,62 @@ export function ProfilePreview({
   const [snap, setSnap] = useState<FollowSnapshot>(initial);
   const [deleted, setDeleted] = useState(false);
 
-  // 右スワイプで閉じる（右方向のドラッグ）。iOSの「戻る」ジェスチャと同じ向き。
-  // しきい値未満で離したら元位置へスナップして戻す。
-  const drag = useRef({ startX: 0, startY: 0, active: false });
+  // 右スワイプで閉じる（横方向のドラッグ）。iOSの「戻る」と同じ向き。
+  // 最初の数pxで縦横どちらの操作かを判定して軸を固定し、横と判定したら
+  // 縦スクロールを止めて真横にだけスライドさせる（斜め入力で上下に動かないように）。
+  // 縦スクロールを止めるには preventDefault が要るが、Reactのタッチハンドラは
+  // passive 扱いで preventDefault が効かないため、ref から非passiveで直接登録する。
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const drag = useRef({ startX: 0, startY: 0, axis: null as null | "x" | "y", x: 0 });
   const [dragX, setDragX] = useState(0);
   const [snapping, setSnapping] = useState(false);
-  const CLOSE_THRESHOLD = 80;
 
-  function onTouchStart(e: React.TouchEvent) {
-    const t = e.touches[0];
-    drag.current = { startX: t.clientX, startY: t.clientY, active: true };
-    setSnapping(false);
-  }
-  function onTouchMove(e: React.TouchEvent) {
-    if (!drag.current.active) return;
-    const t = e.touches[0];
-    const dx = t.clientX - drag.current.startX;
-    const dy = t.clientY - drag.current.startY;
-    if (dx <= 0 || Math.abs(dy) > Math.abs(dx)) {
-      setDragX(0); // 左方向・縦方向は無視（通常スクロールを邪魔しない）
-      return;
-    }
-    setDragX(dx);
-  }
-  function onTouchEnd() {
-    if (!drag.current.active) return;
-    drag.current.active = false;
-    if (dragX > CLOSE_THRESHOLD) {
-      onClose();
-      return;
-    }
-    setSnapping(true);
-    requestAnimationFrame(() => setDragX(0));
-  }
+  useEffect(() => {
+    const el = overlayRef.current;
+    if (!el) return;
+    const CLOSE = 80; // 閉じるしきい値(px)
+    const LOCK = 10; // 軸を固定するまでの移動量(px)
+
+    const onStart = (e: TouchEvent) => {
+      const t = e.touches[0];
+      drag.current = { startX: t.clientX, startY: t.clientY, axis: null, x: 0 };
+      setSnapping(false);
+    };
+    const onMove = (e: TouchEvent) => {
+      const t = e.touches[0];
+      const dx = t.clientX - drag.current.startX;
+      const dy = t.clientY - drag.current.startY;
+      if (drag.current.axis === null) {
+        if (Math.abs(dx) < LOCK && Math.abs(dy) < LOCK) return;
+        drag.current.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+      }
+      if (drag.current.axis !== "x") return; // 縦操作は通常スクロールに任せる
+      e.preventDefault(); // 横操作中は縦スクロールを止める＝真横だけに動く
+      drag.current.x = Math.max(0, dx); // 右方向のみ
+      setDragX(drag.current.x);
+    };
+    const onEnd = () => {
+      if (drag.current.axis !== "x") return;
+      if (drag.current.x > CLOSE) {
+        onClose();
+        return;
+      }
+      setSnapping(true);
+      requestAnimationFrame(() => setDragX(0));
+      drag.current.x = 0;
+    };
+
+    el.addEventListener("touchstart", onStart, { passive: true });
+    el.addEventListener("touchmove", onMove, { passive: false });
+    el.addEventListener("touchend", onEnd, { passive: true });
+    el.addEventListener("touchcancel", onEnd, { passive: true });
+    return () => {
+      el.removeEventListener("touchstart", onStart);
+      el.removeEventListener("touchmove", onMove);
+      el.removeEventListener("touchend", onEnd);
+      el.removeEventListener("touchcancel", onEnd);
+    };
+  }, [onClose]);
 
   const dragStyle: CSSProperties | undefined =
     dragX > 0
@@ -135,14 +158,12 @@ export function ProfilePreview({
 
   return (
     <div
+      ref={overlayRef}
       className="previewOverlay"
       role="dialog"
       aria-modal="true"
       aria-label={`@${handle} のプロフィール`}
       style={dragStyle}
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
       onTransitionEnd={() => { if (dragX === 0) setSnapping(false); }}
     >
       <main className="wrap" style={{ paddingTop: 8, paddingBottom: 40 }}>
