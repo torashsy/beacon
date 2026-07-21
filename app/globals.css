@@ -1970,6 +1970,28 @@ textarea {
   height: 100%;
   object-fit: cover;
 }
+.frow .avWrap {
+  position: relative;
+  flex: 0 0 46px;
+}
+/* アバター左上の更新ランプ。overflow:hidden の .av の外側に置いてクリップを避ける。 */
+.followAvLamp {
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--em);
+  box-shadow: 0 0 0 2px var(--surface),
+    0 0 6px 1px color-mix(in srgb, var(--em) 60%, transparent);
+  animation: lamp-glow 1.8s ease-in-out infinite;
+}
+.followAvLamp.deleted {
+  background: var(--alert);
+  box-shadow: 0 0 0 2px var(--surface),
+    0 0 6px 1px color-mix(in srgb, var(--alert) 60%, transparent);
+}
 .frow .who {
   flex: 1;
   min-width: 0;
