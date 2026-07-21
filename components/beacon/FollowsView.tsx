@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { ago } from "@/lib/beacon/format";
 import { HEADING_TYPE } from "@/lib/beacon/constants";
-import type { FollowSnapshot, FollowStatus } from "@/lib/beacon/follows";
+import { toSnapshot, type FollowSnapshot, type FollowStatus } from "@/lib/beacon/follows";
 import type { PublicPage } from "@/lib/beacon/rpc";
 
 /**
@@ -28,6 +27,7 @@ export function FollowsView({
   states,
   onUnfollow,
   onUpdateSnapshot,
+  onOpenProfile,
   loggedIn,
   onLoginPrompt,
 }: {
@@ -35,11 +35,11 @@ export function FollowsView({
   states: Record<string, FollowStatus>;
   onUnfollow: (handle: string) => void;
   onUpdateSnapshot: (snap: FollowSnapshot) => void;
+  /** タップで遷移せずアプリ内プレビューを開く。 */
+  onOpenProfile: (snap: FollowSnapshot) => void;
   loggedIn: boolean;
   onLoginPrompt: () => void;
 }) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
   const [q, setQ] = useState("");
   const [found, setFound] = useState<{ handle: string; page: PublicPage } | null>(null);
   const [searching, setSearching] = useState(false);
@@ -55,21 +55,6 @@ export function FollowsView({
     const st = states[f.handle]?.state;
     return st === "new" || st === "changed" || st === "deleted";
   }).length;
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      for (const follow of follows.slice(0, 6)) router.prefetch(`/@${follow.handle}`);
-    }, 250);
-    return () => window.clearTimeout(timer);
-  }, [follows, router]);
-
-  function openProfile(handle: string) {
-    // タップから公開ページ(/@handle)のRSC取得が終わるまで isPending が続く。
-    // その間ローディングを出し、遷移待ちの「無反応で固まって見える」状態をなくす。
-    startTransition(() => {
-      router.push(`/@${handle}`);
-    });
-  }
 
   async function searchById(e: React.FormEvent) {
     e.preventDefault();
@@ -91,10 +76,7 @@ export function FollowsView({
       }
       if (!response.ok) throw new Error("search failed");
       const page = (await response.json()) as PublicPage | null;
-      if (page) {
-        router.prefetch(`/@${handle}`);
-        setFound({ handle, page });
-      }
+      if (page) setFound({ handle, page });
       else setSearchMessage("このIDのユーザーは見つかりませんでした");
     } catch {
       setSearchMessage("検索できませんでした。通信状況をご確認ください");
@@ -105,11 +87,6 @@ export function FollowsView({
 
   return (
     <section className="view">
-      {isPending && (
-        <div className="navLoading" role="status" aria-label="読み込み中">
-          <span className="navLoadingSpinner" aria-hidden="true" />
-        </div>
-      )}
       <h1>フォロー中</h1>
       {!loggedIn && (
         <div className="note" style={{ marginBottom: 12 }}>
@@ -148,11 +125,11 @@ export function FollowsView({
           className="card userSearchResult"
           role="link"
           tabIndex={0}
-          onClick={() => openProfile(found.handle)}
+          onClick={() => onOpenProfile(toSnapshot(found.page.profile, found.page.channels, found.page.cal))}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
-              openProfile(found.handle);
+              onOpenProfile(toSnapshot(found.page.profile, found.page.channels, found.page.cal));
             }
           }}
         >
@@ -199,14 +176,12 @@ export function FollowsView({
                   className="frow"
                   role="link"
                   tabIndex={0}
-                  onPointerDown={() => router.prefetch(`/@${f.handle}`)}
-                  onFocus={() => router.prefetch(`/@${f.handle}`)}
-                  onClick={() => openProfile(f.handle)}
+                  onClick={() => onOpenProfile(f)}
                   onKeyDown={(e) => {
                     if ((e.target as HTMLElement).closest("button")) return;
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
-                      openProfile(f.handle);
+                      onOpenProfile(f);
                     }
                   }}
                 >
