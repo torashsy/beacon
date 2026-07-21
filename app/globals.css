@@ -1337,8 +1337,8 @@ textarea {
 }
 @keyframes scrim-out { to { opacity: 0; } }
 @keyframes modal-out {
-  from { opacity: 1; transform: none; }
-  to { opacity: 0; transform: translateY(8px) scale(.99); }
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 .qrScrim {
   padding-inline: 16px;
