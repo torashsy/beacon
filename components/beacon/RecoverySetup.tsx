@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { syncRecoveryStatus, type RecoveryStatus } from "@/lib/beacon/rpc";
 import type { ToastFn } from "./appTypes";
@@ -59,9 +59,19 @@ export function RecoverySetup({
     }
   }, [db, onVerified, stopEditing, toast]);
 
+  // メールリンクから同一ブラウザで戻ってきたケースの自動検出は「初回マウント時の
+  // 1回だけ」に限定する。以前は syncConfirmedContact の識別子が変わるたびに再実行
+  // され（onVerified が毎描画で新しい関数のため）、メアド変更中のパスキー再認証で
+  // 一瞬張られるセッションを拾って、「古いメールで既に verified」を根拠に新コード
+  // 入力前に完了扱いしてエディタを閉じてしまっていた（認証済みアカウント特有のバグ）。
+  const autoSynced = useRef(false);
   useEffect(() => {
+    if (autoSynced.current) return;
+    autoSynced.current = true;
     void syncConfirmedContact();
-  }, [syncConfirmedContact]);
+    // 初回のみ実行する。deps に入れると上記の誤再実行が復活するため意図的に除外。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function sendConfirmation() {
     const value = destination.trim();
@@ -149,9 +159,6 @@ export function RecoverySetup({
           />
           <button className="btn sig" disabled={busy || code.length < 6} onClick={verifyConfirmation}>
             {busy ? "確認中…" : "コードで認証する"}
-          </button>
-          <button className="btn ghost" type="button" disabled={busy} onClick={() => void syncConfirmedContact()}>
-            メール内リンクから開いた場合はこちら
           </button>
         </>
       )}
