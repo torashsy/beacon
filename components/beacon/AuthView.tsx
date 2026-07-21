@@ -159,12 +159,13 @@ export function AuthView({
             lang="en"
           />
         </div>
+        <p className="idRule">英数字と _（アンダースコア）が使えます（3〜20文字）</p>
         <div className={`hint ${handle.length >= 3 ? "ok" : ""}`}>
           {handle.length >= 3
             ? `アドレス → via-mi.com/@${handle}`
             : handle.length > 0
               ? "3文字以上にしてください"
-              : "英数字と _（アンダースコア）が使えます"}
+              : ""}
         </div>
         <div className="authAction">
           <p className="lead">この端末にパスキーを保存します。<br />パスワードなしでログインできます。</p>
