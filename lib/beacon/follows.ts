@@ -122,6 +122,7 @@ export type FollowDiffState =
 export interface FollowStatus {
   state: FollowDiffState;
   addedLive: number; // 増えた有効リンク数
+  addedTypes?: string[]; // 増えた有効リンクの種別（チップ表示用・最大数個）
   fresh?: FollowSnapshot; // 取得した最新（「最新にする」で採用）
 }
 
@@ -165,10 +166,17 @@ export function diffFollow(
 ): FollowStatus {
   if (!page) return { state: "deleted", addedLive: 0 };
   const snapLive = liveUrlSet(snap.channels);
-  const curLive = liveUrlSet(page.channels);
-  const added = [...curLive].filter((u) => !snapLive.has(u));
+  const addedChannels = page.channels.filter(
+    (c) => c.type !== HEADING_TYPE && c.status === "live" && !snapLive.has(c.url),
+  );
   const fresh = toSnapshot(page.profile, page.channels, page.cal);
-  if (added.length) return { state: "new", addedLive: added.length, fresh };
+  if (addedChannels.length)
+    return {
+      state: "new",
+      addedLive: addedChannels.length,
+      addedTypes: addedChannels.map((c) => c.type),
+      fresh,
+    };
   if (snapshotSignature(snap) !== snapshotSignature(fresh))
     return { state: "changed", addedLive: 0, fresh };
   return { state: "same", addedLive: 0, fresh };

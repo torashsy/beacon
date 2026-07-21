@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ago } from "@/lib/beacon/format";
-import { grad, HEADING_TYPE } from "@/lib/beacon/constants";
+import { grad, HEADING_TYPE, TYPES } from "@/lib/beacon/constants";
 import { toSnapshot, type FollowSnapshot, type FollowStatus } from "@/lib/beacon/follows";
 import type { PublicPage } from "@/lib/beacon/rpc";
 
@@ -45,13 +45,22 @@ export function FollowsView({
   const [found, setFound] = useState<{ handle: string; page: PublicPage } | null>(null);
   const [searching, setSearching] = useState(false);
   const [searchMessage, setSearchMessage] = useState("");
+  const [sort, setSort] = useState<"added" | "updated">("added");
   const query = q.trim().toLowerCase();
-  const shown = follows.filter(
+  const filtered = follows.filter(
     (f) =>
       !query ||
       f.handle.toLowerCase().includes(query) ||
       (f.name || "").toLowerCase().includes(query),
   );
+  // 「更新順」は相手が最後にページを更新した時刻の新しい順。既定（追加順）は
+  // フォローした順（配列は新規を先頭にunshiftしているためそのまま）。
+  const shown =
+    sort === "updated"
+      ? [...filtered].sort(
+          (a, b) => followTime(b, states[b.handle]) - followTime(a, states[a.handle]),
+        )
+      : filtered;
   const updates = follows.filter((f) => {
     const st = states[f.handle]?.state;
     return st === "new" || st === "changed" || st === "deleted";
@@ -153,12 +162,32 @@ export function FollowsView({
           <span className="searchResultArrow">→</span>
         </div>
       )}
-      <div className="count">
-        {follows.length
-          ? `${follows.length}人をフォロー中` +
-            (updates ? `・${updates}件に更新あり` : "") +
-            (query ? `・${shown.length}件` : "")
-          : ""}
+      <div className="followListHead">
+        <div className="count">
+          {follows.length
+            ? `${follows.length}人をフォロー中` +
+              (updates ? `・${updates}件に更新あり` : "") +
+              (query ? `・${shown.length}件` : "")
+            : ""}
+        </div>
+        {follows.length > 1 && (
+          <div className="followSort" role="group" aria-label="並び替え">
+            <button
+              type="button"
+              className={sort === "added" ? "on" : ""}
+              onClick={() => setSort("added")}
+            >
+              追加順
+            </button>
+            <button
+              type="button"
+              className={sort === "updated" ? "on" : ""}
+              onClick={() => setSort("updated")}
+            >
+              更新順
+            </button>
+          </div>
+        )}
       </div>
       <div className="card" style={{ padding: "4px 14px" }}>
         <div>
@@ -212,6 +241,18 @@ export function FollowsView({
                     <div className="nm">{f.name || `@${f.handle}`}</div>
                     <div className="id">@{f.handle}</div>
                     <FollowBadge st={st} />
+                    {st.state === "new" && st.addedTypes?.length ? (
+                      <div className="followChips">
+                        {st.addedTypes.slice(0, 3).map((t, i) => (
+                          <span key={i} className="followChip">
+                            ＋{TYPES[t]?.lb ?? "リンク"}
+                          </span>
+                        ))}
+                        {st.addedTypes.length > 3 && (
+                          <span className="followChip more">＋{st.addedTypes.length - 3}</span>
+                        )}
+                      </div>
+                    ) : null}
                     <div className="st">
                       <b>{live}件のリンク</b>
                       ・{ago(followTime(f, st))}
@@ -239,11 +280,8 @@ export function FollowsView({
 function FollowBadge({ st }: { st: FollowStatus }) {
   // ドットはアバター左上のランプ(.followAvLamp)に集約し、ここは説明ラベルだけにする。
   if (st.state === "new") {
-    return (
-      <span className="followLamp new">
-        新しい連絡先{st.addedLive > 1 ? ` +${st.addedLive}` : ""}
-      </span>
-    );
+    // 具体的に増えたリンク種別は followChips 側で見せるため、ここは見出しだけ。
+    return <span className="followLamp new">新しい連絡先</span>;
   }
   if (st.state === "changed") {
     return <span className="followLamp changed">更新あり</span>;

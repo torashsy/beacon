@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { PublicProfileCard, type PublicCardData } from "./PublicProfileCard";
 import { LegalFooter } from "./LegalFooter";
@@ -50,6 +50,54 @@ export function ProfilePreview({
   const [snap, setSnap] = useState<FollowSnapshot>(initial);
   const [deleted, setDeleted] = useState(false);
 
+  // 下スワイプで閉じる（一番上からの下方向ドラッグのみ）。SNSのプロフィール
+  // モーダルと同じ操作感。しきい値未満で離したら元位置へスナップして戻す。
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const drag = useRef({ startX: 0, startY: 0, active: false });
+  const [dragY, setDragY] = useState(0);
+  const [snapping, setSnapping] = useState(false);
+  const CLOSE_THRESHOLD = 90;
+
+  function onTouchStart(e: React.TouchEvent) {
+    const el = overlayRef.current;
+    if (!el || el.scrollTop > 0) return; // 先頭にいるときだけドラッグ開始
+    const t = e.touches[0];
+    drag.current = { startX: t.clientX, startY: t.clientY, active: true };
+    setSnapping(false);
+  }
+  function onTouchMove(e: React.TouchEvent) {
+    if (!drag.current.active) return;
+    const t = e.touches[0];
+    const dy = t.clientY - drag.current.startY;
+    const dx = t.clientX - drag.current.startX;
+    if (dy <= 0 || Math.abs(dx) > Math.abs(dy)) {
+      setDragY(0); // 上方向・横方向は無視（通常スクロール/戻る操作を邪魔しない）
+      return;
+    }
+    setDragY(dy);
+  }
+  function onTouchEnd() {
+    if (!drag.current.active) return;
+    drag.current.active = false;
+    if (dragY > CLOSE_THRESHOLD) {
+      onClose();
+      return;
+    }
+    setSnapping(true);
+    requestAnimationFrame(() => setDragY(0));
+  }
+
+  const dragStyle: CSSProperties | undefined =
+    dragY > 0
+      ? {
+          transform: `translateY(${dragY}px)`,
+          opacity: Math.max(0.4, 1 - dragY / 420),
+          transition: snapping ? "transform .22s ease, opacity .22s ease" : "none",
+        }
+      : snapping
+        ? { transition: "transform .22s ease, opacity .22s ease" }
+        : undefined;
+
   // 表示中は背景スクロールを止める。
   useEffect(() => {
     const prev = document.body.style.overflow;
@@ -89,7 +137,18 @@ export function ProfilePreview({
   }, [handle]);
 
   return (
-    <div className="previewOverlay" role="dialog" aria-modal="true" aria-label={`@${handle} のプロフィール`}>
+    <div
+      ref={overlayRef}
+      className="previewOverlay"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`@${handle} のプロフィール`}
+      style={dragStyle}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+      onTransitionEnd={() => { if (dragY === 0) setSnapping(false); }}
+    >
       <main className="wrap" style={{ paddingTop: 8, paddingBottom: 40 }}>
         <div className="top">
           <span className="logo" aria-hidden="true">via-mi</span>
