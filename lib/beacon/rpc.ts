@@ -80,42 +80,6 @@ export async function syncRecoveryStatus(db: DB): Promise<RecoveryStatus> {
   return unwrap(await db.rpc("sync_recovery_status")) as RecoveryStatus;
 }
 
-/** 旧アカウント互換用。新規登録では使用しない。 */
-export async function createAccount(
-  db: DB,
-  handle: string,
-  pass: string,
-): Promise<string> {
-  return unwrap(
-    await db.rpc("create_account", { p_handle: handle, p_pass: pass }),
-  ) as string;
-}
-
-/** 旧アカウント移行用のログイン検証。 */
-export async function verifyLogin(
-  db: DB,
-  handle: string,
-  pass: string,
-): Promise<boolean> {
-  return unwrap(
-    await db.rpc("verify_login", { p_handle: handle, p_pass: pass }),
-  ) as boolean;
-}
-
-/**
- * セッショントークンを発行（要認証）。以後の全RPCに pass の代わりに渡せる。
- * 期限は30日スライド。パスコード再設定で全セッションが失効する。
- */
-export async function createSession(
-  db: DB,
-  handle: string,
-  pass: string,
-): Promise<string> {
-  return unwrap(
-    await db.rpc("create_session", { p_handle: handle, p_pass: pass }),
-  ) as string;
-}
-
 /** セッショントークンを失効させる（ログアウト時）。 */
 export async function deleteSession(
   db: DB,
@@ -123,36 +87,6 @@ export async function deleteSession(
   token: string,
 ): Promise<void> {
   unwrap(await db.rpc("delete_session", { p_handle: handle, p_token: token }));
-}
-
-/** 復旧コードでパスコード再設定。 */
-export async function resetPass(
-  db: DB,
-  handle: string,
-  recoveryCode: string,
-  newPass: string,
-): Promise<void> {
-  // reset_pass は boolean を返す（誤りカウンタの更新を確実にコミットさせるため、
-  // 誤りを例外にせず false で返す設計。詳細は launch-hardening-migration.sql）。
-  const ok = unwrap(
-    await db.rpc("reset_pass", {
-      p_handle: handle,
-      p_rc: recoveryCode,
-      p_new: newPass,
-    }),
-  ) as boolean;
-  if (!ok) throw new Error("bad recovery code");
-}
-
-/** 復旧コードを再発行し、新しい平文コードを返す（要パスコード）。古い復旧コードは無効になる。 */
-export async function reissueRecovery(
-  db: DB,
-  handle: string,
-  pass: string,
-): Promise<string> {
-  return unwrap(
-    await db.rpc("reissue_recovery", { p_handle: handle, p_pass: pass }),
-  ) as string;
 }
 
 /** 自分のフォロー先ハンドル一覧をサーバーから取得（要パスコード）。 */
