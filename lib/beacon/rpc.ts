@@ -234,15 +234,34 @@ export async function getClicks(
 
 // ---- 公開読み取り（列挙防止のため security definer RPC 経由。直接 select は不可）----
 
-export interface PublicPage {
+export interface PublicPageCore {
   profile: Profile;
   channels: Channel[];
   cal: CalMemo[]; // 公開カレンダーのみ
+}
+export interface PublicPage extends PublicPageCore {
   follower_count: number;
 }
 
 /**
- * 公開ページ1件分（プロフィール＋リンク＋公開カレンダー）を取得。存在しなければ null。
+ * 公開ページ本体（プロフィール＋リンク＋公開カレンダー）だけを1RPCで取得。
+ * フォロワー数を表示しない用途（フォロー更新チェック・一覧同期）向け。存在しなければ null。
+ */
+export async function getPublicPageCore(
+  db: DB,
+  handle: string,
+): Promise<PublicPageCore | null> {
+  const data = unwrap(await db.rpc("get_public_page", { p_handle: handle })) as PublicPage | null;
+  if (!data || !data.profile) return null;
+  return {
+    profile: data.profile,
+    channels: data.channels ?? [],
+    cal: data.cal ?? [],
+  };
+}
+
+/**
+ * 公開ページ1件分＋フォロワー数を取得。存在しなければ null。
  * profiles/channels/cal_public への直接 select は許可されておらず、必ずこの
  * ハンドル指定 RPC 経由で読む（anon キーによる全ユーザー列挙を防ぐ）。
  */
@@ -250,16 +269,13 @@ export async function getPublicPage(
   db: DB,
   handle: string,
 ): Promise<PublicPage | null> {
-  const [pageResult, countResult] = await Promise.all([
-    db.rpc("get_public_page", { p_handle: handle }),
+  const [core, countResult] = await Promise.all([
+    getPublicPageCore(db, handle),
     db.rpc("get_follower_count", { p_handle: handle }),
   ]);
-  const data = unwrap(pageResult) as PublicPage | null;
-  if (!data || !data.profile) return null;
+  if (!core) return null;
   return {
-    profile: data.profile,
-    channels: data.channels ?? [],
-    cal: data.cal ?? [],
+    ...core,
     follower_count: countResult.error ? 0 : Number(countResult.data ?? 0),
   };
 }
