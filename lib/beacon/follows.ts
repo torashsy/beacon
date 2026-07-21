@@ -26,7 +26,8 @@ export interface FollowSnapshot {
   content?: ProfileContent;
   channels: Pick<Channel, "type" | "url" | "label" | "descr" | "status">[];
   pubcal: CalMemo[];
-  updated: number;
+  updated: number; // このスナップショットを端末で取得した時刻（フォロー/更新時）
+  pageUpdated?: string | null; // 相手がページを最後に更新した時刻（accounts.updated_at）
 }
 
 /** 公開プロフィール＋リンク＋公開カレンダーからスナップショットを作る。 */
@@ -56,6 +57,7 @@ export function toSnapshot(
     })),
     pubcal,
     updated: Date.now(),
+    pageUpdated: profile.updated_at ?? null,
   };
 }
 

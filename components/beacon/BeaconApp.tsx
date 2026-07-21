@@ -149,11 +149,35 @@ export function BeaconApp() {
     setEditing(true);
   }
 
+  // 起動時のタブ決定: ?tab= 指定が最優先。無ければ直前に開いていたタブを復元する。
+  // 公開ページ(/@handle)へ遷移して戻るとBeaconAppは作り直されnavTabが既定の
+  // "profile"（自分のページ）に戻ってしまうため、sessionStorageで元のタブへ戻す。
   useEffect(() => {
     const requested = new URLSearchParams(window.location.search).get("tab");
-    if (requested === "howto" || requested === "settings") setNavTab("help");
-    else if (requested && ["profile", "follows", "help"].includes(requested)) setNavTab(requested as NavTab);
+    if (requested === "howto" || requested === "settings") {
+      setNavTab("help");
+      return;
+    }
+    if (requested && ["profile", "follows", "help"].includes(requested)) {
+      setNavTab(requested as NavTab);
+      return;
+    }
+    try {
+      const saved = sessionStorage.getItem("via-mi:tab");
+      if (saved && ["profile", "follows", "help"].includes(saved)) setNavTab(saved as NavTab);
+    } catch {
+      /* sessionStorage不可なら既定のまま */
+    }
   }, []);
+
+  // 現在のタブを控えておき、公開ページから戻ったときに復元できるようにする。
+  useEffect(() => {
+    try {
+      sessionStorage.setItem("via-mi:tab", navTab);
+    } catch {
+      /* noop */
+    }
+  }, [navTab]);
 
   const [authInitialHandle, setAuthInitialHandle] = useState("");
   const [authInitialPane, setAuthInitialPane] = useState<"create" | "login" | "recover">(

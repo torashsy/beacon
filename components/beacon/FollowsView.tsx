@@ -14,6 +14,15 @@ import type { PublicPage } from "@/lib/beacon/rpc";
  * 一覧・名前検索・おすすめは行わず、未フォローの相手はID完全一致でのみ取得する。
  */
 
+/**
+ * 一覧に出す「更新時刻」。相手が実際にページを更新した時刻(pageUpdated)を優先し、
+ * 無い/不正な場合だけ従来のスナップショット取得時刻(updated)にフォールバックする。
+ */
+function followTime(f: FollowSnapshot): number {
+  const parsed = f.pageUpdated ? Date.parse(f.pageUpdated) : NaN;
+  return Number.isFinite(parsed) ? parsed : f.updated;
+}
+
 export function FollowsView({
   follows,
   states,
@@ -215,7 +224,7 @@ export function FollowsView({
                     <FollowBadge st={st} />
                     <div className="st">
                       <b>{live}件のリンク</b>
-                      ・{ago(f.updated)}
+                      ・{ago(followTime(f))}
                     </div>
                   </div>
                   {st.state === "new" || st.state === "changed" ? (
