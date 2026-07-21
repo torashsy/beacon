@@ -32,6 +32,26 @@
 - `create-avatar-upload` Edge Function
 - `create-passkey-user` Edge Function（Verify JWT off）
 - `send-follow-update` Edge Function（Verify JWT off、VAPID秘密鍵を使用）
+- `admin` Edge Function（Verify JWT off、運営の管理画面 `/admin` 用）
+
+## 運営用の管理画面（/admin）
+
+`/admin` は運営がアカウント凍結・解除や通報/問い合わせ対応を行う画面。データ操作は
+すべて `admin` Edge Function 経由で、`service_role` はブラウザに出さない方針を守る。
+認証は「自分の via-mi セッショントークン＋許可リスト」の二段：呼び出し側が送った
+handle/token を `verify_app_session` で検証し、その handle が Secret `ADMIN_HANDLES`
+（カンマ区切り）に含まれるときだけ操作を通す。含まれない一般ユーザーは 403。
+
+デプロイ手順（一度だけ）:
+
+```
+# 管理者にするIDを登録（カンマ区切りで複数可）
+npx supabase secrets set ADMIN_HANDLES=あなたのID
+# 関数をデプロイ（Verify JWT off で公開）
+npx supabase functions deploy admin --no-verify-jwt
+```
+
+`BEACON_ALLOWED_ORIGINS`（本番オリジン）は他の関数と共用。設定済みなら追加不要。
 
 疎通確認は本番の `/api/health`（`get_public_page` の往復）と e2e（`npm run test:e2e`）で行う。
 `scripts/conn-test.mjs` は旧パスワード方式のRPCを使う通し検証で、パスキー専用化に伴い
