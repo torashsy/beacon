@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ago } from "@/lib/beacon/format";
-import { HEADING_TYPE } from "@/lib/beacon/constants";
+import { grad, HEADING_TYPE } from "@/lib/beacon/constants";
 import { toSnapshot, type FollowSnapshot, type FollowStatus } from "@/lib/beacon/follows";
 import type { PublicPage } from "@/lib/beacon/rpc";
 
@@ -133,7 +133,10 @@ export function FollowsView({
             }
           }}
         >
-          <div className="av">
+          <div
+            className="av"
+            style={!found.page.profile.av_url ? { background: grad(found.page.profile.av_theme ?? 0) } : undefined}
+          >
             {found.page.profile.av_url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={found.page.profile.av_url} alt="" loading="lazy" decoding="async" />
@@ -185,7 +188,10 @@ export function FollowsView({
                     }
                   }}
                 >
-                  <div className="av">
+                  <div
+                    className="av"
+                    style={!f.av_url ? { background: grad(f.av_theme ?? 0) } : undefined}
+                  >
                     {f.av_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={f.av_url} alt="" loading="lazy" decoding="async" />
