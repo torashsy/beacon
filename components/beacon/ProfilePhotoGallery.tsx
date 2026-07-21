@@ -52,6 +52,8 @@ export function ProfilePhotoGallery({ photos }: { photos: ProfilePhoto[] }) {
             <img
               src={photo.url}
               alt=""
+              loading="lazy"
+              decoding="async"
               onLoad={() => markLoaded(photo.id)}
             />
           </button>

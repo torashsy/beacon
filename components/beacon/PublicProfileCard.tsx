@@ -31,7 +31,7 @@ function Avatar({ url, emoji, handle, theme }: { url: string; emoji: string; han
     <div className="xav" style={!url ? { background: grad(theme) } : undefined}>
       {url ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={url} alt="" />
+        <img src={url} alt="" decoding="async" />
       ) : (
         emoji || (handle[0] ?? "?").toUpperCase()
       )}
@@ -70,8 +70,9 @@ export function PublicProfileCard({
         style={profile.bn_url ? { background: "none" } : { background: grad(profile.theme) }}
       >
         {profile.bn_url && (
+          // カバー画像はページで最も大きく最初に見える要素（LCP）。優先的に取得させる。
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={profile.bn_url} alt="" />
+          <img src={profile.bn_url} alt="" decoding="async" fetchPriority="high" />
         )}
         {profile.status && (
           <div className="statusBubble"><span>{profile.status}</span></div>

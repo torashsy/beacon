@@ -140,7 +140,7 @@ export function FollowsView({
           <div className="av">
             {found.page.profile.av_url ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={found.page.profile.av_url} alt="" />
+              <img src={found.page.profile.av_url} alt="" loading="lazy" decoding="async" />
             ) : (
               found.page.profile.emoji || found.handle[0]?.toUpperCase()
             )}
@@ -194,7 +194,7 @@ export function FollowsView({
                   <div className="av">
                     {f.av_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={f.av_url} alt="" />
+                      <img src={f.av_url} alt="" loading="lazy" decoding="async" />
                     ) : (
                       f.emoji || f.handle[0]?.toUpperCase()
                     )}
