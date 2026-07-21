@@ -805,8 +805,11 @@ function CalendarPane({
         onChange={(e) => setMemo(e.target.value)}
         placeholder="例: ライブ 19:00〜"
         maxLength={100}
+        // 日付未選択のまま入力できると、後で日付をタップした瞬間に selectDay の
+        // setMemo で入力内容が上書き消去されてしまう。日付選択を先に促す。
+        disabled={!sel}
       />
-      <button className="btn sig" disabled={busy} onClick={save} style={{ marginTop: 14 }}>
+      <button className="btn sig" disabled={busy || !sel} onClick={save} style={{ marginTop: 14 }}>
         {busy ? "保存中…" : "保存する"}
       </button>
     </div>
