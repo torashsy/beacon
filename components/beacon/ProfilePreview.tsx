@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { PublicProfileCard, type PublicCardData } from "./PublicProfileCard";
+import { LegalFooter } from "./LegalFooter";
 import { getPublicPage } from "@/lib/beacon/rpc";
 import { createClient } from "@/lib/supabase/client";
 import { toSnapshot, type FollowSnapshot } from "@/lib/beacon/follows";
@@ -88,31 +90,43 @@ export function ProfilePreview({
 
   return (
     <div className="previewOverlay" role="dialog" aria-modal="true" aria-label={`@${handle} のプロフィール`}>
-      <div className="previewBar">
-        <button type="button" className="publicBack" onClick={onClose}>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
-          戻る
-        </button>
-        <div className="previewBarActions">
-          <a className="previewOpen" href={`/@${handle}`} target="_blank" rel="noreferrer">
-            ページを開く
-          </a>
-          <button
-            type="button"
-            className={`pill ${following ? "line" : "solid"}`}
-            onClick={() => onToggleFollow(snap)}
-          >
-            {following ? "フォロー中" : "フォローする"}
+      <main className="wrap" style={{ paddingTop: 8, paddingBottom: 40 }}>
+        <div className="top">
+          <span className="logo" aria-hidden="true">via-mi</span>
+          <button type="button" className="publicBack" onClick={onClose}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+            戻る
           </button>
         </div>
-      </div>
-      <div className="previewBody">
         {deleted ? (
           <div className="previewDeleted">このページは削除されました。</div>
         ) : (
-          <PublicProfileCard data={snapToCard(snap)} trackHandle={handle} />
+          <>
+            <PublicProfileCard
+              data={snapToCard(snap)}
+              trackHandle={handle}
+              actions={
+                <button
+                  type="button"
+                  className={`pill followAction ${following ? "line" : "solid"}`}
+                  onClick={() => onToggleFollow(snap)}
+                >
+                  {following ? "フォロー中" : "フォローする"}
+                </button>
+              }
+            />
+            <div style={{ marginTop: 12, textAlign: "center" }}>
+              <Link
+                href={`/contact?category=report&page=${encodeURIComponent(`https://via-mi.com/@${handle}`)}`}
+                className="reportLink"
+              >
+                このページを通報
+              </Link>
+            </div>
+            <LegalFooter />
+          </>
         )}
-      </div>
+      </main>
     </div>
   );
 }
