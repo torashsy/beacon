@@ -95,12 +95,19 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 5. 発行された URL で `/@{handle}` が開けば公開成功
    - 独自ドメインは Vercel の **Settings → Domains** で後付け可能
 
-### アカウント復旧メール（Authentication → Email Templates → Magic Link）
+### アカウント復旧メール（Authentication → Email Templates）
 
-別端末での復旧は「メールの6桁コードをアプリに入力する」方式（`verifyOtp`）。
-ホーム画面版(PWA)ではメール内リンクが別ブラウザで開き認証が引き継がれないため、
-コード方式を基本にしている。テンプレートを日本語化し、**本文にコード `{{ .Token }}` を
-必ず含める**こと（リンクは同一ブラウザ用のフォールバック）。
+別端末での復旧・復旧用メールの登録はどちらも「メールの6桁コードをアプリに
+入力する」方式（`verifyOtp`）。ホーム画面版(PWA)ではメール内リンクが別ブラウザで
+開き認証が引き継がれないため、**メールにリンクは載せずコードのみ**にする。
+
+- **Email OTP length は必ず 6 にする**（Authentication → Sign In/Providers の Email、
+  または config の `mailer_otp_length`）。8桁など6以外だと、アプリのコード入力欄
+  （6桁固定）と食い違い、正しいコードを入力しても認証できない。
+- 日本語化して `{{ .Token }}` を本文に含めるテンプレートは **2つ**。どちらも
+  リンク（`{{ .ConfirmationURL }}`）は載せない:
+  - **Magic Link**: ログイン復旧（`signInWithOtp`）で使用
+  - **Change Email Address**: 復旧用メールの登録/変更（`updateUser({ email })`）で使用
 
 ```
 件名: via-mi 確認コード
@@ -108,7 +115,6 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 <h2>via-mi ログイン確認</h2>
 <p>アプリに次の6桁のコードを入力してください。</p>
 <p style="font-size:28px;font-weight:bold;letter-spacing:6px;">{{ .Token }}</p>
-<p>または <a href="{{ .ConfirmationURL }}">こちらのリンク</a> からも確認できます。</p>
 <p>1時間で無効になります。心当たりがなければ無視してください。</p>
 ```
 
@@ -138,8 +144,8 @@ Supabase標準のメール送信は時間あたりの送信数が少なく、本
 
 ### デプロイ後に締める
 
-- Supabase **Authentication → URL Configuration** の Redirect URLs に本番URL（`https://via-mi.com/`）を許可（復旧リンクのフォールバック用）
-- 上記のメールテンプレート（Magic Link）を日本語化し `{{ .Token }}` を含める
+- Email OTP length を **6** に、復旧メール2種（Magic Link / Change Email Address）を
+  日本語のコードのみテンプレート（`{{ .Token }}`・リンクなし）にする（上記「復旧メール」節）
 - Storage ポリシーを厳密版へ（手順3の注記）
 - 本番URLを OGP の絶対URL計算に使う場合は `NEXT_PUBLIC_SITE_URL` を追加して
   `generateMetadata` で参照する
