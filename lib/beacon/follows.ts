@@ -1,5 +1,5 @@
 import type { CalMemo, Channel, Profile } from "./types";
-import type { PublicPage } from "./rpc";
+import type { PublicPageCore } from "./rpc";
 import { HEADING_TYPE } from "./constants";
 import { normalizeProfileContent, type ProfileContent } from "./profile-content";
 
@@ -161,7 +161,7 @@ function snapshotSignature(snapshot: FollowSnapshot): string {
 /** スナップショットと現在ページを比較して差分状態を返す。page=null は削除ずみ。 */
 export function diffFollow(
   snap: FollowSnapshot,
-  page: PublicPage | null,
+  page: PublicPageCore | null,
 ): FollowStatus {
   if (!page) return { state: "deleted", addedLive: 0 };
   const snapLive = liveUrlSet(snap.channels);

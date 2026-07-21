@@ -11,6 +11,7 @@ import {
   getClicks,
   getMyFollows,
   getPublicPage,
+  getPublicPageCore,
   saveMyFollows,
   saveCal as rpcSaveCal,
   saveChannels as rpcSaveChannels,
@@ -347,7 +348,7 @@ export function BeaconApp() {
             const existing = cached.get(target);
             if (existing) return existing;
             try {
-              const page = await getPublicPage(db, target);
+              const page = await getPublicPageCore(db, target);
               return page
                 ? toSnapshot(page.profile, page.channels, page.cal)
                 : null;
@@ -709,7 +710,7 @@ export function BeaconApp() {
         4,
         async (snap) => {
           try {
-            const page = await getPublicPage(db, snap.handle);
+            const page = await getPublicPageCore(db, snap.handle);
             return [snap.handle, diffFollow(snap, page)] as const;
           } catch {
             return [
