@@ -15,7 +15,7 @@ export const SELLING_POINTS: SellingPoint[] = [
   },
   {
     icon: "key",
-    title: "Face ID・生体認証で3秒ログイン。",
+    title: "Face ID・生体認証ですぐログイン。",
     text: "パスワードは要りません。\n生体認証（パスキー）で今すぐはじめましょう。",
   },
   {
