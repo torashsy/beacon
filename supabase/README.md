@@ -54,8 +54,6 @@ npx supabase functions deploy admin --no-verify-jwt
 `BEACON_ALLOWED_ORIGINS`（本番オリジン）は他の関数と共用。設定済みなら追加不要。
 
 疎通確認は本番の `/api/health`（`get_public_page` の往復）と e2e（`npm run test:e2e`）で行う。
-`scripts/conn-test.mjs` は旧パスワード方式のRPCを使う通し検証で、パスキー専用化に伴い
-それらのRPCを anon から revoke したため現在は動かない（参照用に残置）。
 
 ## 今後の変更（自動適用）
 

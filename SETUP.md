@@ -82,8 +82,6 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 5. 「退会（アカウントを削除）」で削除できることを確認
 
 > 疎通確認は本番の `/api/health`（`get_public_page` の往復）と e2e（`npm run test:e2e`）で行う。
-> `scripts/conn-test.mjs` は旧パスワード方式RPC前提の通し検証で、パスキー専用化に伴い
-> それらを anon から revoke したため現在は動かない（参照用に残置）。
 
 ---
 
