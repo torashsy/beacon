@@ -3491,6 +3491,7 @@ a {
 .adminReportActions .pill { padding: 7px 14px; font-size: 12.5px; }
 
 /* ---- アプリ内プロフィールプレビュー（フォロー相手をタップ、遷移なし） ---- */
+/* 公開ページ(/@handle)と同じ見た目で、遷移せずアプリ内に重ねる。 */
 .previewOverlay {
   position: fixed;
   inset: 0;
@@ -3499,33 +3500,12 @@ a {
   overflow-y: auto;
   overscroll-behavior: contain;
   animation: preview-in 160ms var(--ease-state);
+  padding-top: env(safe-area-inset-top);
   padding-bottom: calc(24px + env(safe-area-inset-bottom));
 }
 @keyframes preview-in {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
-}
-.previewBar {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 10px max(var(--page-gutter), env(safe-area-inset-left));
-  padding-top: calc(10px + env(safe-area-inset-top));
-  background: var(--page-glass);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--border);
-}
-.previewBarActions { display: flex; align-items: center; gap: 12px; }
-.previewOpen { font-size: 12px; font-weight: 700; color: var(--emd); text-decoration: none; white-space: nowrap; }
-.previewBarActions .pill { padding: 8px 16px; font-size: 13px; }
-.previewBody {
-  max-width: var(--content-width);
-  margin: 0 auto;
-  padding: 12px max(var(--page-gutter), env(safe-area-inset-left)) 0;
 }
 .previewDeleted {
   margin-top: 40px;
