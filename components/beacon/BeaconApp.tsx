@@ -725,19 +725,45 @@ export function BeaconApp() {
     [db, session, toast],
   );
 
+  // フォロー一覧の正本は端末のlocalStorage。公開ページ(/@handle)でフォローすると
+  // そちらのFollowButtonがlocalStorageを更新するが、アプリ側のReact状態は起動時の
+  // ままになる。アプリに戻った・再表示したタイミングでlocalStorageから読み直す。
+  const reloadFollowsFromStore = useCallback(() => {
+    setFollows(loadFollows(session?.handle ?? null));
+  }, [session]);
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") reloadFollowsFromStore();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    // bfcache から復元されたとき（visibilitychange が発火しない端末向け）
+    window.addEventListener("pageshow", reloadFollowsFromStore);
+    window.addEventListener("focus", reloadFollowsFromStore);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("pageshow", reloadFollowsFromStore);
+      window.removeEventListener("focus", reloadFollowsFromStore);
+    };
+  }, [reloadFollowsFromStore]);
+
   const refreshLatest = useCallback(async () => {
+    // 下引っ張り更新でも、まずlocalStorageの最新一覧を取り込む（公開ページで
+    // フォローした分を反映）。その上で本人プロフィールと各相手の変化を取り直す。
+    const current = loadFollows(session?.handle ?? null);
+    setFollows(current);
     try {
       await Promise.all([
         session
           ? loadMe(session.handle, session.pass).then((latest) => setMe(latest))
           : Promise.resolve(),
-        follows.length ? checkFollows(follows) : Promise.resolve(),
+        current.length ? checkFollows(current) : Promise.resolve(),
         session ? syncFollowsFromServer(session.handle, session.pass) : Promise.resolve(),
       ]);
     } catch {
       toast("更新できませんでした");
     }
-  }, [session, loadMe, follows, checkFollows, syncFollowsFromServer, toast]);
+  }, [session, loadMe, checkFollows, syncFollowsFromServer, toast]);
 
   // 起動時とフォローの顔ぶれ変更時に再チェック（他人がサーバー側で変えた分を検知）
   const followKey = follows.map((f) => f.handle).join(",");
