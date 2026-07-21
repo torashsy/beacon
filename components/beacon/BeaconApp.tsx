@@ -187,6 +187,7 @@ export function BeaconApp() {
     "create",
   );
   const [recoverySessionReady, setRecoverySessionReady] = useState(false);
+  const [recoveryEmail, setRecoveryEmail] = useState("");
   // 保存状態（「保存したか分からない」不安を解消するための常時表示インジケータ）
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">(
     "idle",
@@ -440,16 +441,19 @@ export function BeaconApp() {
       email: destination,
       options: {
         shouldCreateUser: false,
+        // メール内リンクはブラウザで開くとホーム画面版(PWA)と別コンテキストになり
+        // 認証が引き継がれない。基本は本文の6桁コードを verifyOtp で使う。
+        // リンクも残しておき、同一ブラウザで開いた場合のフォールバックにする。
         emailRedirectTo: "https://via-mi.com/?recover=1",
       },
     });
     if (result.error) throw result.error;
+    setRecoveryEmail(destination);
     toast("確認コードを送信しました");
   }, [db, toast]);
 
-  const completeRecovery = useCallback(async () => {
-    const sessionResult = await db.auth.getSession();
-    if (!sessionResult.data.session) throw new Error("auth");
+  // セッション確立後の共通処理: パスキー登録 → アプリセッション発行 → ログイン。
+  const finalizeRecovery = useCallback(async () => {
     try {
       const appSession = await createPasskeySession(db);
       await registerPasskeyForHandle(db, appSession.handle);
@@ -462,6 +466,24 @@ export function BeaconApp() {
       await db.auth.signOut({ scope: "local" }).catch(() => {});
     }
   }, [db, finishAppLogin, toast]);
+
+  // 6桁コードをこのコンテキストで検証してセッションを確立（PWAでも完結する）。
+  const verifyRecoveryCode = useCallback(async (code: string) => {
+    const verified = await db.auth.verifyOtp({
+      email: recoveryEmail,
+      token: code.trim(),
+      type: "email",
+    });
+    if (verified.error) throw verified.error;
+    await finalizeRecovery();
+  }, [db, recoveryEmail, finalizeRecovery]);
+
+  // メール内リンクを同一ブラウザで開いた場合のフォールバック。
+  const completeRecovery = useCallback(async () => {
+    const sessionResult = await db.auth.getSession();
+    if (!sessionResult.data.session) throw new Error("auth");
+    await finalizeRecovery();
+  }, [db, finalizeRecovery]);
 
   const reauthenticatePasskey = useCallback(async () => {
     const signedIn = await db.auth.signInWithPasskey();
@@ -974,6 +996,7 @@ export function BeaconApp() {
             onCreate={doCreate}
             onLogin={doPasskeyLogin}
             onRecoverySend={sendRecoveryCode}
+            onRecoveryVerify={verifyRecoveryCode}
             onRecoveryComplete={completeRecovery}
             recoverySessionReady={recoverySessionReady}
             onBack={() => setOverlay("none")}

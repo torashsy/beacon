@@ -12,6 +12,7 @@ export function AuthView({
   onCreate,
   onLogin,
   onRecoverySend,
+  onRecoveryVerify,
   onRecoveryComplete,
   recoverySessionReady = false,
   onBack,
@@ -22,6 +23,7 @@ export function AuthView({
   onCreate: (handle: string) => Promise<void>;
   onLogin: () => Promise<void>;
   onRecoverySend: (destination: string) => Promise<void>;
+  onRecoveryVerify: (code: string) => Promise<void>;
   onRecoveryComplete: () => Promise<void>;
   recoverySessionReady?: boolean;
   onBack?: () => void;
@@ -30,6 +32,7 @@ export function AuthView({
   const [pane, setPane] = useState<Pane>(initialPane);
   const [handleInput, setHandleInput] = useState(initialHandle);
   const [recoveryDestination, setRecoveryDestination] = useState("");
+  const [recoveryCode, setRecoveryCode] = useState("");
   const [recoveryPending, setRecoveryPending] = useState(false);
   const [busy, setBusy] = useState(false);
   const [hint, setHint] = useState("");
@@ -120,8 +123,26 @@ export function AuthView({
             </>
           ) : (
             <>
-              <div className="lead">メール内の確認リンクを開いてください。確認後、この画面に戻ります。</div>
-              <button className="textlink" type="button" onClick={() => { setRecoveryPending(false); }}>メールアドレスを入力し直す</button>
+              <div className="lead">メールに届いた6桁の確認コードを入力してください。</div>
+              <label className="f" htmlFor="recover-code">確認コード</label>
+              <input
+                id="recover-code"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                value={recoveryCode}
+                onChange={(event) => setRecoveryCode(event.target.value.replace(/[^0-9]/g, "").slice(0, 6))}
+                placeholder="123456"
+                maxLength={6}
+              />
+              <button
+                className="btn sig"
+                disabled={busy || recoveryCode.length < 6 || !supported}
+                onClick={() => run(() => onRecoveryVerify(recoveryCode))}
+              >
+                {busy ? "確認中…" : "コードで復旧する"}
+              </button>
+              {!supported && <div className="hint no">この端末はパスキーに対応していません。</div>}
+              <button className="textlink" type="button" onClick={() => { setRecoveryPending(false); setRecoveryCode(""); }}>メールアドレスを入力し直す</button>
             </>
           )}
           <div className="hint no">{hint}</div>
