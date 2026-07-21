@@ -117,13 +117,17 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 ### 送信元メール（Authentication → SMTP Settings）
 
 Supabase標準のメール送信は時間あたりの送信数が少なく、本番の復旧メールには
-心もとない。独自ドメイン（via-mi.com）のDNS認証まではまだ手が回らない場合、
-[Resend](https://resend.com) の共有ドメイン（`onboarding@resend.dev`）を使えば
-DNS設定なしで数分で本番用SMTPに切り替えられる。
+心もとない。[Resend](https://resend.com) をSMTPとして使う。
 
-1. resend.com に登録（無料、クレカ不要）
-2. **API Keys** でキーを1つ作成（ドメイン追加はスキップしてよい）
-3. Supabase → **Authentication → SMTP Settings** に入力:
+`onboarding@resend.dev`（ドメイン未認証の共有アドレス）はResendアカウント登録時の
+メールアドレス宛にしか送信できない仕様のため、**本番では使わない**。via-mi.comの
+サブドメイン（例: `notify.via-mi.com`）をResendでドメイン認証し、そのドメインの
+アドレスを送信元にする。
+
+1. resend.com に登録 → **Domains** でサブドメインを追加
+2. 発行されるDNSレコード（DKIM用TXT、SPF用MX/TXT）をDNS管理画面に追加し、Resend側でVerify
+3. **API Keys** でキーを1つ作成
+4. Supabase → **Authentication → SMTP Settings** に入力:
 
    | 項目 | 値 |
    |---|---|
@@ -131,12 +135,8 @@ DNS設定なしで数分で本番用SMTPに切り替えられる。
    | Port | `465` |
    | Username | `resend` |
    | Password | 作成したAPIキー（`re_...`） |
-   | Sender email | `onboarding@resend.dev` |
+   | Sender email | `no-reply@notify.via-mi.com`（認証したドメイン配下） |
    | Sender name | `via-mi` |
-
-送信元が `via-mi via onboarding@resend.dev` のように表示される点と、送信数上限が
-低めな点はトレードオフ。復旧メールのみの用途なら問題にならないはず。後日
-via-mi.com のドメイン認証（DNSレコード3つ）を追加すれば独自ドメイン送信元にできる。
 
 ### デプロイ後に締める
 
