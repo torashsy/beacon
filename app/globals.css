@@ -2060,26 +2060,6 @@ textarea {
   background: var(--em);
   color: var(--on-em);
 }
-.followChips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin: 3px 0 1px;
-}
-.followChip {
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1;
-  padding: 3px 7px;
-  border-radius: 999px;
-  color: var(--emd);
-  background: color-mix(in srgb, var(--em) 12%, transparent);
-  white-space: nowrap;
-}
-.followChip.more {
-  color: var(--muted);
-  background: color-mix(in srgb, var(--muted) 12%, transparent);
-}
 .publicProfileLoading {
   padding-top: 8px;
 }

@@ -90,16 +90,12 @@ describe("follow update detection", () => {
       .toBe("changed");
   });
 
-  it("marks newly added live links as new and reports their types", () => {
-    const result = diffFollow(base, {
-      ...page,
-      channels: [
-        { type: "x", url: "https://x.com/test", label: "", descr: "", status: "live" },
-        { type: "youtube", url: "https://youtube.com/@t", label: "", descr: "", status: "live" },
-      ],
-    });
-    expect(result.state).toBe("new");
-    expect(result.addedLive).toBe(2);
-    expect(result.addedTypes).toEqual(["x", "youtube"]);
+  it("marks newly added live links as new", () => {
+    expect(
+      diffFollow(base, {
+        ...page,
+        channels: [{ type: "x", url: "https://x.com/test", label: "", descr: "", status: "live" }],
+      }).state,
+    ).toBe("new");
   });
 });

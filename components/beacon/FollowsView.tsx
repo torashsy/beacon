@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ago } from "@/lib/beacon/format";
-import { grad, HEADING_TYPE, TYPES } from "@/lib/beacon/constants";
+import { grad, HEADING_TYPE } from "@/lib/beacon/constants";
 import { toSnapshot, type FollowSnapshot, type FollowStatus } from "@/lib/beacon/follows";
 import type { PublicPage } from "@/lib/beacon/rpc";
 
@@ -241,18 +241,6 @@ export function FollowsView({
                     <div className="nm">{f.name || `@${f.handle}`}</div>
                     <div className="id">@{f.handle}</div>
                     <FollowBadge st={st} />
-                    {st.state === "new" && st.addedTypes?.length ? (
-                      <div className="followChips">
-                        {st.addedTypes.slice(0, 3).map((t, i) => (
-                          <span key={i} className="followChip">
-                            ＋{TYPES[t]?.lb ?? "リンク"}
-                          </span>
-                        ))}
-                        {st.addedTypes.length > 3 && (
-                          <span className="followChip more">＋{st.addedTypes.length - 3}</span>
-                        )}
-                      </div>
-                    ) : null}
                     <div className="st">
                       <b>{live}件のリンク</b>
                       ・{ago(followTime(f, st))}
@@ -280,8 +268,11 @@ export function FollowsView({
 function FollowBadge({ st }: { st: FollowStatus }) {
   // ドットはアバター左上のランプ(.followAvLamp)に集約し、ここは説明ラベルだけにする。
   if (st.state === "new") {
-    // 具体的に増えたリンク種別は followChips 側で見せるため、ここは見出しだけ。
-    return <span className="followLamp new">新しい連絡先</span>;
+    return (
+      <span className="followLamp new">
+        新しい連絡先{st.addedLive > 1 ? ` +${st.addedLive}` : ""}
+      </span>
+    );
   }
   if (st.state === "changed") {
     return <span className="followLamp changed">更新あり</span>;
