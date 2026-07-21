@@ -97,9 +97,27 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 5. 発行された URL で `/@{handle}` が開けば公開成功
    - 独自ドメインは Vercel の **Settings → Domains** で後付け可能
 
+### アカウント復旧メール（Authentication → Email Templates → Magic Link）
+
+別端末での復旧は「メールの6桁コードをアプリに入力する」方式（`verifyOtp`）。
+ホーム画面版(PWA)ではメール内リンクが別ブラウザで開き認証が引き継がれないため、
+コード方式を基本にしている。テンプレートを日本語化し、**本文にコード `{{ .Token }}` を
+必ず含める**こと（リンクは同一ブラウザ用のフォールバック）。
+
+```
+件名: via-mi 確認コード
+本文:
+<h2>via-mi ログイン確認</h2>
+<p>アプリに次の6桁のコードを入力してください。</p>
+<p style="font-size:28px;font-weight:bold;letter-spacing:6px;">{{ .Token }}</p>
+<p>または <a href="{{ .ConfirmationURL }}">こちらのリンク</a> からも確認できます。</p>
+<p>1時間で無効になります。心当たりがなければ無視してください。</p>
+```
+
 ### デプロイ後に締める
 
-- Supabase **Authentication → URL Configuration** は本アプリでは不使用（RPC認証のため）
+- Supabase **Authentication → URL Configuration** の Redirect URLs に本番URL（`https://via-mi.com/`）を許可（復旧リンクのフォールバック用）
+- 上記のメールテンプレート（Magic Link）を日本語化し `{{ .Token }}` を含める
 - Storage ポリシーを厳密版へ（手順3の注記）
 - 本番URLを OGP の絶対URL計算に使う場合は `NEXT_PUBLIC_SITE_URL` を追加して
   `generateMetadata` で参照する
