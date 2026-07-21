@@ -50,17 +50,14 @@ export function ProfilePreview({
   const [snap, setSnap] = useState<FollowSnapshot>(initial);
   const [deleted, setDeleted] = useState(false);
 
-  // 下スワイプで閉じる（一番上からの下方向ドラッグのみ）。SNSのプロフィール
-  // モーダルと同じ操作感。しきい値未満で離したら元位置へスナップして戻す。
-  const overlayRef = useRef<HTMLDivElement>(null);
+  // 右スワイプで閉じる（右方向のドラッグ）。iOSの「戻る」ジェスチャと同じ向き。
+  // しきい値未満で離したら元位置へスナップして戻す。
   const drag = useRef({ startX: 0, startY: 0, active: false });
-  const [dragY, setDragY] = useState(0);
+  const [dragX, setDragX] = useState(0);
   const [snapping, setSnapping] = useState(false);
-  const CLOSE_THRESHOLD = 90;
+  const CLOSE_THRESHOLD = 80;
 
   function onTouchStart(e: React.TouchEvent) {
-    const el = overlayRef.current;
-    if (!el || el.scrollTop > 0) return; // 先頭にいるときだけドラッグ開始
     const t = e.touches[0];
     drag.current = { startX: t.clientX, startY: t.clientY, active: true };
     setSnapping(false);
@@ -68,30 +65,30 @@ export function ProfilePreview({
   function onTouchMove(e: React.TouchEvent) {
     if (!drag.current.active) return;
     const t = e.touches[0];
-    const dy = t.clientY - drag.current.startY;
     const dx = t.clientX - drag.current.startX;
-    if (dy <= 0 || Math.abs(dx) > Math.abs(dy)) {
-      setDragY(0); // 上方向・横方向は無視（通常スクロール/戻る操作を邪魔しない）
+    const dy = t.clientY - drag.current.startY;
+    if (dx <= 0 || Math.abs(dy) > Math.abs(dx)) {
+      setDragX(0); // 左方向・縦方向は無視（通常スクロールを邪魔しない）
       return;
     }
-    setDragY(dy);
+    setDragX(dx);
   }
   function onTouchEnd() {
     if (!drag.current.active) return;
     drag.current.active = false;
-    if (dragY > CLOSE_THRESHOLD) {
+    if (dragX > CLOSE_THRESHOLD) {
       onClose();
       return;
     }
     setSnapping(true);
-    requestAnimationFrame(() => setDragY(0));
+    requestAnimationFrame(() => setDragX(0));
   }
 
   const dragStyle: CSSProperties | undefined =
-    dragY > 0
+    dragX > 0
       ? {
-          transform: `translateY(${dragY}px)`,
-          opacity: Math.max(0.4, 1 - dragY / 420),
+          transform: `translateX(${dragX}px)`,
+          opacity: Math.max(0.4, 1 - dragX / 420),
           transition: snapping ? "transform .22s ease, opacity .22s ease" : "none",
         }
       : snapping
@@ -138,7 +135,6 @@ export function ProfilePreview({
 
   return (
     <div
-      ref={overlayRef}
       className="previewOverlay"
       role="dialog"
       aria-modal="true"
@@ -147,7 +143,7 @@ export function ProfilePreview({
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
-      onTransitionEnd={() => { if (dragY === 0) setSnapping(false); }}
+      onTransitionEnd={() => { if (dragX === 0) setSnapping(false); }}
     >
       <main className="wrap" style={{ paddingTop: 8, paddingBottom: 40 }}>
         <div className="top">
