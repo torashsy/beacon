@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ago } from "@/lib/beacon/format";
 import { HEADING_TYPE } from "@/lib/beacon/constants";
@@ -30,6 +30,7 @@ export function FollowsView({
   onLoginPrompt: () => void;
 }) {
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const [q, setQ] = useState("");
   const [found, setFound] = useState<{ handle: string; page: PublicPage } | null>(null);
   const [searching, setSearching] = useState(false);
@@ -54,7 +55,11 @@ export function FollowsView({
   }, [follows, router]);
 
   function openProfile(handle: string) {
-    router.push(`/@${handle}`);
+    // タップから公開ページ(/@handle)のRSC取得が終わるまで isPending が続く。
+    // その間ローディングを出し、遷移待ちの「無反応で固まって見える」状態をなくす。
+    startTransition(() => {
+      router.push(`/@${handle}`);
+    });
   }
 
   async function searchById(e: React.FormEvent) {
@@ -91,6 +96,11 @@ export function FollowsView({
 
   return (
     <section className="view">
+      {isPending && (
+        <div className="navLoading" role="status" aria-label="読み込み中">
+          <span className="navLoadingSpinner" aria-hidden="true" />
+        </div>
+      )}
       <h1>フォロー中</h1>
       {!loggedIn && (
         <div className="note" style={{ marginBottom: 12 }}>
