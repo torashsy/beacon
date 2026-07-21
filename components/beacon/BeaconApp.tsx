@@ -1031,7 +1031,6 @@ export function BeaconApp() {
             follows={follows}
             states={followStates}
             onUnfollow={onUnfollow}
-            onUpdateSnapshot={onUpdateSnapshot}
             onOpenProfile={openPreview}
             loggedIn={!!session}
             onLoginPrompt={() => openAuth("login")}

@@ -26,7 +26,6 @@ export function FollowsView({
   follows,
   states,
   onUnfollow,
-  onUpdateSnapshot,
   onOpenProfile,
   loggedIn,
   onLoginPrompt,
@@ -34,7 +33,6 @@ export function FollowsView({
   follows: FollowSnapshot[];
   states: Record<string, FollowStatus>;
   onUnfollow: (handle: string) => void;
-  onUpdateSnapshot: (snap: FollowSnapshot) => void;
   /** タップで遷移せずアプリ内プレビューを開く。 */
   onOpenProfile: (snap: FollowSnapshot) => void;
   loggedIn: boolean;
@@ -188,15 +186,23 @@ export function FollowsView({
                     }
                   }}
                 >
-                  <div
-                    className="av"
-                    style={!f.av_url ? { background: grad(f.av_theme ?? 0) } : undefined}
-                  >
-                    {f.av_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={f.av_url} alt="" loading="lazy" decoding="async" />
-                    ) : (
-                      f.emoji || f.handle[0]?.toUpperCase()
+                  <div className="avWrap">
+                    <div
+                      className="av"
+                      style={!f.av_url ? { background: grad(f.av_theme ?? 0) } : undefined}
+                    >
+                      {f.av_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={f.av_url} alt="" loading="lazy" decoding="async" />
+                      ) : (
+                        f.emoji || f.handle[0]?.toUpperCase()
+                      )}
+                    </div>
+                    {(st.state === "new" || st.state === "changed" || st.state === "deleted") && (
+                      <span
+                        className={`followAvLamp ${st.state === "deleted" ? "deleted" : ""}`}
+                        aria-hidden
+                      />
                     )}
                   </div>
                   <div className="who">
@@ -208,32 +214,15 @@ export function FollowsView({
                       ・{ago(followTime(f))}
                     </div>
                   </div>
-                  {st.state === "new" || st.state === "changed" ? (
-                    <button
-                      className="unf"
-                      style={{
-                        borderColor: "color-mix(in srgb, var(--em) 45%, transparent)",
-                        color: "var(--emd)",
-                        background: "var(--eml)",
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (st.fresh) onUpdateSnapshot(st.fresh);
-                      }}
-                    >
-                      最新にする
-                    </button>
-                  ) : (
-                    <button
-                      className="unf"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onUnfollow(f.handle);
-                      }}
-                    >
-                      解除
-                    </button>
-                  )}
+                  <button
+                    className="unf"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onUnfollow(f.handle);
+                    }}
+                  >
+                    解除
+                  </button>
                 </div>
               );
             })
@@ -245,29 +234,19 @@ export function FollowsView({
 }
 
 function FollowBadge({ st }: { st: FollowStatus }) {
+  // ドットはアバター左上のランプ(.followAvLamp)に集約し、ここは説明ラベルだけにする。
   if (st.state === "new") {
     return (
       <span className="followLamp new">
-        <span className="bulb" aria-hidden />
         新しい連絡先{st.addedLive > 1 ? ` +${st.addedLive}` : ""}
       </span>
     );
   }
   if (st.state === "changed") {
-    return (
-      <span className="followLamp changed">
-        <span className="bulb" aria-hidden />
-        更新あり
-      </span>
-    );
+    return <span className="followLamp changed">更新あり</span>;
   }
   if (st.state === "deleted") {
-    return (
-      <span className="followLamp deleted">
-        <span className="bulb" aria-hidden />
-        削除ずみ
-      </span>
-    );
+    return <span className="followLamp deleted">削除ずみ</span>;
   }
   return null;
 }
