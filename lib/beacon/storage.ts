@@ -67,7 +67,13 @@ export async function uploadImage(
   }
   const { error } = await db.storage
     .from(BUCKET)
-    .uploadToSignedUrl(grant.path, grant.token, blob, { contentType: "image/jpeg" });
+    // ファイル名はアップロードごとにユニーク（{kind}-{timestamp}.jpg）で中身が
+    // 変わらないため、ブラウザ/CDN に長期・不変キャッシュさせて再表示を高速化する。
+    // 既定の cacheControl は 3600 秒（1時間）で、1時間後に再ダウンロードが走っていた。
+    .uploadToSignedUrl(grant.path, grant.token, blob, {
+      contentType: "image/jpeg",
+      cacheControl: "31536000",
+    });
   if (error) throw new Error(error.message);
 
   const { data } = db.storage.from(BUCKET).getPublicUrl(grant.path);

@@ -135,7 +135,7 @@ export function QrShareModal({
             <span className="qrIdentity" aria-hidden="true">
               {avatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={avatarUrl} alt="" />
+                <img src={avatarUrl} alt="" decoding="async" />
               ) : (
                 <span>{emoji || (handle[0] ?? "?").toUpperCase()}</span>
               )}
