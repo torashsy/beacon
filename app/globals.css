@@ -1815,6 +1815,7 @@ textarea {
 .authSimple .card { display: grid; gap: 12px; }
 .authSimple .authAction { display: grid; gap: 8px; }
 .authSimple .authAction .lead { margin: 0 4px; }
+.authSimple .authLead { margin: -4px 4px 16px; line-height: 1.7; }
 .authSimple .recoveryLink { margin-top: 20px; font-size: 11px; opacity: .72; }
 .recoveryBanner {
   width: 100%; min-height: 38px; border: 1px solid var(--warning-border); border-radius: 11px; background: var(--warning-surface);
@@ -2106,13 +2107,20 @@ textarea {
 .sampleIntro { margin: -6px 0 10px; }
 .sampleTabs {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  /* 折り返しは不可。5つを必ず1行で、中央・等間隔に並べる。
+     万一収まらない狭幅端末では折り返さず横スクロールに逃がす。 */
+  flex-wrap: nowrap;
+  justify-content: space-evenly;
+  gap: 0;
   margin-bottom: 14px;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
+.sampleTabs::-webkit-scrollbar { display: none; }
 .sampleTabs button {
+  flex: 0 0 auto;
   min-height: 40px;
-  padding: 8px 14px;
+  padding: 8px 11px;
   border: 1px solid var(--border);
   border-radius: 999px;
   background: var(--surface);
@@ -2120,6 +2128,7 @@ textarea {
   font: inherit;
   font-size: 12px;
   font-weight: 750;
+  white-space: nowrap;
   cursor: pointer;
   touch-action: manipulation;
 }

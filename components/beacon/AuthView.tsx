@@ -136,6 +136,9 @@ export function AuthView({
     <section className="view authSimple">
       {back}
       <h1>IDを作成</h1>
+      <p className="lead authLead">
+        IDは、あなたの公開ページのアドレスになります。あとから変更できないので、じっくり選んでください。
+      </p>
       <div className="card">
         <label className="f" htmlFor="create-id">ID</label>
         <div className="idfield">
@@ -156,7 +159,11 @@ export function AuthView({
           />
         </div>
         <div className={`hint ${handle.length >= 3 ? "ok" : ""}`}>
-          {handle ? (handle.length >= 3 ? `@${handle} で作成します` : "3文字以上にしてください") : ""}
+          {handle.length >= 3
+            ? `ページ → via-mi.com/@${handle}`
+            : handle.length > 0
+              ? "3文字以上にしてください"
+              : "英数字と _（アンダースコア）が使えます"}
         </div>
         <div className="authAction">
           <p className="lead">この端末にパスキーを保存します。次回からパスワードなしでログインできます。</p>

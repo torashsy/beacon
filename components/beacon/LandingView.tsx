@@ -117,7 +117,7 @@ export function LandingView({
       </div>
 
       <div className="landingClose">
-        <p>あなたのページも、3秒で。</p>
+        <p>あなたのページも、1分で。</p>
         <button className="btn sig" onClick={onCreate}>
           はじめる
         </button>
