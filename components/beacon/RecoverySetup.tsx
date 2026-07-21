@@ -21,6 +21,7 @@ export function RecoverySetup({
   const db = useMemo(() => createClient(), []);
   const [editing, setEditing] = useState(!verified);
   const [destination, setDestination] = useState("");
+  const [code, setCode] = useState("");
   const [pending, setPending] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -29,6 +30,7 @@ export function RecoverySetup({
     setEditing(false);
     setPending(false);
     setDestination("");
+    setCode("");
     setError("");
   }, []);
 
@@ -36,6 +38,7 @@ export function RecoverySetup({
     setEditing(true);
     setPending(false);
     setDestination("");
+    setCode("");
     setError("");
   }, []);
 
@@ -83,6 +86,32 @@ export function RecoverySetup({
     }
   }
 
+  async function verifyConfirmation() {
+    setBusy(true);
+    setError("");
+    try {
+      const otpResult = await db.auth.verifyOtp({
+        email: destination.trim(),
+        token: code.trim(),
+        type: "email_change",
+      });
+      if (otpResult.error) throw otpResult.error;
+      const status = await syncRecoveryStatus(db);
+      if (status.recovery_verified) {
+        onVerified(status);
+        stopEditing();
+        toast("復旧用メールを認証しました");
+      } else {
+        setError("コードが正しくありません");
+      }
+    } catch {
+      setError("コードが正しくありません");
+    } finally {
+      await db.auth.signOut({ scope: "local" }).catch(() => {});
+      setBusy(false);
+    }
+  }
+
   const editor = editing && (
     <div className="recoveryEditor">
       {!pending ? (
@@ -102,9 +131,22 @@ export function RecoverySetup({
         </>
       ) : (
         <>
-          <div className="lead">新しいメールアドレスに届いた確認リンクを開いてください。</div>
+          <div className="lead">新しいメールアドレスに届いた6桁の確認コードを入力してください。</div>
+          <label className="f" htmlFor="recovery-code">確認コード</label>
+          <input
+            id="recovery-code"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            value={code}
+            onChange={(event) => setCode(event.target.value.replace(/[^0-9]/g, "").slice(0, 6))}
+            placeholder="123456"
+            maxLength={6}
+          />
+          <button className="btn sig" disabled={busy || code.length < 6} onClick={verifyConfirmation}>
+            {busy ? "確認中…" : "コードで認証する"}
+          </button>
           <button className="btn ghost" type="button" disabled={busy} onClick={() => void syncConfirmedContact()}>
-            認証状態を確認
+            メール内リンクから開いた場合はこちら
           </button>
         </>
       )}
