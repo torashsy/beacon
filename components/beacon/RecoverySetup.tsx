@@ -78,8 +78,13 @@ export function RecoverySetup({
       await db.auth.signOut({ scope: "local" });
       setPending(true);
       toast("確認メールを送信しました");
-    } catch {
-      setError("送信できませんでした。メールアドレスをご確認ください");
+    } catch (error) {
+      const status = (error as { status?: number }).status;
+      setError(
+        status === 429
+          ? "送信回数が多すぎます。1分ほど待ってからもう一度お試しください"
+          : "送信できませんでした。メールアドレスをご確認ください",
+      );
       await db.auth.signOut({ scope: "local" }).catch(() => {});
     } finally {
       setBusy(false);
