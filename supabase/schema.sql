@@ -928,7 +928,13 @@ returns jsonb language sql security definer stable set search_path = public as $
       or exists (select 1 from account_moderation where handle=lower(p_handle) and suspended)
       then null
     else jsonb_build_object(
-      'profile', (select to_jsonb(p) from profiles p where p.handle = lower(p_handle)),
+      'profile', (
+        (select to_jsonb(p) from profiles p where p.handle = lower(p_handle))
+        || jsonb_build_object(
+          'updated_at',
+          (select a.updated_at from accounts a where a.handle = lower(p_handle))
+        )
+      ),
       'channels', coalesce((select jsonb_agg(to_jsonb(c) order by c.position, c.id)
         from channels c where c.handle = lower(p_handle)), '[]'::jsonb),
       'cal', coalesce((select jsonb_agg(jsonb_build_object('d', cp.d, 'memo', cp.memo) order by cp.d)

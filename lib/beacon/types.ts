@@ -26,6 +26,7 @@ export interface Profile {
   bn_url: string;
   status?: string; // ひとこと近況（任意）
   status_at?: string | null; // 近況の更新時刻
+  updated_at?: string | null; // ページ（プロフィール/リンク/カレンダー）の最終更新時刻
   verified?: boolean; // 復旧用メールアドレスを確認済み
   content?: ProfileContent; // 写真（旧プロフィールでは未設定）
 }
