@@ -14,11 +14,14 @@ import type { PublicPage } from "@/lib/beacon/rpc";
  */
 
 /**
- * 一覧に出す「更新時刻」。相手が実際にページを更新した時刻(pageUpdated)を優先し、
- * 無い/不正な場合だけ従来のスナップショット取得時刻(updated)にフォールバックする。
+ * 一覧に出す「更新時刻」。相手が実際にページを更新した時刻(pageUpdated)を表示する。
+ * 更新チェック済みなら最新取得分(st.fresh.pageUpdated)を優先する。保存済み
+ * スナップショットの時刻(f.pageUpdated)は前回同期時点で古いことがあるため。
+ * どちらも無ければ取得時刻(updated)にフォールバックする。
  */
-function followTime(f: FollowSnapshot): number {
-  const parsed = f.pageUpdated ? Date.parse(f.pageUpdated) : NaN;
+function followTime(f: FollowSnapshot, st?: FollowStatus): number {
+  const iso = st?.fresh?.pageUpdated ?? f.pageUpdated;
+  const parsed = iso ? Date.parse(iso) : NaN;
   return Number.isFinite(parsed) ? parsed : f.updated;
 }
 
@@ -211,7 +214,7 @@ export function FollowsView({
                     <FollowBadge st={st} />
                     <div className="st">
                       <b>{live}件のリンク</b>
-                      ・{ago(followTime(f))}
+                      ・{ago(followTime(f, st))}
                     </div>
                   </div>
                   <button
