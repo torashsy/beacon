@@ -58,6 +58,7 @@ import { LandingView } from "./LandingView";
 import { ProfileView } from "./ProfileView";
 import { ProfileEdit, type EditResult } from "./ProfileEdit";
 import { FollowsView } from "./FollowsView";
+import { ProfilePreview } from "./ProfilePreview";
 import { HowtoView } from "./HowtoView";
 import { RecoverySetup } from "./RecoverySetup";
 import { PullToRefresh } from "./PullToRefresh";
@@ -132,6 +133,7 @@ export function BeaconApp() {
   const recoverySetupRef = useRef<HTMLDivElement | null>(null);
   const recoveryHighlightTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [follows, setFollows] = useState<FollowSnapshot[]>([]);
+  const [preview, setPreview] = useState<FollowSnapshot | null>(null);
   const [followStates, setFollowStates] = useState<
     Record<string, FollowStatus>
   >({});
@@ -826,7 +828,43 @@ export function BeaconApp() {
     [session, pushFollowsToServer],
   );
 
+  // ---- アプリ内プレビュー（フォロー相手/検索結果を遷移せず開く）----
+  const openPreview = useCallback((snap: FollowSnapshot) => {
+    setPreview(snap);
+  }, []);
+
+  const onPreviewToggleFollow = useCallback(
+    (snap: FollowSnapshot) => {
+      if (follows.some((f) => f.handle === snap.handle)) {
+        onUnfollow(snap.handle);
+      } else {
+        onUpdateSnapshot(snap);
+        toast("フォローしました");
+      }
+    },
+    [follows, onUnfollow, onUpdateSnapshot, toast],
+  );
+
+  // プレビューで最新を取得したら、フォロー中ならスナップショットを更新（更新バッジも消える）。
+  const onPreviewRefreshed = useCallback(
+    (handle: string, snap: FollowSnapshot | null) => {
+      setFollows((cur) => {
+        if (!cur.some((f) => f.handle === handle)) return cur; // 未フォローなら一覧は変えない
+        if (!snap) {
+          setFollowStates((s) => ({ ...s, [handle]: { state: "deleted", addedLive: 0 } }));
+          return cur;
+        }
+        const next = cur.map((f) => (f.handle === handle ? snap : f));
+        replaceFollows(session?.handle ?? null, next);
+        setFollowStates((s) => ({ ...s, [handle]: { state: "same", addedLive: 0 } }));
+        return next;
+      });
+    },
+    [session],
+  );
+
   function goNav(v: NavTab) {
+    setPreview(null);
     if (v !== navTab) {
       setNavDirection(NAV_ORDER.indexOf(v) > NAV_ORDER.indexOf(navTab) ? "from-right" : "from-left");
       window.scrollTo({ top: 0, behavior: "auto" });
@@ -876,7 +914,7 @@ export function BeaconApp() {
 
   return (
     <>
-      <PullToRefresh enabled={overlay === "none" && !editing} onRefresh={refreshLatest}>
+      <PullToRefresh enabled={overlay === "none" && !editing && !preview} onRefresh={refreshLatest}>
         <div className="wrap">
         <div className="top">
           <button type="button" className="logo logoButton" onClick={goHome} aria-label="via-mi ホーム">
@@ -993,6 +1031,7 @@ export function BeaconApp() {
             states={followStates}
             onUnfollow={onUnfollow}
             onUpdateSnapshot={onUpdateSnapshot}
+            onOpenProfile={openPreview}
             loggedIn={!!session}
             onLoginPrompt={() => openAuth("login")}
           />
@@ -1081,6 +1120,17 @@ export function BeaconApp() {
             <NavIcon name="help" />
           </button>
         </nav>
+      )}
+
+      {preview && (
+        <ProfilePreview
+          key={preview.handle}
+          initial={preview}
+          following={follows.some((f) => f.handle === preview.handle)}
+          onClose={() => setPreview(null)}
+          onToggleFollow={onPreviewToggleFollow}
+          onRefreshed={onPreviewRefreshed}
+        />
       )}
 
       <div className={`toast ${toastOn ? "show" : ""}`} role="status" aria-live="polite">{toastMsg}</div>
