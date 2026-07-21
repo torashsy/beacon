@@ -2111,8 +2111,8 @@ textarea {
   margin-bottom: 14px;
 }
 .sampleTabs button {
-  min-height: 34px;
-  padding: 6px 12px;
+  min-height: 40px;
+  padding: 8px 14px;
   border: 1px solid var(--border);
   border-radius: 999px;
   background: var(--surface);
@@ -2127,6 +2127,25 @@ textarea {
   background: var(--em);
   color: var(--on-em);
   border-color: var(--em);
+}
+/* 見本カードを見終わった直後に登録へ誘導する締めのCTA
+   （デモで興味が最も高まる位置。ここが無いと最上部のボタンまで戻る必要があった）。 */
+.landingClose {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin: 22px 0 6px;
+  text-align: center;
+}
+.landingClose p {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text);
+}
+.landingClose .btn {
+  margin-top: 0;
+  width: 100%;
 }
 /* "via-mi" の v の字形の空白分、他の行より右にずれて見えるため補正する。 */
 .guideHeading { margin-left: -1px; }

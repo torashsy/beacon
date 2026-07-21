@@ -115,6 +115,14 @@ export function LandingView({
       <div style={{ pointerEvents: "none", userSelect: "none" }} aria-hidden>
         <PublicProfileCard data={card} />
       </div>
+
+      <div className="landingClose">
+        <p>あなたのページも、3秒で。</p>
+        <button className="btn sig" onClick={onCreate}>
+          はじめる
+        </button>
+      </div>
+
       <LegalFooter />
     </section>
   );
