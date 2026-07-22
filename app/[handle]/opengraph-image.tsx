@@ -131,7 +131,7 @@ export default async function Image({
         </div>
         <div style={{ display: "flex", flexDirection: "column", marginLeft: 62, flex: 1 }}>
           <div style={{ fontSize: 62, fontWeight: 850, color: shareTheme.text }}>
-            {`@${handle ?? "via_mi"}`}
+            {handle ?? "via_mi"}
           </div>
           {platforms.length > 0 && (
             <div

@@ -36,6 +36,8 @@ export function QrShareModal({
   const [canShareFiles, setCanShareFiles] = useState(false);
   const [closing, setClosing] = useState(false);
   const closeTimer = useRef<number | undefined>(undefined);
+  const shareTitle = `${name.trim().replace(/^@+/, "") || handle} | via-mi`;
+  const shareText = "SNS・リンク・予定を、ひとつに。自分らしいプロフィールをvia-miで。";
 
   function requestClose() {
     if (closing) return;
@@ -87,7 +89,7 @@ export function QrShareModal({
       const blob = await buildImage();
       if (canShareFiles) {
         const file = new File([blob], `via-mi-${handle}.jpg`, { type: "image/jpeg" });
-        await navigator.share({ files: [file], title: `@${handle} · via-mi` });
+        await navigator.share({ files: [file], title: shareTitle, text: shareText });
       } else {
         downloadBlob(blob);
         toast("QR画像を保存しました");
@@ -108,8 +110,8 @@ export function QrShareModal({
       const blob = await buildImage();
       const file = new File([blob], `via-mi-${handle}.jpg`, { type: "image/jpeg" });
       const shareData = {
-        title: `@${handle} · via-mi`,
-        text: `@${handle} のvia-mi`,
+        title: shareTitle,
+        text: shareText,
         files: [file],
       };
       if (

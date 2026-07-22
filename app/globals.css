@@ -3086,16 +3086,16 @@ textarea {
 }
 .nav {
   position: fixed;
-  left: 50%;
-  right: auto;
+  left: 0;
+  right: 0;
   bottom: 0;
   background: var(--surface-glass);
   backdrop-filter: blur(10px);
   border-top: 1px solid var(--border);
   display: flex;
   width: min(100%, var(--content-width));
-  margin: 0;
-  transform: translateX(-50%);
+  margin: 0 auto;
+  transform: none;
   padding: 7px 10px calc(7px + env(safe-area-inset-bottom));
   z-index: 40;
   box-shadow: var(--nav-shadow);

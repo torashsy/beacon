@@ -96,15 +96,11 @@ export function ProfileView({
   async function share() {
     // text を渡すことで、Xなどシェア先アプリの投稿本文に定型メッセージが
     // 自動で入る（urlだけだとリンクのみ貼られ、文面が空になるため）。
-    const displayName = me.profile.name.trim();
-    const intro = me.profile.bio.replace(/\s+/g, " ").trim().slice(0, 90);
-    const shareText = [
-      `${displayName ? `${displayName}（@${handle}）` : `@${handle}`}のvia-miページ`,
-      intro,
-    ].filter(Boolean).join("\n");
+    const displayName = me.profile.name.trim().replace(/^@+/, "") || handle;
+    const shareText = `${displayName}のvia-mi\nSNS・リンク・予定を、ひとつに。自分らしいプロフィールをvia-miで。`;
     if (typeof navigator.share === "function") {
       try {
-        await navigator.share({ title: `@${handle} · via-mi`, text: shareText, url: pageUrl() });
+        await navigator.share({ title: `${displayName} | via-mi`, text: shareText, url: pageUrl() });
       } catch {
         /* キャンセルは無視 */
       }
