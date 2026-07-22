@@ -6,6 +6,7 @@ import { safeUrl } from "@/lib/beacon/safe";
 import { LinkThumb } from "./icons";
 import { TrackedLink } from "./TrackedLink";
 import { normalizeProfileContent, visibleMemoBlocks } from "@/lib/beacon/profile-content";
+import { normalizeColorTheme } from "@/lib/beacon/appearance";
 import { ProfilePhotoGallery } from "./ProfilePhotoGallery";
 import { CollapsibleBio } from "./CollapsibleBio";
 
@@ -20,7 +21,7 @@ export interface PublicCardData {
   followerCount?: number;
   profile: Pick<
     Profile,
-    "name" | "bio" | "emoji" | "theme" | "av_theme" | "av_url" | "bn_url" | "status" | "verified" | "content"
+    "name" | "bio" | "emoji" | "theme" | "av_theme" | "av_url" | "bn_url" | "status" | "verified" | "content" | "color_theme"
   >;
   channels: Channel[]; // 非表示リンクも含む。ここで公開対象だけに絞る
   pubcal: CalMemo[]; // 公開メモのみ
@@ -69,7 +70,7 @@ export function PublicProfileCard({
     hasLinks || content.photos.length > 0 || pubcal.length > 0 || memoBlocks.length > 0;
 
   return (
-    <div className="xcard">
+    <div className="xcard" data-color-theme={normalizeColorTheme(profile.color_theme)}>
       <div
         className="banner"
         style={profile.bn_url ? { background: "none" } : { background: grad(profile.theme) }}

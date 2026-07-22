@@ -662,6 +662,7 @@ export function BeaconApp() {
           emoji: edit.emoji,
           theme: edit.theme,
           av_theme: edit.avTheme,
+          color_theme: edit.colorTheme,
           status: edit.status,
           status_at:
             edit.status !== (prof.status ?? "")

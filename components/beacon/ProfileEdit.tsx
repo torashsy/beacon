@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Profile } from "@/lib/beacon/types";
 import { COLORS, grad } from "@/lib/beacon/constants";
+import { COLOR_THEMES, normalizeColorTheme } from "@/lib/beacon/appearance";
 import { CameraIcon } from "./icons";
 import { ImageCropper } from "./ImageCropper";
 
@@ -31,6 +32,7 @@ export interface EditResult {
   emoji: string;
   theme: number;
   avTheme: number;
+  colorTheme: string;
   status: string;
   av: ImageEdit;
   bn: ImageEdit;
@@ -66,6 +68,7 @@ export function ProfileEdit({
   const [emoji, setEmoji] = useState(profile.emoji || "🙂");
   const [theme, setTheme] = useState(profile.theme ?? 0);
   const [avTheme, setAvTheme] = useState(profile.av_theme ?? 0);
+  const [colorTheme, setColorTheme] = useState(normalizeColorTheme(profile.color_theme));
   const [status, setStatus] = useState(profile.status ?? "");
   const [av, setAv] = useState<ImageEdit>({ mode: "keep" });
   const [bn, setBn] = useState<ImageEdit>({ mode: "keep" });
@@ -139,6 +142,7 @@ export function ProfileEdit({
         emoji,
         theme,
         avTheme,
+        colorTheme,
         status: status.trim(),
         av,
         bn,
@@ -175,7 +179,7 @@ export function ProfileEdit({
         onChange={(e) => pick("bn", e)}
       />
 
-      <div className="xcard">
+      <div className="xcard" data-color-theme={colorTheme}>
         <div
           className="ebanner"
           style={bnUrl ? { background: "none" } : { background: grad(theme) }}
@@ -235,6 +239,24 @@ export function ProfileEdit({
               placeholder="自己紹介を追加"
             />
             <div className="ecount">{bio.length} / 800</div>
+          </div>
+          <div className="efield">
+            <div className="el">カラーテーマ</div>
+            <div className="emojis colorPalette" role="group" aria-label="プロフィールの配色">
+              {COLOR_THEMES.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  aria-label={t.label}
+                  title={t.label}
+                  aria-pressed={colorTheme === t.id}
+                  className={`em colorSwatch ${colorTheme === t.id ? "on" : ""}`}
+                  style={{ background: `linear-gradient(135deg, ${t.colors[0]}, ${t.colors[1]})` }}
+                  onClick={() => setColorTheme(t.id)}
+                />
+              ))}
+            </div>
+            <div className="fieldHint">プロフィールの配色。見た人にもこの色で表示されます。</div>
           </div>
         </div>
       </div>

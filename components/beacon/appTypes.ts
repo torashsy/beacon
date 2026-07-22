@@ -66,6 +66,7 @@ export function emptyProfile(handle: string): Profile {
     av_theme: 0,
     av_url: "",
     bn_url: "",
+    color_theme: "sky",
     content: EMPTY_PROFILE_CONTENT,
   };
 }

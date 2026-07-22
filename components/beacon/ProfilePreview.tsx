@@ -25,6 +25,7 @@ function snapToCard(snap: FollowSnapshot): PublicCardData {
       av_url: snap.av_url,
       bn_url: snap.bn_url,
       status: snap.status ?? "",
+      color_theme: snap.color_theme,
       content: snap.content,
     },
     channels: snap.channels,
