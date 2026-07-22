@@ -1,17 +1,17 @@
 {
   "canvas": { "width": 1600, "height": 900 },
   "brand": {
-    "logo": { "path": "logo/viamilogo.png", "x": 78, "y": 57, "width": 470, "height": 141 }
+    "logo": { "path": "logo/viamilogo.png", "x": 78, "y": 50, "width": 430, "height": 129 }
   },
-  "badge": { "text": "先着10名", "x": 80, "y": 218, "width": 272, "height": 72 },
-  "headline": { "text": "ページを作って", "x": 82, "y": 372 },
-  "reward": { "amount": "1,000", "unit": "円分", "label": "プレゼント", "x": 76, "y": 550 },
-  "conditionsTitle": { "text": "達成条件は3つだけ", "x": 850, "y": 194 },
+  "badge": { "text": "先着10名", "x": 80, "y": 210, "width": 250, "height": 66 },
+  "headline": { "text": "ページを作って", "x": 82, "y": 356 },
+  "reward": { "amount": "1,000", "unit": "円分", "label": "プレゼント", "x": 76, "y": 545 },
+  "conditionsTitle": { "text": "達成条件は3つだけ", "x": 860, "y": 190 },
   "conditions": [
-    { "number": "1", "text": "via-miページを作成", "y": 244 },
-    { "number": "2", "text": "Xでページを共有", "y": 414 },
-    { "number": "3", "text": "via-miでフォロワー10人", "y": 584 }
+    { "number": "1", "text": "via-miページを作成", "y": 226 },
+    { "number": "2", "text": "Xでページを共有", "y": 386 },
+    { "number": "3", "text": "via-miでフォロワー10人", "y": 546 }
   ],
-  "dm": { "text": "達成したら公式XへDM", "x": 80, "y": 730, "width": 670, "height": 82 },
+  "dm": { "text": "達成したらvia-mi公式X（@viami_official）へDM", "x": 80, "y": 744, "width": 1450, "height": 76 },
   "url": { "text": "via-mi.com", "x": 82, "y": 866 }
 }

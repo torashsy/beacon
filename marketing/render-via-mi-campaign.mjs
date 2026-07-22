@@ -13,10 +13,10 @@ const esc = (value) => String(value)
 
 const cards = layout.conditions.map((item) => `
   <g>
-    <rect x="840" y="${item.y}" width="690" height="145" rx="34" fill="#ffffff" fill-opacity="0.94" filter="url(#shadow)"/>
-    <circle cx="930" cy="${item.y + 72}" r="52" fill="url(#number)"/>
-    <text x="930" y="${item.y + 91}" text-anchor="middle" class="number">${esc(item.number)}</text>
-    <text x="1004" y="${item.y + 89}" class="condition">${esc(item.text)}</text>
+    <rect x="840" y="${item.y}" width="690" height="136" rx="30" fill="#ffffff" fill-opacity="0.97" stroke="#dff2fb" stroke-width="2" filter="url(#shadow)"/>
+    <circle cx="922" cy="${item.y + 68}" r="48" fill="url(#number)"/>
+    <text x="922" y="${item.y + 87}" text-anchor="middle" class="number">${esc(item.number)}</text>
+    <text x="994" y="${item.y + 84}" class="condition">${esc(item.text)}</text>
   </g>`).join("");
 
 const svg = `
@@ -24,8 +24,8 @@ const svg = `
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#ffffff"/>
-      <stop offset="0.58" stop-color="#f7fcff"/>
-      <stop offset="1" stop-color="#e8fff9"/>
+      <stop offset="0.55" stop-color="#f8fcff"/>
+      <stop offset="1" stop-color="#e9fbf8"/>
     </linearGradient>
     <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0" stop-color="#2494f4"/>
@@ -40,39 +40,41 @@ const svg = `
       <stop offset="1" stop-color="#2189ee"/>
     </linearGradient>
     <filter id="shadow" x="-20%" y="-30%" width="140%" height="170%">
-      <feDropShadow dx="0" dy="10" stdDeviation="18" flood-color="#3b91ba" flood-opacity="0.12"/>
+      <feDropShadow dx="0" dy="9" stdDeviation="16" flood-color="#3b91ba" flood-opacity="0.13"/>
     </filter>
     <style>
-      text { font-family: "Yu Gothic", "Meiryo", sans-serif; fill: #08245c; }
-      .headline { font-size: 56px; font-weight: 800; }
-      .amount { font-size: 168px; font-weight: 800; fill: url(#amount); letter-spacing: -7px; }
-      .unit { font-size: 70px; font-weight: 800; fill: #3d9ee9; }
-      .label { font-size: 70px; font-weight: 800; }
-      .title { font-size: 49px; font-weight: 800; }
-      .condition { font-size: 39px; font-weight: 750; }
-      .number { font-size: 66px; font-weight: 700; fill: white; }
+      text { font-family: "Noto Sans JP", "BIZ UDPGothic", "Yu Gothic UI", sans-serif; fill: #12365f; }
+      .white { fill: #ffffff; }
+      .headline { font-size: 54px; font-weight: 750; letter-spacing: 1px; }
+      .amount { font-size: 164px; font-weight: 800; fill: url(#amount); letter-spacing: -8px; }
+      .unit { font-size: 62px; font-weight: 750; fill: #3196df; }
+      .label { font-size: 62px; font-weight: 750; letter-spacing: 2px; }
+      .title { font-size: 45px; font-weight: 750; }
+      .condition { font-size: 36px; font-weight: 700; }
+      .number { font-size: 62px; font-weight: 700; fill: #ffffff; }
     </style>
   </defs>
   <rect width="1600" height="900" fill="url(#bg)"/>
-  <circle cx="1455" cy="95" r="255" fill="#cffff4" fill-opacity="0.22"/>
-  <circle cx="1180" cy="855" r="330" fill="#bcecff" fill-opacity="0.20"/>
+  <circle cx="1455" cy="95" r="255" fill="#cffff4" fill-opacity="0.28"/>
+  <circle cx="1180" cy="855" r="330" fill="#bcecff" fill-opacity="0.24"/>
+  <circle cx="735" cy="110" r="75" fill="#dff7ff" fill-opacity="0.45"/>
   <path d="M1080 92 C1190 10 1235 165 1345 78 S1510 110 1600 34" fill="none" stroke="#ffffff" stroke-width="30" stroke-linecap="round" opacity="0.78"/>
   <path d="M675 880 C790 780 870 930 990 835 S1175 890 1300 812 S1490 880 1605 792" fill="none" stroke="#ffffff" stroke-width="30" stroke-linecap="round" opacity="0.70"/>
 
   <rect x="${layout.badge.x}" y="${layout.badge.y}" width="${layout.badge.width}" height="${layout.badge.height}" rx="36" fill="url(#accent)"/>
-  <text x="${layout.badge.x + layout.badge.width / 2}" y="${layout.badge.y + 50}" text-anchor="middle" font-size="39" font-weight="800" fill="#ffffff">${esc(layout.badge.text)}</text>
+  <text x="${layout.badge.x + layout.badge.width / 2}" y="${layout.badge.y + 46}" text-anchor="middle" font-size="36" font-weight="750" class="white">${esc(layout.badge.text)}</text>
   <text x="${layout.headline.x}" y="${layout.headline.y}" class="headline">${esc(layout.headline.text)}</text>
   <text x="${layout.reward.x}" y="${layout.reward.y}" class="amount">${esc(layout.reward.amount)}</text>
-  <text x="590" y="${layout.reward.y}" class="unit">${esc(layout.reward.unit)}</text>
-  <text x="82" y="664" class="label">${esc(layout.reward.label)}</text>
+  <text x="575" y="${layout.reward.y}" class="unit">${esc(layout.reward.unit)}</text>
+  <text x="82" y="650" class="label">${esc(layout.reward.label)}</text>
 
   <text x="${layout.conditionsTitle.x}" y="${layout.conditionsTitle.y}" class="title">${esc(layout.conditionsTitle.text)}</text>
   ${cards}
 
   <rect x="${layout.dm.x}" y="${layout.dm.y}" width="${layout.dm.width}" height="${layout.dm.height}" rx="41" fill="url(#accent)"/>
-  <circle cx="135" cy="771" r="27" fill="#ffffff"/>
-  <path d="M119 760h32v23h-32z M119 760l16 12 16-12" fill="none" stroke="#278fe9" stroke-width="4" stroke-linejoin="round"/>
-  <text x="184" y="784" font-size="38" font-weight="800" fill="#ffffff">${esc(layout.dm.text)}</text>
+  <circle cx="128" cy="782" r="25" fill="#ffffff"/>
+  <path d="M114 772h28v20h-28z M114 772l14 10 14-10" fill="none" stroke="#278fe9" stroke-width="3.5" stroke-linejoin="round"/>
+  <text x="800" y="797" text-anchor="middle" font-size="34" font-weight="750" class="white">${esc(layout.dm.text)}</text>
   <text x="${layout.url.x}" y="${layout.url.y}" font-size="30" font-weight="650">${esc(layout.url.text)}</text>
 </svg>`;
 
