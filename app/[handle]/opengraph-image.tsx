@@ -2,6 +2,7 @@ import { ImageResponse } from "next/og";
 import { createClient } from "@/lib/supabase/server";
 import { getPublicPage } from "@/lib/beacon/rpc";
 import { COLORS, HEADING_TYPE, typeMeta } from "@/lib/beacon/constants";
+import { profileQrTheme } from "@/lib/beacon/brand-qr";
 import { getSiteUrl } from "@/lib/site";
 
 /**
@@ -45,6 +46,10 @@ export default async function Image({
   const [c0, c1] = COLORS[0];
   let theme = 0;
   let platforms: string[] = [];
+  let avatarUrl = "";
+  let colorTheme: unknown = "sky";
+  let followerCount = 0;
+  let linkCount = 0;
 
   if (handle) {
     try {
@@ -52,6 +57,12 @@ export default async function Image({
       const page = await getPublicPage(db, handle);
       if (page) {
         theme = page.profile.theme ?? 0;
+        avatarUrl = page.profile.av_url ?? "";
+        colorTheme = page.profile.color_theme;
+        followerCount = page.follower_count;
+        linkCount = page.channels.filter(
+          (c) => c.type !== HEADING_TYPE && c.status === "live",
+        ).length;
         platforms = page.channels
           .filter((c) => c.type !== HEADING_TYPE && c.status === "live")
           .map((c) => latinLabel(c.type))
@@ -63,6 +74,7 @@ export default async function Image({
     }
   }
   const [g0, g1] = COLORS[theme] ?? [c0, c1];
+  const shareTheme = profileQrTheme(colorTheme);
 
   return new ImageResponse(
     (
@@ -74,49 +86,84 @@ export default async function Image({
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: g0,
-          backgroundImage: `linear-gradient(135deg, ${g0}, ${g1})`,
+          backgroundColor: shareTheme.accent,
+          backgroundImage: `linear-gradient(135deg, ${shareTheme.accent}, ${shareTheme.accent2})`,
         }}
       >
         <div
           style={{
             display: "flex",
-            flexDirection: "column",
+          flexDirection: "row",
+          alignItems: "center",
+          backgroundColor: "#ffffff",
+          borderRadius: 40,
+          width: 1020,
+          minHeight: 390,
+          padding: "58px 68px",
+          boxShadow: "0 20px 60px rgba(23,72,58,.18)",
+        }}
+      >
+        <div
+          style={{
+            width: 210,
+            height: 210,
+            display: "flex",
             alignItems: "center",
-            backgroundColor: "#ffffff",
-            borderRadius: 40,
-            padding: "56px 80px",
-            boxShadow: "0 20px 60px rgba(23,72,58,.18)",
+            justifyContent: "center",
+            overflow: "hidden",
+            flexShrink: 0,
+            borderRadius: 999,
+            border: "10px solid #fff",
+            backgroundColor: g0,
+            backgroundImage: `linear-gradient(135deg, ${g0}, ${g1})`,
+            boxShadow: "0 12px 34px rgba(20,35,45,.18)",
+            color: "#fff",
+            fontSize: 92,
+            fontWeight: 850,
           }}
         >
-          <div style={{ fontSize: 64, fontWeight: 800, color: "#17242B" }}>
+          {avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={avatarUrl} alt="" width="210" height="210" style={{ objectFit: "cover" }} />
+          ) : (
+            (handle?.[0] ?? "v").toUpperCase()
+          )}
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", marginLeft: 62, flex: 1 }}>
+          <div style={{ fontSize: 62, fontWeight: 850, color: shareTheme.text }}>
             {`@${handle ?? "via_mi"}`}
           </div>
           {platforms.length > 0 && (
             <div
               style={{
-                fontSize: 34,
+                display: "flex",
+                flexWrap: "wrap",
+                fontSize: 27,
                 fontWeight: 700,
-                color: "#0284C7",
-                marginTop: 20,
+                color: shareTheme.module,
+                marginTop: 18,
               }}
             >
-              {platforms.join("  ·  ")}
+              {platforms.join("  /  ")}
             </div>
           )}
           <div
             style={{
-              fontSize: 26,
-              color: "#6E8580",
-              marginTop: 28,
-              backgroundColor: "#F4FAF8",
-              padding: "12px 28px",
-              borderRadius: 999,
+              display: "flex",
+              gap: 28,
+              fontSize: 25,
+              color: "#52636c",
+              marginTop: 30,
             }}
           >
+            <span style={{ fontWeight: 750 }}>{`${linkCount} links`}</span>
+            <span style={{ fontWeight: 750 }}>{`${followerCount} followers`}</span>
+          </div>
+          <div style={{ fontSize: 23, color: "#75858d", marginTop: 20 }}>
             {`${siteHost}/@${handle ?? ""}`}
           </div>
         </div>
+      </div>
         <div
           style={{
             display: "flex",
@@ -124,11 +171,11 @@ export default async function Image({
             marginTop: 44,
             fontSize: 40,
             fontWeight: 800,
-            color: "#0284C7",
+            color: shareTheme.module,
           }}
         >
           <span>via-mi</span>
-          <span style={{ color: "#7DD3FC" }}>.</span>
+          <span style={{ color: shareTheme.text }}>.</span>
           <span
             style={{ fontSize: 26, fontWeight: 600, color: "#17242B", marginLeft: 18 }}
           >

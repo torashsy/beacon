@@ -18,19 +18,22 @@ export type QrShareImageOptions = {
 const FALLBACK_ACCENT = "#0879ad";
 const FALLBACK_ACCENT_2 = "#60c8f3";
 
-/**
- * 共有QRカードの配色はアプリのテーマ（ライト/ダークや配色テーマ）に依存させず固定する。
- * 理由: ①ダークモードでもQRが白地に濃色で高コントラストに保たれ読み取りやすい、
- * ②画面プレビューと保存PNGの見た目が一致する、③CSS変数の解決値が6桁hexで
- * ないと safeColor が白へフォールバックして文字色が変わる問題を防ぐ。
- * 値は既定ブルーテーマのライト値。アバターの配色（av_theme）は別途ユーザー固有のまま。
- */
-export const QR_CARD = {
-  accent: "#e4f7fd", // カード背景グラデ（明）
-  accent2: "#bcecf8", // カード背景グラデ（濃）
-  text: "#17323e", // 文字色（濃紺）
-  module: "#066886", // QRモジュール色（白地に対して高コントラスト）
+const PROFILE_QR_THEMES = {
+  peach: { accent: "#fff0f5", accent2: "#f6b4ca", text: "#572238", module: "#a92f5d" },
+  mint: { accent: "#ebfbf6", accent2: "#9ee4cf", text: "#17483b", module: "#18725c" },
+  sky: { accent: "#e4f7fd", accent2: "#bcecf8", text: "#17323e", module: "#066886" },
+  lilac: { accent: "#f3efff", accent2: "#c6b1ef", text: "#382954", module: "#6847aa" },
+  citrus: { accent: "#fff4e5", accent2: "#ffc47f", text: "#513419", module: "#96570f" },
+  mono: { accent: "#f2f3f4", accent2: "#cfd2d5", text: "#202428", module: "#30353a" },
 } as const;
+
+export function profileQrTheme(value: unknown) {
+  return PROFILE_QR_THEMES[
+    typeof value === "string" && value in PROFILE_QR_THEMES
+      ? value as keyof typeof PROFILE_QR_THEMES
+      : "sky"
+  ];
+}
 
 function safeColor(value: string, fallback: string): string {
   return /^#[0-9a-f]{6}$/i.test(value.trim()) ? value.trim() : fallback;
@@ -228,7 +231,7 @@ function drawShareBackdrop(
   context.restore();
 }
 
-export async function renderQrSharePng(
+export async function renderQrShareImage(
   options: QrShareImageOptions,
 ): Promise<Blob> {
   const width = 1080;
@@ -375,7 +378,8 @@ export async function renderQrSharePng(
   return new Promise((resolve, reject) => {
     canvas.toBlob(
       (blob) => (blob ? resolve(blob) : reject(new Error("image export failed"))),
-      "image/png",
+      "image/jpeg",
+      0.96,
     );
   });
 }

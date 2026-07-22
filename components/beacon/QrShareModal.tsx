@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { renderQrSharePng } from "@/lib/beacon/brand-qr";
+import { renderQrShareImage } from "@/lib/beacon/brand-qr";
 import type { ToastFn } from "./appTypes";
 
 export type QrCard = {
@@ -33,7 +33,7 @@ export function QrShareModal({
   toast: ToastFn;
 }) {
   const [busy, setBusy] = useState(false);
-  const [canShare, setCanShare] = useState(false);
+  const [canShareFiles, setCanShareFiles] = useState(false);
   const [closing, setClosing] = useState(false);
   const closeTimer = useRef<number | undefined>(undefined);
 
@@ -47,15 +47,17 @@ export function QrShareModal({
 
   // 端末が画像ファイルの共有に対応しているときだけ「共有」ボタンを出す。
   useEffect(() => {
-    setCanShare(
-      typeof navigator !== "undefined" &&
-        typeof navigator.share === "function" &&
-        typeof navigator.canShare === "function",
-    );
+    if (
+      typeof navigator === "undefined" ||
+      typeof navigator.share !== "function" ||
+      typeof navigator.canShare !== "function"
+    ) return;
+    const probe = new File([new Uint8Array([0])], "via-mi.jpg", { type: "image/jpeg" });
+    setCanShareFiles(navigator.canShare({ files: [probe] }));
   }, []);
 
-  function buildPng() {
-    return renderQrSharePng({
+  function buildImage() {
+    return renderQrShareImage({
       qrDataUrl: qr.dataUrl,
       handle,
       name,
@@ -73,7 +75,7 @@ export function QrShareModal({
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = `via-mi-${handle}.png`;
+    anchor.download = `via-mi-${handle}.jpg`;
     anchor.click();
     window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
   }
@@ -82,10 +84,18 @@ export function QrShareModal({
     if (busy) return;
     setBusy(true);
     try {
-      downloadBlob(await buildPng());
-      toast("QR画像を保存しました");
-    } catch {
-      toast("QR画像を保存できませんでした");
+      const blob = await buildImage();
+      if (canShareFiles) {
+        const file = new File([blob], `via-mi-${handle}.jpg`, { type: "image/jpeg" });
+        await navigator.share({ files: [file], title: `@${handle} · via-mi` });
+      } else {
+        downloadBlob(blob);
+        toast("QR画像を保存しました");
+      }
+    } catch (error) {
+      if ((error as { name?: string }).name !== "AbortError") {
+        toast("QR画像を保存できませんでした");
+      }
     } finally {
       setBusy(false);
     }
@@ -95,8 +105,8 @@ export function QrShareModal({
     if (busy) return;
     setBusy(true);
     try {
-      const blob = await buildPng();
-      const file = new File([blob], `via-mi-${handle}.png`, { type: "image/png" });
+      const blob = await buildImage();
+      const file = new File([blob], `via-mi-${handle}.jpg`, { type: "image/jpeg" });
       const shareData = {
         title: `@${handle} · via-mi`,
         text: `@${handle} のvia-mi`,
@@ -193,9 +203,9 @@ export function QrShareModal({
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M12 3v12m0 0 4-4m-4 4-4-4M5 15v4a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-4" />
             </svg>
-            <span>{busy ? "画像を作成中…" : "画像を保存"}</span>
+            <span>{busy ? "画像を作成中…" : canShareFiles ? "写真アプリに保存" : "画像を保存"}</span>
           </button>
-          {canShare && (
+          {canShareFiles && (
             <button
               type="button"
               className="btn line qrShareSecondary"

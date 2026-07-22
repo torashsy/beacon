@@ -14,7 +14,7 @@ import {
   supportsUserId,
   userIdExample,
 } from "@/lib/beacon/link-input";
-import { createBrandQrSvg, qrSvgDataUrl, QR_CARD } from "@/lib/beacon/brand-qr";
+import { createBrandQrSvg, profileQrTheme, qrSvgDataUrl } from "@/lib/beacon/brand-qr";
 import { cryptoId, type Me, type ToastFn } from "./appTypes";
 import { LinkThumb } from "./icons";
 import { PublicProfileCard } from "./PublicProfileCard";
@@ -97,7 +97,11 @@ export function ProfileView({
     // text を渡すことで、Xなどシェア先アプリの投稿本文に定型メッセージが
     // 自動で入る（urlだけだとリンクのみ貼られ、文面が空になるため）。
     const displayName = me.profile.name.trim();
-    const shareText = `${displayName ? `${displayName}（@${handle}）` : `@${handle}`}のvia-miページ`;
+    const intro = me.profile.bio.replace(/\s+/g, " ").trim().slice(0, 90);
+    const shareText = [
+      `${displayName ? `${displayName}（@${handle}）` : `@${handle}`}のvia-miページ`,
+      intro,
+    ].filter(Boolean).join("\n");
     if (typeof navigator.share === "function") {
       try {
         await navigator.share({ title: `@${handle} · via-mi`, text: shareText, url: pageUrl() });
@@ -118,13 +122,13 @@ export function ProfileView({
     try {
       const { create } = await import("qrcode");
       const qr = create(pageUrl(), { errorCorrectionLevel: "H" });
-      // 配色はテーマ非依存の固定ブランド色（ダークでもQRが高コントラスト、
-      // 画面プレビューと保存PNGが一致、文字色が変わらない）。
+      const qrTheme = profileQrTheme(me.profile.color_theme);
+      // プロフィールの配色を使いつつ、QR本体は白地とのコントラストを保つ。
       setQrCard({
-        dataUrl: qrSvgDataUrl(createBrandQrSvg(qr.modules, QR_CARD.module)),
-        accent: QR_CARD.accent,
-        accent2: QR_CARD.accent2,
-        onAccent: QR_CARD.text,
+        dataUrl: qrSvgDataUrl(createBrandQrSvg(qr.modules, qrTheme.module)),
+        accent: qrTheme.accent,
+        accent2: qrTheme.accent2,
+        onAccent: qrTheme.text,
       });
     } catch {
       toast("QRコードを作成できませんでした");

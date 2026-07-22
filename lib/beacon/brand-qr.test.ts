@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createBrandQrSvg, qrSvgDataUrl } from "./brand-qr";
+import { createBrandQrSvg, profileQrTheme, qrSvgDataUrl } from "./brand-qr";
 
 function matrix(size = 21) {
   return {
@@ -23,5 +23,13 @@ describe("brand QR", () => {
     const svg = createBrandQrSvg(matrix(), "not-a-color");
     expect(svg).toContain('fill="#0879ad"');
     expect(qrSvgDataUrl(svg)).toMatch(/^data:image\/svg\+xml/);
+  });
+
+  it("uses the profile color theme for the share card and QR modules", () => {
+    expect(profileQrTheme("peach")).toMatchObject({
+      accent: "#fff0f5",
+      module: "#a92f5d",
+    });
+    expect(profileQrTheme("unknown")).toEqual(profileQrTheme("sky"));
   });
 });

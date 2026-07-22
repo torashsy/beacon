@@ -65,8 +65,11 @@ export async function generateMetadata({
   if (!page) return { title: "via-mi", robots: NOINDEX };
   const { profile } = page;
 
-  const title = `${profile.name || handle} · via-mi`;
-  const description = profile.bio || "via-mi のプロフィール";
+  const title = profile.name
+    ? `${profile.name}（@${handle}） | via-mi`
+    : `@${handle} | via-mi`;
+  const description = profile.bio.replace(/\s+/g, " ").trim().slice(0, 160)
+    || `@${handle}のリンクや予定をまとめたvia-miプロフィール`;
   return {
     title,
     description,
