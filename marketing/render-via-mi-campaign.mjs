@@ -43,14 +43,14 @@ const svg = `
       <feDropShadow dx="0" dy="9" stdDeviation="16" flood-color="#3b91ba" flood-opacity="0.13"/>
     </filter>
     <style>
-      text { font-family: "Noto Sans JP", "BIZ UDPGothic", "Yu Gothic UI", sans-serif; fill: #12365f; }
+      text { font-family: "Noto Sans JP", "BIZ UDPGothic", sans-serif; fill: #12365f; font-kerning: normal; font-feature-settings: "palt" 1; }
       .white { fill: #ffffff; }
-      .headline { font-size: 54px; font-weight: 750; letter-spacing: 1px; }
-      .amount { font-size: 164px; font-weight: 800; fill: url(#amount); letter-spacing: -8px; }
-      .unit { font-size: 62px; font-weight: 750; fill: #3196df; }
-      .label { font-size: 62px; font-weight: 750; letter-spacing: 2px; }
-      .title { font-size: 45px; font-weight: 750; }
-      .condition { font-size: 36px; font-weight: 700; }
+      .headline { font-size: 56px; font-weight: 700; letter-spacing: 0; }
+      .amount { font-size: 176px; font-weight: 780; fill: url(#amount); letter-spacing: -8px; }
+      .unit { font-size: 64px; font-weight: 700; fill: #3196df; letter-spacing: 0; }
+      .label { font-size: 66px; font-weight: 700; letter-spacing: 1px; }
+      .title { font-size: 46px; font-weight: 700; letter-spacing: 0; }
+      .condition { font-size: 37px; font-weight: 650; letter-spacing: 0; }
       .number { font-size: 62px; font-weight: 700; fill: #ffffff; }
     </style>
   </defs>
@@ -64,17 +64,16 @@ const svg = `
   <rect x="${layout.badge.x}" y="${layout.badge.y}" width="${layout.badge.width}" height="${layout.badge.height}" rx="36" fill="url(#accent)"/>
   <text x="${layout.badge.x + layout.badge.width / 2}" y="${layout.badge.y + 46}" text-anchor="middle" font-size="36" font-weight="750" class="white">${esc(layout.badge.text)}</text>
   <text x="${layout.headline.x}" y="${layout.headline.y}" class="headline">${esc(layout.headline.text)}</text>
-  <text x="${layout.reward.x}" y="${layout.reward.y}" class="amount">${esc(layout.reward.amount)}</text>
-  <text x="575" y="${layout.reward.y}" class="unit">${esc(layout.reward.unit)}</text>
-  <text x="82" y="650" class="label">${esc(layout.reward.label)}</text>
+  <text x="${layout.reward.x}" y="${layout.reward.y}"><tspan class="amount">${esc(layout.reward.amount)}</tspan><tspan class="unit" dx="18">${esc(layout.reward.unit)}</tspan></text>
+  <text x="82" y="676" class="label">${esc(layout.reward.label)}</text>
 
-  <text x="${layout.conditionsTitle.x}" y="${layout.conditionsTitle.y}" class="title">${esc(layout.conditionsTitle.text)}</text>
+  <text x="${layout.conditionsTitle.x}" y="${layout.conditionsTitle.y}" text-anchor="middle" class="title">${esc(layout.conditionsTitle.text)}</text>
   ${cards}
 
   <rect x="${layout.dm.x}" y="${layout.dm.y}" width="${layout.dm.width}" height="${layout.dm.height}" rx="41" fill="url(#accent)"/>
-  <circle cx="128" cy="782" r="25" fill="#ffffff"/>
-  <path d="M114 772h28v20h-28z M114 772l14 10 14-10" fill="none" stroke="#278fe9" stroke-width="3.5" stroke-linejoin="round"/>
-  <text x="800" y="797" text-anchor="middle" font-size="34" font-weight="750" class="white">${esc(layout.dm.text)}</text>
+  <circle cx="124" cy="762" r="25" fill="#ffffff"/>
+  <path d="M110 752h28v20h-28z M110 752l14 10 14-10" fill="none" stroke="#278fe9" stroke-width="3.2" stroke-linejoin="round"/>
+  <text x="160" y="773" font-size="25" font-weight="700" class="white">${esc(layout.dm.text)}</text>
   <text x="${layout.url.x}" y="${layout.url.y}" font-size="30" font-weight="650">${esc(layout.url.text)}</text>
 </svg>`;
 
