@@ -126,6 +126,7 @@ export function BeaconApp() {
   const [session, setSession] = useState<Session | null>(null);
   const [me, setMe] = useState<Me | null>(null);
   const [navTab, setNavTab] = useState<NavTab>("profile");
+  const [followsMode, setFollowsMode] = useState<"following" | "followers">("following");
   const [navDirection, setNavDirection] = useState<NavDirection>("none");
   // 全画面オーバーレイ（ナビを隠す）: 認証フォーム / 公開プレビュー
   const [overlay, setOverlay] = useState<Overlay>("none");
@@ -1035,6 +1036,10 @@ export function BeaconApp() {
                   onSaveCal={persistCal}
                   onSaveContent={persistProfileContent}
                   onUploadPhoto={uploadProfilePhoto}
+                  onOpenFollowers={() => {
+                    setFollowsMode("followers");
+                    goNav("follows");
+                  }}
                   toast={toast}
                 />
               </div>
@@ -1047,6 +1052,10 @@ export function BeaconApp() {
                   onSaveCal={persistCal}
                   onSaveContent={persistProfileContent}
                   onUploadPhoto={uploadProfilePhoto}
+                  onOpenFollowers={() => {
+                    setFollowsMode("followers");
+                    goNav("follows");
+                  }}
                   toast={toast}
                 />
             )
@@ -1065,6 +1074,8 @@ export function BeaconApp() {
             onUnfollow={onUnfollow}
             onOpenProfile={openPreview}
             onLoadFollowers={loadFollowers}
+            mode={followsMode}
+            onModeChange={setFollowsMode}
             loggedIn={!!session}
             onLoginPrompt={() => openAuth("login")}
           />

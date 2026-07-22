@@ -1563,6 +1563,20 @@ textarea {
   color: var(--text);
   font-size: 13px;
 }
+/* 本人プロフィールでは、フォロワー数タップでフォロワー一覧へ。 */
+button.followerCountButton {
+  display: inline-block;
+  font-family: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+button.followerCountButton:hover strong,
+button.followerCountButton:focus-visible strong {
+  text-decoration: underline;
+}
 input:focus,
 select:focus,
 textarea:focus {

@@ -45,6 +45,7 @@ export function ProfileView({
   onSaveCal,
   onSaveContent,
   onUploadPhoto,
+  onOpenFollowers,
   toast,
 }: {
   me: Me;
@@ -56,6 +57,8 @@ export function ProfileView({
   onSaveCal: (date: string, memo: string) => Promise<boolean>;
   onSaveContent: (next: ProfileContent) => Promise<boolean>;
   onUploadPhoto: (file: File) => Promise<string | null>;
+  /** フォロワー数タップでフォロワー一覧を開く。 */
+  onOpenFollowers?: () => void;
   toast: ToastFn;
 }) {
   const [tab, setTab] = useState<ContentTab>(focusSection ?? "links");
@@ -135,6 +138,7 @@ export function ProfileView({
             pubcal: publicCal,
           }}
           clickCounts={me.clicks}
+          onFollowersClick={onOpenFollowers}
           headerActions={
             <>
               <button className="circleAction headerCircleAction" onClick={share} aria-label="共有">

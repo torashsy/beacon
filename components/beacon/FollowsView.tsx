@@ -31,6 +31,8 @@ export function FollowsView({
   onUnfollow,
   onOpenProfile,
   onLoadFollowers,
+  mode,
+  onModeChange,
   loggedIn,
   onLoginPrompt,
 }: {
@@ -41,10 +43,12 @@ export function FollowsView({
   onOpenProfile: (snap: FollowSnapshot) => void;
   /** 自分をフォローしている相手の一覧を取得（本人のみ）。 */
   onLoadFollowers: () => Promise<FollowerRow[]>;
+  /** 「フォロー中 / フォロワー」の表示モード（親が保持）。 */
+  mode: "following" | "followers";
+  onModeChange: (mode: "following" | "followers") => void;
   loggedIn: boolean;
   onLoginPrompt: () => void;
 }) {
-  const [mode, setMode] = useState<"following" | "followers">("following");
   const [q, setQ] = useState("");
   const [found, setFound] = useState<{ handle: string; page: PublicPage } | null>(null);
   const [searching, setSearching] = useState(false);
@@ -77,8 +81,11 @@ export function FollowsView({
   }).length;
 
   // 「フォロワー」タブを開き、かつログイン済みで未取得のときに一覧を読み込む。
+  // 依存は mode / loggedIn のみ。followers や followersLoading を依存に入れると、
+  // effect 内の setState でこの effect 自身が再実行され、クリーンアップが進行中の
+  // 取得を cancel してしまい「読み込み中」のまま固まる（未取得判定は本体内で行う）。
   useEffect(() => {
-    if (mode !== "followers" || !loggedIn || followers !== null || followersLoading) return;
+    if (mode !== "followers" || !loggedIn || followers !== null) return;
     let cancelled = false;
     setFollowersLoading(true);
     setFollowersError("");
@@ -95,7 +102,18 @@ export function FollowsView({
     return () => {
       cancelled = true;
     };
-  }, [mode, loggedIn, followers, followersLoading, onLoadFollowers]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, loggedIn]);
+
+  // ログアウトしたらキャッシュを破棄し、別アカウントで開いたとき前のフォロワーが
+  // 残らないようにする（再ログイン時に取り直す）。
+  useEffect(() => {
+    if (!loggedIn) {
+      setFollowers(null);
+      setFollowersError("");
+      setFollowersLoading(false);
+    }
+  }, [loggedIn]);
 
   // フォロワー行のタップで、その相手の公開ページを取得してプレビューを開く。
   async function openByHandle(handle: string) {
@@ -150,7 +168,7 @@ export function FollowsView({
         <button
           type="button"
           className={mode === "following" ? "on" : ""}
-          onClick={() => setMode("following")}
+          onClick={() => onModeChange("following")}
           aria-pressed={mode === "following"}
         >
           フォロー中
@@ -158,7 +176,7 @@ export function FollowsView({
         <button
           type="button"
           className={mode === "followers" ? "on" : ""}
-          onClick={() => setMode("followers")}
+          onClick={() => onModeChange("followers")}
           aria-pressed={mode === "followers"}
         >
           フォロワー
