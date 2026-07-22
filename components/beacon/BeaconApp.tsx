@@ -12,6 +12,7 @@ import {
   getMyFollows,
   getMyFollowers,
   type FollowerRow,
+  getPagesUpdated,
   getPublicPage,
   getPublicPageCore,
   saveMyFollows,
@@ -732,11 +733,22 @@ export function BeaconApp() {
           if (!next[f.handle]) next[f.handle] = { state: "loading", addedLive: 0 };
         return next;
       });
+      // まず全フォロー相手の更新時刻を1回でまとめて取得し、前回スナップショットと
+      // 一致する（＝変化なし）相手は本体取得を省く。フォロー数が多いほどDB読み取りを削減。
+      const updatedMap = await getPagesUpdated(db, list.map((f) => f.handle)).catch(
+        () => ({}) as Record<string, string>,
+      );
       const entries = await mapWithConcurrency(
         list,
         4,
         async (snap) => {
           try {
+            const fresh = updatedMap[snap.handle];
+            const known = snap.pageUpdated;
+            // 更新時刻が判明していて前回と一致するなら、本体取得せず「変化なし」。
+            if (fresh && known && Date.parse(fresh) === Date.parse(known)) {
+              return [snap.handle, { state: "same", addedLive: 0 } as FollowStatus] as const;
+            }
             const page = await getPublicPageCore(db, snap.handle);
             return [snap.handle, diffFollow(snap, page)] as const;
           } catch {
