@@ -1,8 +1,9 @@
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/server";
 import { getPublicPage } from "@/lib/beacon/rpc";
 import { toSnapshot } from "@/lib/beacon/follows";
 import {
@@ -19,15 +20,24 @@ import { PublicBottomNav } from "@/components/beacon/PublicBottomNav";
  * URL 規約は「先頭に @ を付ける」。@ なしのパスはここでは扱わない。
  *
  * generateMetadata と PublicPage は同一リクエストで2回呼ばれるため、
- * React cache でリクエスト単位にメモ化し RPC 往復を1回にまとめる。
+ * React cache でリクエスト単位にメモ化し RPC 往復を1回にまとめる。さらに
+ * unstable_cache でリクエストをまたいで短時間キャッシュし、閲覧のたびに
+ * DB を引かないようにする（公開情報なので数十秒のずれは許容）。
+ * cookie 非依存の createPublicClient を使うことで unstable_cache 内から呼べる。
  */
 
 type Params = { handle: string };
 
-const loadPage = cache(async (handle: string) => {
-  const db = await createClient();
-  return getPublicPage(db, handle);
-});
+/** 公開ページのキャッシュ保持秒数（この間はDBを引かずにキャッシュを返す）。 */
+const PUBLIC_PAGE_TTL = 60;
+
+const loadPage = cache((handle: string) =>
+  unstable_cache(
+    () => getPublicPage(createPublicClient(), handle),
+    ["public-page", handle],
+    { revalidate: PUBLIC_PAGE_TTL, tags: [`public-page:${handle}`] },
+  )(),
+);
 
 /** URL セグメント（例 "@torashsy"）から先頭 @ を外す。@ なしは null。 */
 function normalizeHandleParam(raw: string): string | null {
