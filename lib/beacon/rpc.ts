@@ -101,6 +101,36 @@ export async function getMyFollows(
   return rows.map((r) => r.target);
 }
 
+/** フォロワー一覧の1件分（表示に必要な公開項目のみ）。 */
+export interface FollowerRow {
+  handle: string;
+  name: string;
+  emoji: string;
+  av_url: string;
+  av_theme: number;
+}
+
+/**
+ * 自分をフォローしている相手の一覧をサーバーから取得（要パスコード）。
+ * 本人だけが自分のフォロワーを閲覧できる。他人のフォロワー一覧・検索・おすすめは提供しない。
+ */
+export async function getMyFollowers(
+  db: DB,
+  handle: string,
+  pass: string,
+): Promise<FollowerRow[]> {
+  const rows = (unwrap(
+    await db.rpc("get_my_followers", { p_handle: handle, p_pass: pass }),
+  ) ?? []) as Partial<FollowerRow>[];
+  return rows.map((r) => ({
+    handle: r.handle ?? "",
+    name: r.name ?? "",
+    emoji: r.emoji ?? "",
+    av_url: r.av_url ?? "",
+    av_theme: Number(r.av_theme ?? 0),
+  }));
+}
+
 /** 自分のフォロー先ハンドル一覧をサーバーへ保存（差し替え・要パスコード）。 */
 export async function saveMyFollows(
   db: DB,

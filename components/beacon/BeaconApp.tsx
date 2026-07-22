@@ -10,6 +10,8 @@ import {
   getAccountSecurity,
   getClicks,
   getMyFollows,
+  getMyFollowers,
+  type FollowerRow,
   getPublicPage,
   getPublicPageCore,
   saveMyFollows,
@@ -856,6 +858,13 @@ export function BeaconApp() {
     setPreview(snap);
   }, []);
 
+  // 自分をフォローしている相手の一覧（本人のみ・要パスコード）。フォロータブの
+  // 「フォロワー」表示で必要になったタイミングで取得する。
+  const loadFollowers = useCallback(async (): Promise<FollowerRow[]> => {
+    if (!session) return [];
+    return getMyFollowers(db, session.handle, session.pass);
+  }, [db, session]);
+
   const onPreviewToggleFollow = useCallback(
     (snap: FollowSnapshot) => {
       if (follows.some((f) => f.handle === snap.handle)) {
@@ -1055,6 +1064,7 @@ export function BeaconApp() {
             states={followStates}
             onUnfollow={onUnfollow}
             onOpenProfile={openPreview}
+            onLoadFollowers={loadFollowers}
             loggedIn={!!session}
             onLoginPrompt={() => openAuth("login")}
           />
