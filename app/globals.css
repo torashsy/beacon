@@ -1234,7 +1234,9 @@ textarea {
   padding: 0;
   cursor: zoom-in;
   display: block;
+  transition: transform var(--motion-press) var(--ease-state);
 }
+.profilePhotoItem:active { transform: scale(.992); }
 .profilePhotoItem.loading {
   width: 140px;
   background: var(--eml);
@@ -1248,7 +1250,10 @@ textarea {
   height: 100%;
   display: block;
   object-fit: contain;
+  opacity: 0;
+  transition: opacity var(--motion-ui) var(--ease-state);
 }
+.profilePhotoItem.loaded img { opacity: 1; }
 .photoLightbox {
   position: fixed;
   inset: 0;
@@ -1257,6 +1262,7 @@ textarea {
   padding: max(48px, env(safe-area-inset-top)) 16px max(32px, env(safe-area-inset-bottom));
   background: rgba(7, 12, 16, .9);
   cursor: zoom-out;
+  animation: photo-lightbox-in 140ms var(--ease-state);
 }
 .photoLightbox > img {
   position: absolute;
@@ -1269,6 +1275,21 @@ textarea {
   object-fit: contain;
   border-radius: 10px;
   transform: translate(-50%, -50%);
+  animation: photo-lightbox-image-in 180ms var(--ease-ios-out);
+}
+.photoLightbox.closing {
+  animation: photo-lightbox-out 150ms var(--ease-state) forwards;
+}
+.photoLightbox.closing > img {
+  animation: photo-lightbox-image-out 150ms var(--ease-state) forwards;
+}
+@keyframes photo-lightbox-in { from { opacity: 0; } }
+@keyframes photo-lightbox-out { to { opacity: 0; } }
+@keyframes photo-lightbox-image-in {
+  from { opacity: .4; transform: translate(-50%, -50%) scale(.96); }
+}
+@keyframes photo-lightbox-image-out {
+  to { opacity: 0; transform: translate(-50%, -50%) scale(.97); }
 }
 .photoLightboxClose {
   position: absolute;
@@ -1467,6 +1488,10 @@ textarea {
 .editMode select,
 .editMode textarea {
   font-family: inherit;
+}
+.editMode { animation: editor-in var(--motion-ui) var(--ease-ios-out); }
+@keyframes editor-in {
+  from { opacity: .65; transform: translate3d(0, 6px, 0); }
 }
 .modalScrim {
   position: fixed;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { PublicProfileCard, type PublicCardData } from "./PublicProfileCard";
 import { LegalFooter } from "./LegalFooter";
@@ -58,8 +58,27 @@ export function ProfilePreview({
   // passive 扱いで preventDefault が効かないため、ref から非passiveで直接登録する。
   const overlayRef = useRef<HTMLDivElement>(null);
   const drag = useRef({ startX: 0, startY: 0, axis: null as null | "x" | "y", x: 0 });
-  const [dragX, setDragX] = useState(0);
-  const [snapping, setSnapping] = useState(false);
+  const closeTimer = useRef<number | null>(null);
+
+  const closePreview = useCallback(() => {
+    const el = overlayRef.current;
+    if (!el) {
+      onClose();
+      return;
+    }
+    if (closeTimer.current !== null) return;
+    el.style.willChange = "transform, opacity";
+    el.style.transition = "transform 180ms var(--ease-ios-out), opacity 140ms var(--ease-state)";
+    requestAnimationFrame(() => {
+      el.style.transform = "translate3d(100%, 0, 0)";
+      el.style.opacity = "0";
+    });
+    closeTimer.current = window.setTimeout(onClose, 190);
+  }, [onClose]);
+
+  useEffect(() => () => {
+    if (closeTimer.current !== null) window.clearTimeout(closeTimer.current);
+  }, []);
 
   useEffect(() => {
     const el = overlayRef.current;
@@ -70,7 +89,7 @@ export function ProfilePreview({
     const onStart = (e: TouchEvent) => {
       const t = e.touches[0];
       drag.current = { startX: t.clientX, startY: t.clientY, axis: null, x: 0 };
-      setSnapping(false);
+      el.style.transition = "none";
     };
     const onMove = (e: TouchEvent) => {
       const t = e.touches[0];
@@ -83,16 +102,19 @@ export function ProfilePreview({
       if (drag.current.axis !== "x") return; // 縦操作は通常スクロールに任せる
       e.preventDefault(); // 横操作中は縦スクロールを止める＝真横だけに動く
       drag.current.x = Math.max(0, dx); // 右方向のみ
-      setDragX(drag.current.x);
+      el.style.transform = `translate3d(${drag.current.x}px, 0, 0)`;
+      el.style.opacity = String(Math.max(0.4, 1 - drag.current.x / 420));
+      el.style.willChange = "transform, opacity";
     };
     const onEnd = () => {
       if (drag.current.axis !== "x") return;
       if (drag.current.x > CLOSE) {
-        onClose();
+        closePreview();
         return;
       }
-      setSnapping(true);
-      requestAnimationFrame(() => setDragX(0));
+      el.style.transition = "transform 220ms var(--ease-ios-out), opacity 180ms var(--ease-state)";
+      el.style.transform = "translate3d(0, 0, 0)";
+      el.style.opacity = "1";
       drag.current.x = 0;
     };
 
@@ -106,18 +128,7 @@ export function ProfilePreview({
       el.removeEventListener("touchend", onEnd);
       el.removeEventListener("touchcancel", onEnd);
     };
-  }, [onClose]);
-
-  const dragStyle: CSSProperties | undefined =
-    dragX > 0
-      ? {
-          transform: `translateX(${dragX}px)`,
-          opacity: Math.max(0.4, 1 - dragX / 420),
-          transition: snapping ? "transform .22s ease, opacity .22s ease" : "none",
-        }
-      : snapping
-        ? { transition: "transform .22s ease, opacity .22s ease" }
-        : undefined;
+  }, [closePreview]);
 
   // 表示中は背景スクロールを止める。
   useEffect(() => {
@@ -128,10 +139,10 @@ export function ProfilePreview({
 
   // Escで閉じる。
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") closePreview(); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [closePreview]);
 
   // 裏で最新を取得して差し替える。
   useEffect(() => {
@@ -164,13 +175,11 @@ export function ProfilePreview({
       role="dialog"
       aria-modal="true"
       aria-label={`@${handle} のプロフィール`}
-      style={dragStyle}
-      onTransitionEnd={() => { if (dragX === 0) setSnapping(false); }}
     >
       <main className="wrap" style={{ paddingTop: 8, paddingBottom: 40 }}>
         <div className="top">
           <span className="logo" aria-hidden="true">via-mi</span>
-          <button type="button" className="publicBack" onClick={onClose}>
+          <button type="button" className="publicBack" onClick={closePreview}>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
             戻る
           </button>
