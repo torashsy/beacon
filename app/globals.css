@@ -323,39 +323,79 @@ html[data-color-mode="dark"] {
     --nav-shadow: var(--dark-nav-shadow);
   }
 }
-/* プロフィールカード固有テーマ: 所有者が選んだ色相(アクセント)だけをカードに
-   スコープする。地色/文字/明暗は見る人の環境(html)のまま＝「色味は所有者・
-   明暗は見る人」。各テーマのアクセント値は html[data-color-theme=X] と同一。 */
+/* プロフィールカード固有テーマ。所有者の色はカード内だけに閉じ込め、
+   ページ背景・ナビ・検索・設定には波及させない。明暗は閲覧者の設定に合わせる。 */
+.xcard[data-color-theme] {
+  --surface: var(--profile-surface);
+  --text: var(--profile-text);
+  --muted: var(--profile-muted);
+  --faint: var(--profile-faint);
+  --border: var(--profile-border);
+  --ink: var(--profile-ink);
+  --soft: var(--profile-soft);
+  --skeleton: var(--profile-skeleton);
+  --shadow: 0 2px 10px color-mix(in srgb, var(--em) 10%, transparent);
+  background: var(--surface);
+  color: var(--text);
+}
 .xcard[data-color-theme="sky"] {
+  --profile-surface: #f7fcff; --profile-text: #17323e; --profile-muted: #496a78; --profile-faint: #9fbfca;
+  --profile-border: #cfe9f3; --profile-ink: #edfaff; --profile-soft: #dcf4fb; --profile-skeleton: #e8f7fb;
+  --profile-dark-surface: #182830; --profile-dark-text: #f0f6f9; --profile-dark-muted: #a4b5be; --profile-dark-faint: #687d88;
+  --profile-dark-border: #304853; --profile-dark-ink: #1c3039; --profile-dark-soft: #21404c; --profile-dark-skeleton: #263b44;
   --em: #087da4; --emd: #066886; --eml: #e4f7fd; --em2: #bcecf8; --on-em: #fff;
   --dark-em: #337f97; --dark-emd: #b7e7f2; --dark-eml: #1d3a45; --dark-em2: #d0f0f7; --dark-on-em: #fff;
 }
 .xcard[data-color-theme="mono"] {
+  --profile-surface: #fafafa; --profile-text: #202326; --profile-muted: #596066; --profile-faint: #aeb3b7;
+  --profile-border: #dedfe1; --profile-ink: #f4f5f5; --profile-soft: #eceeef; --profile-skeleton: #eff0f1;
+  --profile-dark-surface: #181b1e; --profile-dark-text: #f1f3f4; --profile-dark-muted: #adb3b8; --profile-dark-faint: #747c82;
+  --profile-dark-border: #30353a; --profile-dark-ink: #22262a; --profile-dark-soft: #282d31; --profile-dark-skeleton: #292e32;
   --em: #363a3f; --emd: #282c30; --eml: #eef0f1; --em2: #cfd3d6; --on-em: #fff;
   --dark-em: #4c5156; --dark-emd: #e5e9ec; --dark-eml: #282f35; --dark-em2: #c7cdd2; --dark-on-em: #fff;
 }
 .xcard[data-color-theme="mint"] {
+  --profile-surface: #f8fffc; --profile-text: #17352c; --profile-muted: #496d61; --profile-faint: #a7c6bd;
+  --profile-border: #d3eee5; --profile-ink: #f0fcf8; --profile-soft: #e2f8f0; --profile-skeleton: #ebf8f3;
+  --profile-dark-surface: #192a25; --profile-dark-text: #eff8f5; --profile-dark-muted: #a2bdb6; --profile-dark-faint: #657f78;
+  --profile-dark-border: #30483f; --profile-dark-ink: #1e322c; --profile-dark-soft: #224139; --profile-dark-skeleton: #283d37;
   --em: #19765e; --emd: #14614e; --eml: #e6faf3; --em2: #c8f2e5; --on-em: #fff;
   --dark-em: #327d68; --dark-emd: #b6e7d7; --dark-eml: #1d3c33; --dark-em2: #d2f1e8; --dark-on-em: #fff;
 }
 .xcard[data-color-theme="lilac"] {
+  --profile-surface: #fdfbff; --profile-text: #302944; --profile-muted: #655a7a; --profile-faint: #bbb1ca;
+  --profile-border: #e5dcf3; --profile-ink: #f9f6ff; --profile-soft: #efe9fa; --profile-skeleton: #f1edf7;
+  --profile-dark-surface: #211b2c; --profile-dark-text: #f5f1ff; --profile-dark-muted: #bab0ce; --profile-dark-faint: #7c708e;
+  --profile-dark-border: #433755; --profile-dark-ink: #2c243a; --profile-dark-soft: #35294d; --profile-dark-skeleton: #352e43;
   --em: #7352b4; --emd: #5e4296; --eml: #f2edfc; --em2: #ded1f5; --on-em: #fff;
   --dark-em: #68568d; --dark-emd: #dccdf6; --dark-eml: #352d45; --dark-em2: #ebe2fa; --dark-on-em: #fff;
 }
 .xcard[data-color-theme="peach"] {
+  --profile-surface: #fffafd; --profile-text: #402733; --profile-muted: #755264; --profile-faint: #c8aeb9;
+  --profile-border: #f0d9e2; --profile-ink: #fff4f8; --profile-soft: #fde8f0; --profile-skeleton: #f8ecf1;
+  --profile-dark-surface: #291c22; --profile-dark-text: #fff3f6; --profile-dark-muted: #c9adb6; --profile-dark-faint: #8a6e77;
+  --profile-dark-border: #503741; --profile-dark-ink: #34242a; --profile-dark-soft: #432c35; --profile-dark-skeleton: #3c2b31;
   --em: #c43d6b; --emd: #9f3157; --eml: #ffebf2; --em2: #ffd5e3; --on-em: #fff;
   --dark-em: #84465d; --dark-emd: #ffc0d1; --dark-eml: #452b35; --dark-em2: #f8d5df; --dark-on-em: #fff;
 }
 .xcard[data-color-theme="citrus"] {
+  --profile-surface: #fffaf5; --profile-text: #402a19; --profile-muted: #70543c; --profile-faint: #c6b09e;
+  --profile-border: #efdecc; --profile-ink: #fff5e9; --profile-soft: #ffead3; --profile-skeleton: #f7ede3;
+  --profile-dark-surface: #2a2119; --profile-dark-text: #fff6ed; --profile-dark-muted: #c4b2a3; --profile-dark-faint: #887566;
+  --profile-dark-border: #4d3d30; --profile-dark-ink: #362a20; --profile-dark-soft: #443226; --profile-dark-skeleton: #3e3128;
   --em: #a45618; --emd: #834412; --eml: #fff0df; --em2: #ffe0bb; --on-em: #fff;
   --dark-em: #7e5c3d; --dark-emd: #f1d0ad; --dark-eml: #423126; --dark-em2: #f7e0c8; --dark-on-em: #fff;
 }
 /* 見る人がダークなら、カード内の色相もダーク値へ差し替える（明暗は見る人基準）。 */
 html[data-color-mode="dark"] .xcard[data-color-theme] {
+  --surface: var(--profile-dark-surface); --text: var(--profile-dark-text); --muted: var(--profile-dark-muted); --faint: var(--profile-dark-faint);
+  --border: var(--profile-dark-border); --ink: var(--profile-dark-ink); --soft: var(--profile-dark-soft); --skeleton: var(--profile-dark-skeleton);
   --em: var(--dark-em); --emd: var(--dark-emd); --eml: var(--dark-eml); --em2: var(--dark-em2); --on-em: var(--dark-on-em);
 }
 @media (prefers-color-scheme: dark) {
   html:not([data-color-mode="light"]) .xcard[data-color-theme] {
+    --surface: var(--profile-dark-surface); --text: var(--profile-dark-text); --muted: var(--profile-dark-muted); --faint: var(--profile-dark-faint);
+    --border: var(--profile-dark-border); --ink: var(--profile-dark-ink); --soft: var(--profile-dark-soft); --skeleton: var(--profile-dark-skeleton);
     --em: var(--dark-em); --emd: var(--dark-emd); --eml: var(--dark-eml); --em2: var(--dark-em2); --on-em: var(--dark-on-em);
   }
 }

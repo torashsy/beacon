@@ -271,6 +271,7 @@ test("profile photos keep their ratio, enlarge on tap, and expose a horizontal e
         av_url: "",
         bn_url: "",
         verified: false,
+        color_theme: "peach",
         content: {
           photos,
         },
@@ -308,6 +309,15 @@ test("profile photos keep their ratio, enlarge on tap, and expose a horizontal e
   });
 
   await page.goto("/");
+  await expect(page.locator('.xcard[data-color-theme="peach"]')).toHaveCSS(
+    "background-color",
+    "rgb(255, 250, 253)",
+  );
+  await expect(page.locator("body")).toHaveCSS("background-color", "rgb(247, 252, 255)");
+  await expect(page.locator(".homeQuickAction").first()).toHaveCSS(
+    "background-color",
+    "rgb(255, 255, 255)",
+  );
   await expect(page.getByRole("button", { name: "写真を追加" })).toBeVisible();
   await expect(page.getByRole("button", { name: "メモを追加" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "写真", exact: true })).toHaveCount(0);
