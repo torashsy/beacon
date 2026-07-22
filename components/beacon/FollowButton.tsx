@@ -67,7 +67,7 @@ export function FollowButton({ snapshot }: { snapshot: FollowSnapshot }) {
       // ハイドレーション完了までは押下不可（SSRと初期状態を一致させる）
       disabled={!ready}
     >
-      {!loggedIn ? "ログインしてフォロー" : followed ? "フォロー中" : "フォローする"}
+      {followed ? "フォロー中" : "フォローする"}
     </button>
   );
 }
