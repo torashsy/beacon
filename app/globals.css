@@ -1063,7 +1063,9 @@ textarea {
 .memoBlock + .memoBlock {
   margin-top: 6px;
 }
-.memoBlock.heading {
+/* 表示(.memoBlock)と編集欄(.memoBlockInput)の両方に書式プレビューを効かせる */
+.memoBlock.heading,
+.memoBlockInput.heading {
   font-size: 17px;
   font-weight: 800;
   line-height: 1.5;
@@ -1071,10 +1073,12 @@ textarea {
 .memoBlock.heading + .memoBlock {
   margin-top: 4px;
 }
-.memoBlock.bold {
+.memoBlock.bold,
+.memoBlockInput.bold {
   font-weight: 800;
 }
-.memoBlock.underline {
+.memoBlock.underline,
+.memoBlockInput.underline {
   text-decoration: underline;
   text-underline-offset: 2px;
 }
@@ -1628,17 +1632,18 @@ textarea {
   stroke-linecap: round;
 }
 .qrActions {
-  display: grid;
-  grid-template-columns: 1fr auto;
+  display: flex;
+  flex-wrap: wrap;
   gap: 9px;
   margin-top: 11px;
 }
 .qrActions .btn {
-  width: auto;
   min-height: 48px;
   margin-top: 0;
 }
+/* 「画像を保存」を主役として1行占有。共有(任意)と閉じるは次行で分け合う。 */
 .qrShareButton.btn.sig {
+  flex: 1 1 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1650,7 +1655,8 @@ textarea {
 .qrShareButton.btn.sig:hover:not(:disabled) {
   background: var(--ink);
 }
-.qrShareButton svg {
+.qrShareButton svg,
+.qrShareSecondary svg {
   width: 19px;
   height: 19px;
   fill: none;
@@ -1659,7 +1665,15 @@ textarea {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+.qrShareSecondary.btn {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
 .qrCloseButton {
+  flex: 1 1 0;
   min-width: 82px;
   padding-inline: 14px;
 }

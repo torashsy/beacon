@@ -18,6 +18,20 @@ export type QrShareImageOptions = {
 const FALLBACK_ACCENT = "#0879ad";
 const FALLBACK_ACCENT_2 = "#60c8f3";
 
+/**
+ * 共有QRカードの配色はアプリのテーマ（ライト/ダークや配色テーマ）に依存させず固定する。
+ * 理由: ①ダークモードでもQRが白地に濃色で高コントラストに保たれ読み取りやすい、
+ * ②画面プレビューと保存PNGの見た目が一致する、③CSS変数の解決値が6桁hexで
+ * ないと safeColor が白へフォールバックして文字色が変わる問題を防ぐ。
+ * 値は既定ブルーテーマのライト値。アバターの配色（av_theme）は別途ユーザー固有のまま。
+ */
+export const QR_CARD = {
+  accent: "#e4f7fd", // カード背景グラデ（明）
+  accent2: "#bcecf8", // カード背景グラデ（濃）
+  text: "#17323e", // 文字色（濃紺）
+  module: "#066886", // QRモジュール色（白地に対して高コントラスト）
+} as const;
+
 function safeColor(value: string, fallback: string): string {
   return /^#[0-9a-f]{6}$/i.test(value.trim()) ? value.trim() : fallback;
 }

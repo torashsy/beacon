@@ -14,7 +14,7 @@ import {
   supportsUserId,
   userIdExample,
 } from "@/lib/beacon/link-input";
-import { createBrandQrSvg, qrSvgDataUrl } from "@/lib/beacon/brand-qr";
+import { createBrandQrSvg, qrSvgDataUrl, QR_CARD } from "@/lib/beacon/brand-qr";
 import { cryptoId, type Me, type ToastFn } from "./appTypes";
 import { LinkThumb } from "./icons";
 import { PublicProfileCard } from "./PublicProfileCard";
@@ -117,17 +117,14 @@ export function ProfileView({
   async function openQr() {
     try {
       const { create } = await import("qrcode");
-      const style = getComputedStyle(document.documentElement);
-      const accent = style.getPropertyValue("--eml").trim() || "#e4f7fd";
-      const accent2 = style.getPropertyValue("--em2").trim() || "#60c8f3";
-      const qrColor = style.getPropertyValue("--emd").trim() || "#0879ad";
-      const onAccent = style.getPropertyValue("--text").trim() || "#17323e";
       const qr = create(pageUrl(), { errorCorrectionLevel: "H" });
+      // 配色はテーマ非依存の固定ブランド色（ダークでもQRが高コントラスト、
+      // 画面プレビューと保存PNGが一致、文字色が変わらない）。
       setQrCard({
-        dataUrl: qrSvgDataUrl(createBrandQrSvg(qr.modules, qrColor)),
-        accent,
-        accent2,
-        onAccent,
+        dataUrl: qrSvgDataUrl(createBrandQrSvg(qr.modules, QR_CARD.module)),
+        accent: QR_CARD.accent,
+        accent2: QR_CARD.accent2,
+        onAccent: QR_CARD.text,
       });
     } catch {
       toast("QRコードを作成できませんでした");
