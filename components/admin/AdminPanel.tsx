@@ -124,6 +124,25 @@ export function AdminPanel() {
     }
   }
 
+  async function deleteAccount(a: Account) {
+    const input = window.prompt(
+      `@${a.handle} を完全に削除します。確認のためIDを入力してください。`,
+      "",
+    );
+    if (input?.trim().toLowerCase() !== a.handle) return;
+    setBusy(true);
+    setMsg("");
+    try {
+      await call("delete_account", { target: a.handle });
+      await loadAccounts(query);
+      setMsg(`@${a.handle} を削除しました`);
+    } catch {
+      setMsg("削除に失敗しました");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function setReportStatus(r: Report, status: string) {
     setBusy(true);
     setMsg("");
@@ -221,13 +240,24 @@ export function AdminPanel() {
                     </span>
                     {a.suspended && a.reason && <span className="adminReason">理由: {a.reason}</span>}
                   </div>
-                  <button
-                    className={`pill ${a.suspended ? "line" : "solid danger"}`}
-                    disabled={busy}
-                    onClick={() => void toggleSuspend(a)}
-                  >
-                    {a.suspended ? "解除" : "凍結"}
-                  </button>
+                  <div className="adminRowActions">
+                    <button
+                      className={`pill ${a.suspended ? "line" : "solid danger"}`}
+                      disabled={busy}
+                      onClick={() => void toggleSuspend(a)}
+                    >
+                      {a.suspended ? "解除" : "凍結"}
+                    </button>
+                    {a.handle !== session?.handle && (
+                      <button
+                        className="pill line dangerText"
+                        disabled={busy}
+                        onClick={() => void deleteAccount(a)}
+                      >
+                        削除
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))
             )}

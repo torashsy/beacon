@@ -3830,6 +3830,9 @@ a {
 }
 .adminRow.suspended { border-color: color-mix(in srgb, var(--alert) 45%, var(--border)); background: color-mix(in srgb, var(--alert) 6%, var(--surface)); }
 .adminRowMain { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+.adminRowActions { display: flex; align-items: center; justify-content: flex-end; gap: 6px; flex-wrap: wrap; }
+.adminRowActions .pill { margin: 0; }
+.adminRowActions .dangerText { color: var(--alert); border-color: color-mix(in srgb, var(--alert) 42%, var(--border)); }
 .adminHandle { font-weight: 700; font-size: 14px; color: var(--emd); text-decoration: none; word-break: break-all; }
 .adminMeta { font-size: 11.5px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
 .adminReason { font-size: 11.5px; color: var(--alert); }

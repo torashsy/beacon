@@ -43,6 +43,30 @@ function json(request: Request, body: unknown, status = 200): Response {
 
 const HANDLE_RE = /^[a-z0-9_]{3,20}$/;
 const REPORT_STATUSES = new Set(["new", "reviewing", "resolved", "rejected"]);
+const AVATAR_BUCKET = "avatars";
+
+async function removeAccountImages(
+  admin: ReturnType<typeof createClient>,
+  handle: string,
+): Promise<number> {
+  let removed = 0;
+  for (let page = 0; page < 100; page += 1) {
+    const { data, error } = await admin.storage.from(AVATAR_BUCKET).list(handle, {
+      limit: 100,
+      offset: 0,
+      sortBy: { column: "name", order: "asc" },
+    });
+    if (error) throw error;
+    const paths = (data ?? [])
+      .filter((item) => item.id && item.name)
+      .map((item) => `${handle}/${item.name}`);
+    if (paths.length === 0) return removed;
+    const { error: removeError } = await admin.storage.from(AVATAR_BUCKET).remove(paths);
+    if (removeError) throw removeError;
+    removed += paths.length;
+  }
+  throw new Error("too many stored images");
+}
 
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") {
@@ -149,6 +173,20 @@ Deno.serve(async (request) => {
       });
       if (error) throw error;
       return json(request, { ok: true });
+    }
+
+    if (action === "delete_account") {
+      const target = String(params.target ?? "").toLowerCase();
+      if (!HANDLE_RE.test(target)) return json(request, { error: "invalid target" }, 400);
+      if (target === handle) return json(request, { error: "cannot delete self" }, 400);
+
+      const filesRemoved = await removeAccountImages(admin, target);
+      const { data: deleted, error } = await admin.rpc("admin_delete_account", {
+        p_handle: target,
+      });
+      if (error) throw error;
+      if (deleted !== true) return json(request, { error: "not found" }, 404);
+      return json(request, { deleted: true, filesRemoved });
     }
 
     if (action === "list_reports") {
