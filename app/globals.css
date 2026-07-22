@@ -2766,6 +2766,19 @@ textarea {
   position: absolute;
   bottom: 5px;
 }
+/* 未保存の編集がある日は枠とドットで区別する（保存ボタンでまとめて確定）。 */
+.day.unsaved {
+  border-color: var(--warning-border);
+}
+.day.unsaved .dot {
+  background: var(--warning-text);
+}
+.calpending {
+  margin-top: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--warning-text);
+}
 .vfoot {
   margin-top: 18px;
   text-align: center;

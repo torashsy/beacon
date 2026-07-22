@@ -709,16 +709,24 @@ function CalendarPane({
   const [y, setY] = useState(now.getFullYear());
   const [m, setM] = useState(now.getMonth());
   const [sel, setSel] = useState<string | null>(null);
-  const [memo, setMemo] = useState("");
+  // 保存ボタンを押すまで、各日のメモ編集をローカルに保持する下書き。
+  // キーが存在する日＝ユーザーが触った日（空文字＝消去）。未保存のまま
+  // 別の日・別の月へ移動しても内容は保持され、まとめて保存できる。
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
 
   const first = new Date(y, m, 1).getDay();
   const days = new Date(y, m + 1, 0).getDate();
 
-  function selectDay(k: string) {
-    setSel(k);
-    setMemo(me.cal[k]?.memo ?? "");
+  // 下書きがあればそれを、無ければ保存済みの値を返す。
+  function memoOf(k: string): string {
+    return k in drafts ? drafts[k] : (me.cal[k]?.memo ?? "");
   }
+  // 保存済みと異なる下書きを持つ日＝未保存の変更。
+  const pending = Object.keys(drafts).filter(
+    (k) => drafts[k].trim() !== (me.cal[k]?.memo ?? ""),
+  );
+
   function nav(d: -1 | 1) {
     let nm = m + d;
     let ny = y;
@@ -732,16 +740,30 @@ function CalendarPane({
     setM(nm);
     setY(ny);
     setSel(null);
-    setMemo("");
+    // 下書き（未保存の編集）は月移動でも消さずに保持する。
   }
   async function save() {
-    if (!sel) {
-      toast("日付を選んでください");
+    if (pending.length === 0) {
+      toast("変更はありません");
       return;
     }
     setBusy(true);
     try {
-      if (await onSaveCal(sel, memo.trim())) toast("保存しました");
+      const saved: string[] = [];
+      let failed = false;
+      // 1日ずつ save_cal を実行。失敗した日は下書きに残して編集内容を守る。
+      for (const k of pending) {
+        if (await onSaveCal(k, drafts[k].trim())) saved.push(k);
+        else failed = true;
+      }
+      if (saved.length > 0) {
+        setDrafts((cur) => {
+          const next = { ...cur };
+          for (const k of saved) delete next[k];
+          return next;
+        });
+      }
+      if (!failed) toast(`${saved.length}件を保存しました`);
     } finally {
       setBusy(false);
     }
@@ -782,15 +804,16 @@ function CalendarPane({
             d === now.getDate() &&
             m === now.getMonth() &&
             y === now.getFullYear();
-          const entry = me.cal[k];
+          const hasMemo = memoOf(k).trim() !== "";
+          const unsaved = pending.includes(k);
           return (
             <div
               key={k}
-              className={`day ${isToday ? "today" : ""} ${sel === k ? "sel" : ""}`}
-              onClick={() => selectDay(k)}
+              className={`day ${isToday ? "today" : ""} ${sel === k ? "sel" : ""} ${unsaved ? "unsaved" : ""}`}
+              onClick={() => setSel(k)}
             >
               {d}
-              {entry?.memo && <span className="dot" />}
+              {hasMemo && <span className="dot" />}
             </div>
           );
         })}
@@ -801,16 +824,32 @@ function CalendarPane({
       </label>
       <input
         className="plain"
-        value={memo}
-        onChange={(e) => setMemo(e.target.value)}
+        value={sel ? memoOf(sel) : ""}
+        onChange={(e) => {
+          if (!sel) return;
+          const v = e.target.value;
+          setDrafts((cur) => ({ ...cur, [sel]: v }));
+        }}
         placeholder="例: ライブ 19:00〜"
         maxLength={100}
-        // 日付未選択のまま入力できると、後で日付をタップした瞬間に selectDay の
-        // setMemo で入力内容が上書き消去されてしまう。日付選択を先に促す。
+        // 入力は選択中の日の下書きに紐づく。日付未選択で入力できると
+        // どの日への編集か決まらないため、日付選択を先に促す。
         disabled={!sel}
       />
-      <button className="btn sig" disabled={busy || !sel} onClick={save} style={{ marginTop: 14 }}>
-        {busy ? "保存中…" : "保存する"}
+      {pending.length > 0 && (
+        <div className="calpending">未保存の変更 {pending.length}件</div>
+      )}
+      <button
+        className="btn sig"
+        disabled={busy || pending.length === 0}
+        onClick={save}
+        style={{ marginTop: 14 }}
+      >
+        {busy
+          ? "保存中…"
+          : pending.length > 0
+            ? `保存する（${pending.length}件）`
+            : "保存する"}
       </button>
     </div>
   );
