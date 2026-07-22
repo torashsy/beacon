@@ -31,6 +31,8 @@ export function FollowsView({
   onUnfollow,
   onOpenProfile,
   onLoadFollowers,
+  mode,
+  onModeChange,
   loggedIn,
   onLoginPrompt,
 }: {
@@ -41,10 +43,12 @@ export function FollowsView({
   onOpenProfile: (snap: FollowSnapshot) => void;
   /** 自分をフォローしている相手の一覧を取得（本人のみ）。 */
   onLoadFollowers: () => Promise<FollowerRow[]>;
+  /** 「フォロー中 / フォロワー」の表示モード（親が保持）。 */
+  mode: "following" | "followers";
+  onModeChange: (mode: "following" | "followers") => void;
   loggedIn: boolean;
   onLoginPrompt: () => void;
 }) {
-  const [mode, setMode] = useState<"following" | "followers">("following");
   const [q, setQ] = useState("");
   const [found, setFound] = useState<{ handle: string; page: PublicPage } | null>(null);
   const [searching, setSearching] = useState(false);
@@ -150,7 +154,7 @@ export function FollowsView({
         <button
           type="button"
           className={mode === "following" ? "on" : ""}
-          onClick={() => setMode("following")}
+          onClick={() => onModeChange("following")}
           aria-pressed={mode === "following"}
         >
           フォロー中
@@ -158,7 +162,7 @@ export function FollowsView({
         <button
           type="button"
           className={mode === "followers" ? "on" : ""}
-          onClick={() => setMode("followers")}
+          onClick={() => onModeChange("followers")}
           aria-pressed={mode === "followers"}
         >
           フォロワー

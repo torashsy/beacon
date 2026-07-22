@@ -46,6 +46,7 @@ export function PublicProfileCard({
   headerActions,
   trackHandle,
   clickCounts,
+  onFollowersClick,
 }: {
   data: PublicCardData;
   /** フォローボタン等、カード右上のアクション。 */
@@ -57,6 +58,8 @@ export function PublicProfileCard({
   trackHandle?: string;
   /** 本人画面だけで指定するURL別クリック数。 */
   clickCounts?: Record<string, number>;
+  /** 本人画面だけで指定。フォロワー数をタップするとフォロワー一覧を開く。 */
+  onFollowersClick?: () => void;
 }) {
   const { handle, profile, channels, pubcal } = data;
   const hasLinks = channels.some((c) => c.type !== HEADING_TYPE && c.status === "live");
@@ -92,9 +95,19 @@ export function PublicProfileCard({
         </div>
         <div className="xid">@{handle}</div>
         {typeof data.followerCount === "number" && (
-          <div className="followerCount">
-            <strong>{data.followerCount.toLocaleString("ja-JP")}</strong> フォロワー
-          </div>
+          onFollowersClick ? (
+            <button
+              type="button"
+              className="followerCount followerCountButton"
+              onClick={onFollowersClick}
+            >
+              <strong>{data.followerCount.toLocaleString("ja-JP")}</strong> フォロワー
+            </button>
+          ) : (
+            <div className="followerCount">
+              <strong>{data.followerCount.toLocaleString("ja-JP")}</strong> フォロワー
+            </div>
+          )
         )}
         {profile.bio && <CollapsibleBio bio={profile.bio} />}
       </div>
