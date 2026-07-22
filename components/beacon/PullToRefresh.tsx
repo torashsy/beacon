@@ -36,6 +36,7 @@ export function PullToRefresh({
   const progressRef = useRef<HTMLSpanElement | null>(null);
   const surfaceRef = useRef<HTMLDivElement | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [visible, setVisible] = useState(false);
   const [ready, setReady] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [returning, setReturning] = useState(false);
@@ -73,6 +74,8 @@ export function PullToRefresh({
     function renderDistance(nextDistance: number) {
       distanceRef.current = nextDistance;
       pendingDistance.current = nextDistance;
+      const nextVisible = nextDistance > 2;
+      setVisible((current) => current === nextVisible ? current : nextVisible);
       const nextReady = nextDistance >= REFRESH_DISTANCE;
       setReady((current) => current === nextReady ? current : nextReady);
       if (moveFrame.current !== null) return;
@@ -88,6 +91,7 @@ export function PullToRefresh({
       distanceRef.current = 0;
       pendingDistance.current = 0;
       setDragging(false);
+      setVisible(false);
       setReady(false);
       paintDistance(0);
     }
@@ -186,7 +190,7 @@ export function PullToRefresh({
     <>
       <div
         ref={indicatorRef}
-        className={`pullRefresh ${dragging || refreshing || returning ? "show" : ""} ${phase}`}
+        className={`pullRefresh ${visible || refreshing || returning ? "show" : ""} ${phase}`}
         role="status"
         aria-live="polite"
         aria-label={refreshing ? "更新中" : ready ? "離して更新" : "引っ張って更新"}

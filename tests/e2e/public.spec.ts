@@ -586,6 +586,13 @@ test("pulling down from the top offers a refresh", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator(".pullRefresh")).toBeAttached();
   await page.evaluate(() => {
+    const start = new Event("touchstart", { bubbles: true, cancelable: true });
+    Object.defineProperty(start, "touches", { value: [{ clientY: 0 }] });
+    document.dispatchEvent(start);
+    document.dispatchEvent(new Event("touchend", { bubbles: true, cancelable: true }));
+  });
+  await expect(page.locator(".pullRefresh")).not.toHaveClass(/show/);
+  await page.evaluate(() => {
     const dispatchTouch = (type: string, clientY: number) => {
       const event = new Event(type, { bubbles: true, cancelable: true });
       Object.defineProperty(event, "touches", {

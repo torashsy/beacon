@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import {
   createPasskeySession,
@@ -86,6 +87,7 @@ type NavDirection = "none" | "from-left" | "from-right";
 type Overlay = "none" | "auth";
 
 const NAV_ORDER: NavTab[] = ["follows", "profile", "help"];
+const ADMIN_ENTRY_HANDLES = new Set(["torashsy"]);
 
 function publicChannelsSignature(channels: Channel[]) {
   return JSON.stringify(channels.filter((channel) => channel.status === "live").map((channel) => ({
@@ -1185,6 +1187,15 @@ export function BeaconApp() {
                     secret={session.pass}
                     toast={toast}
                   />
+                  {ADMIN_ENTRY_HANDLES.has(session.handle) && (
+                    <Link
+                      className="btn ghost"
+                      href="/admin"
+                      style={{ marginTop: 0, textDecoration: "none" }}
+                    >
+                      管理画面
+                    </Link>
+                  )}
                   <button className="textDangerButton" onClick={doDeleteAccount}>
                     アカウントを削除
                   </button>
