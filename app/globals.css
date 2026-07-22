@@ -323,6 +323,42 @@ html[data-color-mode="dark"] {
     --nav-shadow: var(--dark-nav-shadow);
   }
 }
+/* プロフィールカード固有テーマ: 所有者が選んだ色相(アクセント)だけをカードに
+   スコープする。地色/文字/明暗は見る人の環境(html)のまま＝「色味は所有者・
+   明暗は見る人」。各テーマのアクセント値は html[data-color-theme=X] と同一。 */
+.xcard[data-color-theme="sky"] {
+  --em: #087da4; --emd: #066886; --eml: #e4f7fd; --em2: #bcecf8; --on-em: #fff;
+  --dark-em: #337f97; --dark-emd: #b7e7f2; --dark-eml: #1d3a45; --dark-em2: #d0f0f7; --dark-on-em: #fff;
+}
+.xcard[data-color-theme="mono"] {
+  --em: #363a3f; --emd: #282c30; --eml: #eef0f1; --em2: #cfd3d6; --on-em: #fff;
+  --dark-em: #4c5156; --dark-emd: #e5e9ec; --dark-eml: #282f35; --dark-em2: #c7cdd2; --dark-on-em: #fff;
+}
+.xcard[data-color-theme="mint"] {
+  --em: #19765e; --emd: #14614e; --eml: #e6faf3; --em2: #c8f2e5; --on-em: #fff;
+  --dark-em: #327d68; --dark-emd: #b6e7d7; --dark-eml: #1d3c33; --dark-em2: #d2f1e8; --dark-on-em: #fff;
+}
+.xcard[data-color-theme="lilac"] {
+  --em: #7352b4; --emd: #5e4296; --eml: #f2edfc; --em2: #ded1f5; --on-em: #fff;
+  --dark-em: #68568d; --dark-emd: #dccdf6; --dark-eml: #352d45; --dark-em2: #ebe2fa; --dark-on-em: #fff;
+}
+.xcard[data-color-theme="peach"] {
+  --em: #c43d6b; --emd: #9f3157; --eml: #ffebf2; --em2: #ffd5e3; --on-em: #fff;
+  --dark-em: #84465d; --dark-emd: #ffc0d1; --dark-eml: #452b35; --dark-em2: #f8d5df; --dark-on-em: #fff;
+}
+.xcard[data-color-theme="citrus"] {
+  --em: #a45618; --emd: #834412; --eml: #fff0df; --em2: #ffe0bb; --on-em: #fff;
+  --dark-em: #7e5c3d; --dark-emd: #f1d0ad; --dark-eml: #423126; --dark-em2: #f7e0c8; --dark-on-em: #fff;
+}
+/* 見る人がダークなら、カード内の色相もダーク値へ差し替える（明暗は見る人基準）。 */
+html[data-color-mode="dark"] .xcard[data-color-theme] {
+  --em: var(--dark-em); --emd: var(--dark-emd); --eml: var(--dark-eml); --em2: var(--dark-em2); --on-em: var(--dark-on-em);
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-color-mode="light"]) .xcard[data-color-theme] {
+    --em: var(--dark-em); --emd: var(--dark-emd); --eml: var(--dark-eml); --em2: var(--dark-em2); --on-em: var(--dark-on-em);
+  }
+}
 * {
   box-sizing: border-box;
   margin: 0;

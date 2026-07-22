@@ -170,6 +170,7 @@ export async function updateProfile(
   pass: string,
   p: Pick<Profile, "name" | "bio" | "emoji" | "theme" | "av_theme" | "av_url" | "bn_url"> & {
     status?: string;
+    color_theme?: string;
   },
 ): Promise<void> {
   unwrap(
@@ -184,6 +185,7 @@ export async function updateProfile(
       p_bn: p.bn_url,
       p_status: p.status ?? null,
       p_av_theme: p.av_theme,
+      p_color_theme: p.color_theme ?? "sky",
     }),
   );
 }

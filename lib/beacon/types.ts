@@ -29,6 +29,7 @@ export interface Profile {
   updated_at?: string | null; // ページ（プロフィール/リンク/カレンダー）の最終更新時刻
   verified?: boolean; // 復旧用メールアドレスを確認済み
   content?: ProfileContent; // 写真（旧プロフィールでは未設定）
+  color_theme?: string; // カード固有のカラーテーマ（6テーマ・他人にも見える）
 }
 
 /** カレンダーメモ 1 件 */

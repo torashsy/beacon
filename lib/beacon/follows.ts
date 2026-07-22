@@ -23,6 +23,7 @@ export interface FollowSnapshot {
   av_theme?: number;
   av_url: string;
   bn_url: string;
+  color_theme?: string;
   content?: ProfileContent;
   channels: Pick<Channel, "type" | "url" | "label" | "descr" | "status">[];
   pubcal: CalMemo[];
@@ -47,6 +48,7 @@ export function toSnapshot(
     av_theme: profile.av_theme ?? 0,
     av_url: profile.av_url,
     bn_url: profile.bn_url,
+    color_theme: profile.color_theme ?? "sky",
     content: normalizeProfileContent(profile.content),
     channels: channels.map((c) => ({
       type: c.type,
@@ -146,6 +148,7 @@ function snapshotSignature(snapshot: FollowSnapshot): string {
     av_theme: snapshot.av_theme ?? 0,
     av_url: snapshot.av_url,
     bn_url: snapshot.bn_url,
+    color_theme: snapshot.color_theme ?? "sky",
     content: normalizeProfileContent(snapshot.content),
     channels: snapshot.channels.map((channel) => ({
       type: channel.type,

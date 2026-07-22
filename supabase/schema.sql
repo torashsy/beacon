@@ -32,7 +32,8 @@ create table if not exists profiles (
   bn_url   text default '',
   status   text default '',              -- ひとこと近況
   status_at timestamptz,                 -- 近況の更新時刻
-  content jsonb not null default '{"photos":[]}'::jsonb
+  content jsonb not null default '{"photos":[]}'::jsonb,
+  color_theme text not null default 'sky' -- カード固有のカラーテーマ（6テーマ・他人にも見える）
 );
 
 create table if not exists channels (
@@ -328,10 +329,12 @@ end $$;
 -- ---- RPC: プロフィール更新 ----
 drop function if exists update_profile(text,text,text,text,text,int,text,text);
 drop function if exists update_profile(text,text,text,text,text,int,text,text,text);
+drop function if exists update_profile(text,text,text,text,text,int,text,text,text,int);
 
 create or replace function update_profile(p_handle text, p_pass text,
   p_name text, p_bio text, p_emoji text, p_theme int, p_av text, p_bn text,
-  p_status text default null, p_av_theme int default 0)
+  p_status text default null, p_av_theme int default 0,
+  p_color_theme text default 'sky')
 returns void language plpgsql security definer set search_path = public, extensions as $$
 begin
   if not _check_pass(p_handle,p_pass) then raise exception 'auth'; end if;
@@ -343,11 +346,15 @@ begin
   if p_theme not between 0 and 11 or p_av_theme not between 0 and 11 then
     raise exception 'invalid theme';
   end if;
+  if coalesce(p_color_theme, 'sky') not in ('peach','mint','sky','lilac','citrus','mono') then
+    raise exception 'invalid color theme';
+  end if;
   if length(coalesce(p_av,'')) > 2000 or length(coalesce(p_bn,'')) > 2000 then
     raise exception 'image url too long';
   end if;
   update profiles set name=p_name, bio=p_bio, emoji=p_emoji, theme=p_theme, av_theme=p_av_theme,
     av_url=p_av, bn_url=p_bn,
+    color_theme = coalesce(p_color_theme, 'sky'),
     status = coalesce(p_status, status),
     status_at = case when p_status is not null and p_status <> coalesce(status,'')
                      then now() else status_at end
@@ -612,7 +619,7 @@ end $$;
 -- 旧パスワード方式のRPC（create_account / verify_login / reset_pass /
 -- create_session / reissue_recovery）は現行のパスキー専用UIから呼ばれないため、
 -- 裏口を作らないよう anon には grant しない。定義は互換のため残すが実行権限は与えない。
-grant execute on function update_profile(text,text,text,text,text,int,text,text,text,int) to anon;
+grant execute on function update_profile(text,text,text,text,text,int,text,text,text,int,text) to anon;
 grant execute on function update_profile_content(text,text,jsonb) to anon;
 grant execute on function save_channels(text,text,jsonb)                              to anon;
 grant execute on function save_cal(text,text,date,text)                               to anon;
