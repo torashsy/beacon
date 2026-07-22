@@ -81,8 +81,11 @@ export function FollowsView({
   }).length;
 
   // 「フォロワー」タブを開き、かつログイン済みで未取得のときに一覧を読み込む。
+  // 依存は mode / loggedIn のみ。followers や followersLoading を依存に入れると、
+  // effect 内の setState でこの effect 自身が再実行され、クリーンアップが進行中の
+  // 取得を cancel してしまい「読み込み中」のまま固まる（未取得判定は本体内で行う）。
   useEffect(() => {
-    if (mode !== "followers" || !loggedIn || followers !== null || followersLoading) return;
+    if (mode !== "followers" || !loggedIn || followers !== null) return;
     let cancelled = false;
     setFollowersLoading(true);
     setFollowersError("");
@@ -99,7 +102,18 @@ export function FollowsView({
     return () => {
       cancelled = true;
     };
-  }, [mode, loggedIn, followers, followersLoading, onLoadFollowers]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, loggedIn]);
+
+  // ログアウトしたらキャッシュを破棄し、別アカウントで開いたとき前のフォロワーが
+  // 残らないようにする（再ログイン時に取り直す）。
+  useEffect(() => {
+    if (!loggedIn) {
+      setFollowers(null);
+      setFollowersError("");
+      setFollowersLoading(false);
+    }
+  }, [loggedIn]);
 
   // フォロワー行のタップで、その相手の公開ページを取得してプレビューを開く。
   async function openByHandle(handle: string) {
