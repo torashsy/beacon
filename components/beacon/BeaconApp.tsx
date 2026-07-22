@@ -135,6 +135,9 @@ export function BeaconApp() {
   const [followsMode, setFollowsMode] = useState<"following" | "followers">("following");
   const [initialFollowSearch, setInitialFollowSearch] = useState("");
   const [followSearchRequest, setFollowSearchRequest] = useState(0);
+  // 公開ページのCTA(?start=create)から来た未ログイン閲覧者に、起動後すぐ
+  // アカウント作成フォームを開くためのフラグ。
+  const [wantCreate, setWantCreate] = useState(false);
   const [navDirection, setNavDirection] = useState<NavDirection>("none");
   // 全画面オーバーレイ（ナビを隠す）: 認証フォーム / 公開プレビュー
   const [overlay, setOverlay] = useState<Overlay>("none");
@@ -176,6 +179,7 @@ export function BeaconApp() {
       setFollowSearchRequest((request) => request + 1);
       setFollowsMode("following");
     }
+    if (params.get("start") === "create") setWantCreate(true);
     if (requested === "howto" || requested === "settings") {
       setNavTab("help");
       return;
@@ -586,6 +590,14 @@ export function BeaconApp() {
     setAuthInitialPane(pane);
     setOverlay("auth");
   }, []);
+
+  // 公開ページのCTAから来た未ログイン閲覧者には、起動完了後すぐに作成フォームを開く。
+  // ログイン済みならフラグを消すだけ（自分のページを表示）。
+  useEffect(() => {
+    if (booting || !wantCreate) return;
+    if (!session) openAuth("create");
+    setWantCreate(false);
+  }, [booting, wantCreate, session, openAuth]);
 
   // ---- 書込ヘルパー ----
   // 「保存したか分からない」不安への対策: 全ての書込を通し、状態を常時インジケータに反映する。

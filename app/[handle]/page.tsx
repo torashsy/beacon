@@ -13,6 +13,7 @@ import { FollowButton } from "@/components/beacon/FollowButton";
 import { LegalFooter } from "@/components/beacon/LegalFooter";
 import { PublicBackButton } from "@/components/beacon/PublicBackButton";
 import { PublicBottomNav } from "@/components/beacon/PublicBottomNav";
+import { PublicCreateCta } from "@/components/beacon/PublicCreateCta";
 
 /**
  * 公開ページ /@{handle}。誰でも閲覧可能だが、列挙防止のため必ずハンドル指定の
@@ -117,6 +118,7 @@ export default async function PublicPage({
         trackHandle={handle}
         actions={<FollowButton snapshot={snapshot} />}
       />
+      <PublicCreateCta />
       <div style={{ marginTop: 12, textAlign: "center" }}>
         <Link
           href={`/contact?category=report&page=${encodeURIComponent(`https://via-mi.com/@${handle}`)}`}
