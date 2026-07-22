@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPublicPage } from "@/lib/beacon/rpc";
 import { takeRateLimit } from "@/lib/rate-limit";
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/server";
 
 const HANDLE = /^[a-z0-9_]{3,20}$/;
 
@@ -34,7 +34,8 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const db = await createClient();
+  // 公開検索はログインcookieに依存させず、常に全公開プロフィールを対象にする。
+  const db = createPublicClient();
   if (tag) {
     const { data, error } = await db.rpc("search_profiles_by_tag", {
       p_tag: tag,

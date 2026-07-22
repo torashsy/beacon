@@ -56,6 +56,7 @@ export function FollowsView({
   loggedIn,
   onLoginPrompt,
   initialSearch,
+  initialSearchKey = 0,
 }: {
   follows: FollowSnapshot[];
   states: Record<string, FollowStatus>;
@@ -70,6 +71,7 @@ export function FollowsView({
   loggedIn: boolean;
   onLoginPrompt: () => void;
   initialSearch?: string;
+  initialSearchKey?: number;
 }) {
   const [q, setQ] = useState("");
   const [found, setFound] = useState<{ handle: string; page: PublicPage } | null>(null);
@@ -202,7 +204,7 @@ export function FollowsView({
     if (!initialSearch) return;
     setQ(initialSearch);
     void runSearch(initialSearch);
-  }, [initialSearch]);
+  }, [initialSearch, initialSearchKey]);
 
   return (
     <section className="view">

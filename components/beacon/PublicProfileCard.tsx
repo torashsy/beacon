@@ -48,6 +48,7 @@ export function PublicProfileCard({
   trackHandle,
   clickCounts,
   onFollowersClick,
+  onTagClick,
 }: {
   data: PublicCardData;
   /** フォローボタン等、カード右上のアクション。 */
@@ -61,6 +62,8 @@ export function PublicProfileCard({
   clickCounts?: Record<string, number>;
   /** 本人画面だけで指定。フォロワー数をタップするとフォロワー一覧を開く。 */
   onFollowersClick?: () => void;
+  /** アプリ内表示ではリロードせずタグ検索へ移動する。 */
+  onTagClick?: (tag: string) => void;
 }) {
   const { handle, profile, channels, pubcal } = data;
   const hasLinks = channels.some((c) => c.type !== HEADING_TYPE && c.status === "live");
@@ -116,7 +119,11 @@ export function PublicProfileCard({
         {(profile.tags?.length ?? 0) > 0 && (
           <div className="profileTags" aria-label="ハッシュタグ">
             {profile.tags!.map((tag) => (
-              <a key={tag} href={`/?tab=follows&tag=${encodeURIComponent(tag)}`}>#{tag}</a>
+              onTagClick ? (
+                <button key={tag} type="button" onClick={() => onTagClick(tag)}>#{tag}</button>
+              ) : (
+                <a key={tag} href={`/?tab=follows&tag=${encodeURIComponent(tag)}`}>#{tag}</a>
+              )
             ))}
           </div>
         )}

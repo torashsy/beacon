@@ -54,6 +54,7 @@ export function ProfileView({
   onSaveContent,
   onUploadPhoto,
   onOpenFollowers,
+  onSearchTag,
   toast,
 }: {
   me: Me;
@@ -67,6 +68,7 @@ export function ProfileView({
   onUploadPhoto: (file: File) => Promise<string | null>;
   /** フォロワー数タップでフォロワー一覧を開く。 */
   onOpenFollowers?: () => void;
+  onSearchTag?: (tag: string) => void;
   toast: ToastFn;
 }) {
   const [tab, setTab] = useState<ContentTab>(focusSection ?? "links");
@@ -145,6 +147,7 @@ export function ProfileView({
           }}
           clickCounts={me.clicks}
           onFollowersClick={onOpenFollowers}
+          onTagClick={onSearchTag}
           headerActions={
             <>
               <button className="circleAction headerCircleAction" onClick={share} aria-label="共有">

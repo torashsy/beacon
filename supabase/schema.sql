@@ -1081,3 +1081,4 @@ language sql security definer stable set search_path = public as $$
 $$;
 revoke all on function search_profiles_by_tag(text,int) from public, authenticated;
 grant execute on function search_profiles_by_tag(text,int) to anon;
+grant execute on function search_profiles_by_tag(text,int) to authenticated;

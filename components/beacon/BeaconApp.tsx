@@ -134,6 +134,7 @@ export function BeaconApp() {
   const [navTab, setNavTab] = useState<NavTab>("profile");
   const [followsMode, setFollowsMode] = useState<"following" | "followers">("following");
   const [initialFollowSearch, setInitialFollowSearch] = useState("");
+  const [followSearchRequest, setFollowSearchRequest] = useState(0);
   const [navDirection, setNavDirection] = useState<NavDirection>("none");
   // 全画面オーバーレイ（ナビを隠す）: 認証フォーム / 公開プレビュー
   const [overlay, setOverlay] = useState<Overlay>("none");
@@ -170,7 +171,11 @@ export function BeaconApp() {
     const params = new URLSearchParams(window.location.search);
     const requested = params.get("tab");
     const tag = params.get("tag");
-    if (tag) setInitialFollowSearch(`#${tag}`);
+    if (tag) {
+      setInitialFollowSearch(`#${tag}`);
+      setFollowSearchRequest((request) => request + 1);
+      setFollowsMode("following");
+    }
     if (requested === "howto" || requested === "settings") {
       setNavTab("help");
       return;
@@ -993,6 +998,13 @@ export function BeaconApp() {
     setOverlay("none");
   }
 
+  function openTagSearch(tag: string) {
+    setInitialFollowSearch(`#${tag}`);
+    setFollowSearchRequest((request) => request + 1);
+    setFollowsMode("following");
+    goNav("follows");
+  }
+
   function goRecoverySetup() {
     goNav("help");
     setRecoveryFocusRequest((request) => request + 1);
@@ -1126,6 +1138,7 @@ export function BeaconApp() {
                     setFollowsMode("followers");
                     goNav("follows");
                   }}
+                  onSearchTag={openTagSearch}
                   toast={toast}
                 />
               </div>
@@ -1142,6 +1155,7 @@ export function BeaconApp() {
                     setFollowsMode("followers");
                     goNav("follows");
                   }}
+                  onSearchTag={openTagSearch}
                   toast={toast}
                 />
             )
@@ -1165,6 +1179,7 @@ export function BeaconApp() {
             loggedIn={!!session}
             onLoginPrompt={() => openAuth("login")}
             initialSearch={initialFollowSearch}
+            initialSearchKey={followSearchRequest}
           />
         )}
 
@@ -1270,6 +1285,10 @@ export function BeaconApp() {
           onClose={() => setPreview(null)}
           onToggleFollow={onPreviewToggleFollow}
           onRefreshed={onPreviewRefreshed}
+          onSearchTag={(tag) => {
+            setPreview(null);
+            openTagSearch(tag);
+          }}
         />
       )}
 

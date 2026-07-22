@@ -1821,16 +1821,21 @@ button.followerCountButton:focus-visible strong {
   gap: 6px;
   margin-top: 10px;
 }
-.profileTags a {
+.profileTags a,
+.profileTags button {
   padding: 4px 9px;
+  border: 0;
   border-radius: 999px;
   background: color-mix(in srgb, var(--em) 10%, transparent);
   color: var(--emd);
   font-size: 12px;
   font-weight: 700;
   text-decoration: none;
+  font-family: inherit;
+  cursor: pointer;
 }
-.profileTags a:active { transform: scale(.97); }
+.profileTags a:active,
+.profileTags button:active { transform: scale(.97); }
 input:focus,
 select:focus,
 textarea:focus {

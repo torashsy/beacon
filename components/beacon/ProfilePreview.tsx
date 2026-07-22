@@ -26,6 +26,7 @@ function snapToCard(snap: FollowSnapshot): PublicCardData {
       bn_url: snap.bn_url,
       status: snap.status ?? "",
       color_theme: snap.color_theme,
+      tags: snap.tags,
       content: snap.content,
     },
     channels: snap.channels,
@@ -39,6 +40,7 @@ export function ProfilePreview({
   onClose,
   onToggleFollow,
   onRefreshed,
+  onSearchTag,
 }: {
   initial: FollowSnapshot;
   following: boolean;
@@ -46,6 +48,7 @@ export function ProfilePreview({
   onToggleFollow: (snap: FollowSnapshot) => void;
   /** 最新取得後にフォロー中スナップショットを更新するための通知（null=削除済み）。 */
   onRefreshed?: (handle: string, snap: FollowSnapshot | null) => void;
+  onSearchTag?: (tag: string) => void;
 }) {
   const handle = initial.handle;
   const [snap, setSnap] = useState<FollowSnapshot>(initial);
@@ -190,6 +193,7 @@ export function ProfilePreview({
           <>
             <PublicProfileCard
               data={snapToCard(snap)}
+              onTagClick={onSearchTag}
               trackHandle={handle}
               actions={
                 <button
