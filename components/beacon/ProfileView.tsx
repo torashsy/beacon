@@ -21,6 +21,7 @@ import { PublicProfileCard } from "./PublicProfileCard";
 import { QrShareModal, type QrCard } from "./QrShareModal";
 import {
   normalizeProfileContent,
+  MEMO_MAX_LENGTH,
   type ProfileContent,
   type ProfilePhoto,
 } from "@/lib/beacon/profile-content";
@@ -55,7 +56,7 @@ export function ProfileView({
   focusSection?: ContentTab;
   onSaveChannels: (next: Channel[]) => Promise<boolean>;
   onSaveCal: (date: string, memo: string) => Promise<boolean>;
-  onSaveContent: (next: ProfileContent) => Promise<boolean>;
+  onSaveContent: (next: Partial<ProfileContent>) => Promise<boolean>;
   onUploadPhoto: (file: File) => Promise<string | null>;
   /** フォロワー数タップでフォロワー一覧を開く。 */
   onOpenFollowers?: () => void;
@@ -557,7 +558,7 @@ function PhotosPane({
   toast,
 }: {
   me: Me;
-  onSaveContent: (next: ProfileContent) => Promise<boolean>;
+  onSaveContent: (next: Partial<ProfileContent>) => Promise<boolean>;
   onUploadPhoto: (file: File) => Promise<string | null>;
   toast: ToastFn;
 }) {
@@ -566,12 +567,32 @@ function PhotosPane({
   const [draftPhotos, setDraftPhotos] = useState<ProfilePhoto[]>(content.photos);
   const draftPhotosRef = useRef(draftPhotos);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [memoDraft, setMemoDraft] = useState(content.memo);
+  const [memoBusy, setMemoBusy] = useState(false);
 
   useEffect(() => {
     const next = normalizeProfileContent(me.profile.content).photos;
     draftPhotosRef.current = next;
     setDraftPhotos(next);
   }, [me.profile.content]);
+
+  const savedMemo = content.memo;
+  // 保存済みメモが変わったときだけ入力欄へ反映（写真の追加等で入力中メモを消さない）。
+  useEffect(() => {
+    setMemoDraft(savedMemo);
+  }, [savedMemo]);
+
+  const memoDirty = memoDraft.trim() !== savedMemo;
+
+  async function saveMemo() {
+    if (!memoDirty || memoBusy) return;
+    setMemoBusy(true);
+    try {
+      if (await onSaveContent({ memo: memoDraft.trim() })) toast("メモを保存しました");
+    } finally {
+      setMemoBusy(false);
+    }
+  }
 
   function setPhotoDraft(next: ProfilePhoto[]) {
     draftPhotosRef.current = next;
@@ -692,6 +713,29 @@ function PhotosPane({
       >
         {busy ? "追加中…" : draftPhotos.length >= 5 ? "5枚追加済み" : "写真を選ぶ"}
       </button>
+
+      <div className="memoEditor">
+        <div className="editorPaneHeading">
+          <p>メモ（写真の下に表示）</p>
+          <span>{memoDraft.length} / {MEMO_MAX_LENGTH}</span>
+        </div>
+        <textarea
+          className="plain memoTextarea"
+          value={memoDraft}
+          onChange={(e) => setMemoDraft(e.target.value)}
+          placeholder="自己紹介や補足など、自由に書けます"
+          maxLength={MEMO_MAX_LENGTH}
+          rows={5}
+        />
+        <button
+          className="btn sig"
+          disabled={memoBusy || !memoDirty}
+          onClick={saveMemo}
+          style={{ marginTop: 12 }}
+        >
+          {memoBusy ? "保存中…" : "メモを保存"}
+        </button>
+      </div>
     </div>
   );
 }
