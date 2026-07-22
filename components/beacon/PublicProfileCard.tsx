@@ -5,7 +5,7 @@ import { fmtMd } from "@/lib/beacon/format";
 import { safeUrl } from "@/lib/beacon/safe";
 import { LinkThumb } from "./icons";
 import { TrackedLink } from "./TrackedLink";
-import { normalizeProfileContent } from "@/lib/beacon/profile-content";
+import { normalizeProfileContent, visibleMemoBlocks } from "@/lib/beacon/profile-content";
 import { ProfilePhotoGallery } from "./ProfilePhotoGallery";
 import { CollapsibleBio } from "./CollapsibleBio";
 
@@ -64,8 +64,9 @@ export function PublicProfileCard({
   const { handle, profile, channels, pubcal } = data;
   const hasLinks = channels.some((c) => c.type !== HEADING_TYPE && c.status === "live");
   const content = normalizeProfileContent(profile.content);
+  const memoBlocks = visibleMemoBlocks(content.memo);
   const hasAnyContent =
-    hasLinks || content.photos.length > 0 || pubcal.length > 0 || content.memo.trim().length > 0;
+    hasLinks || content.photos.length > 0 || pubcal.length > 0 || memoBlocks.length > 0;
 
   return (
     <div className="xcard">
@@ -172,9 +173,25 @@ export function PublicProfileCard({
         </section>
       )}
 
-      {content.memo.trim().length > 0 && (
+      {memoBlocks.length > 0 && (
         <section className="profileMemoSection">
-          <p className="profileMemo">{content.memo}</p>
+          <div className="profileMemoCard">
+            {memoBlocks.map((b) => (
+              <p
+                key={b.id}
+                className={
+                  "memoBlock" +
+                  (b.heading ? " heading" : "") +
+                  (b.bold ? " bold" : "") +
+                  (b.underline ? " underline" : "") +
+                  (b.color ? ` memoColor-${b.color}` : "")
+                }
+                style={{ textAlign: b.align }}
+              >
+                {b.text}
+              </p>
+            ))}
+          </div>
         </section>
       )}
     </div>

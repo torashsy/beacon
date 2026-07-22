@@ -21,7 +21,14 @@ import { PublicProfileCard } from "./PublicProfileCard";
 import { QrShareModal, type QrCard } from "./QrShareModal";
 import {
   normalizeProfileContent,
-  MEMO_MAX_LENGTH,
+  emptyMemoBlock,
+  MEMO_COLORS,
+  MEMO_MAX_BLOCKS,
+  MEMO_MAX_BLOCK_LENGTH,
+  MEMO_MAX_TOTAL,
+  type MemoAlign,
+  type MemoBlock,
+  type MemoColor,
   type ProfileContent,
   type ProfilePhoto,
 } from "@/lib/beacon/profile-content";
@@ -713,6 +720,22 @@ function PhotosPane({
 
 // ---------- メモタブ（写真とは独立。表示はプロフィールの写真の下）----------
 
+const MEMO_ALIGN_ORDER: MemoAlign[] = ["left", "center", "right"];
+const MEMO_ALIGN_LABEL: Record<MemoAlign, string> = { left: "左揃え", center: "中央揃え", right: "右揃え" };
+const MEMO_COLOR_LABEL: Record<MemoColor, string> = {
+  "": "標準色", red: "赤", orange: "橙", green: "緑", blue: "青", purple: "紫",
+};
+
+function memoBlockClass(b: MemoBlock, base: string): string {
+  return (
+    base +
+    (b.heading ? " heading" : "") +
+    (b.bold ? " bold" : "") +
+    (b.underline ? " underline" : "") +
+    (b.color ? ` memoColor-${b.color}` : "")
+  );
+}
+
 function MemoPane({
   me,
   onSaveContent,
@@ -723,47 +746,177 @@ function MemoPane({
   toast: ToastFn;
 }) {
   const savedMemo = normalizeProfileContent(me.profile.content).memo;
-  const [memoDraft, setMemoDraft] = useState(savedMemo);
-  const [memoBusy, setMemoBusy] = useState(false);
+  const savedKey = JSON.stringify(savedMemo);
+  const [draft, setDraft] = useState<MemoBlock[]>(savedMemo);
+  const [busy, setBusy] = useState(false);
 
-  // 保存済みメモが変わったら入力欄へ反映する。
+  // 保存済みメモが変わったら編集内容へ反映する。
   useEffect(() => {
-    setMemoDraft(savedMemo);
-  }, [savedMemo]);
+    setDraft(JSON.parse(savedKey) as MemoBlock[]);
+  }, [savedKey]);
 
-  const memoDirty = memoDraft.trim() !== savedMemo;
+  // 保存対象は空行を除いたもの。
+  const cleaned = draft.filter((b) => b.text.trim() !== "");
+  const dirty = JSON.stringify(cleaned) !== savedKey;
+  const total = draft.reduce((n, b) => n + b.text.length, 0);
 
-  async function saveMemo() {
-    if (!memoDirty || memoBusy) return;
-    setMemoBusy(true);
+  function updateBlock(id: string, patch: Partial<MemoBlock>) {
+    setDraft((cur) => cur.map((b) => (b.id === id ? { ...b, ...patch } : b)));
+  }
+  function removeBlock(id: string) {
+    setDraft((cur) => cur.filter((b) => b.id !== id));
+  }
+  function moveBlock(index: number, dir: -1 | 1) {
+    setDraft((cur) => {
+      const next = [...cur];
+      const target = index + dir;
+      if (target < 0 || target >= next.length) return cur;
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+  }
+  function addBlock() {
+    if (draft.length >= MEMO_MAX_BLOCKS) {
+      toast(`メモの行は${MEMO_MAX_BLOCKS}個までです`);
+      return;
+    }
+    setDraft((cur) => [...cur, emptyMemoBlock(cryptoId())]);
+  }
+
+  async function save() {
+    if (!dirty || busy) return;
+    setBusy(true);
     try {
-      if (await onSaveContent({ memo: memoDraft.trim() })) toast("メモを保存しました");
+      if (await onSaveContent({ memo: cleaned })) toast("メモを保存しました");
     } finally {
-      setMemoBusy(false);
+      setBusy(false);
     }
   }
 
   return (
     <div className="xpane contentEditorPane">
       <div className="editorPaneHeading">
-        <p>プロフィールの写真の下に表示されます</p>
-        <span>{memoDraft.length} / {MEMO_MAX_LENGTH}</span>
+        <p>行ごとに書式を選べます（プロフィールの写真の下に表示）</p>
+        <span>{total} / {MEMO_MAX_TOTAL}</span>
       </div>
-      <textarea
-        className="plain memoTextarea"
-        value={memoDraft}
-        onChange={(e) => setMemoDraft(e.target.value)}
-        placeholder="自己紹介や補足など、自由に書けます"
-        maxLength={MEMO_MAX_LENGTH}
-        rows={7}
-      />
+
+      {draft.length === 0 ? (
+        <div className="empty">「行を追加」からメモを作成できます。</div>
+      ) : (
+        <div className="memoBlockList">
+          {draft.map((b, index) => (
+            <div className="memoBlockEditor" key={b.id}>
+              <div className="memoBlockBar">
+                <button
+                  type="button"
+                  className={`memoFmt ${b.heading ? "on" : ""}`}
+                  aria-pressed={b.heading}
+                  onClick={() => updateBlock(b.id, { heading: !b.heading })}
+                >
+                  見出し
+                </button>
+                <button
+                  type="button"
+                  className={`memoFmt ${b.bold ? "on" : ""}`}
+                  aria-pressed={b.bold}
+                  aria-label="太字"
+                  onClick={() => updateBlock(b.id, { bold: !b.bold })}
+                >
+                  <b>B</b>
+                </button>
+                <button
+                  type="button"
+                  className={`memoFmt ${b.underline ? "on" : ""}`}
+                  aria-pressed={b.underline}
+                  aria-label="下線"
+                  onClick={() => updateBlock(b.id, { underline: !b.underline })}
+                >
+                  <u>U</u>
+                </button>
+                <button
+                  type="button"
+                  className="memoFmt"
+                  aria-label={MEMO_ALIGN_LABEL[b.align]}
+                  title={MEMO_ALIGN_LABEL[b.align]}
+                  onClick={() =>
+                    updateBlock(b.id, {
+                      align: MEMO_ALIGN_ORDER[(MEMO_ALIGN_ORDER.indexOf(b.align) + 1) % 3],
+                    })
+                  }
+                >
+                  {b.align === "left" ? "⇤" : b.align === "center" ? "⇔" : "⇥"}
+                </button>
+                <div className="memoColorRow" role="group" aria-label="文字色">
+                  {MEMO_COLORS.map((c) => (
+                    <button
+                      type="button"
+                      key={c || "default"}
+                      className={`memoSwatch ${c ? `memoColor-${c}` : "isDefault"} ${b.color === c ? "on" : ""}`}
+                      aria-label={MEMO_COLOR_LABEL[c]}
+                      title={MEMO_COLOR_LABEL[c]}
+                      aria-pressed={b.color === c}
+                      onClick={() => updateBlock(b.id, { color: c })}
+                    />
+                  ))}
+                </div>
+                <span className="memoBarSpacer" />
+                <button
+                  type="button"
+                  className="memoIcon"
+                  aria-label="上へ移動"
+                  disabled={index === 0}
+                  onClick={() => moveBlock(index, -1)}
+                >
+                  ↑
+                </button>
+                <button
+                  type="button"
+                  className="memoIcon"
+                  aria-label="下へ移動"
+                  disabled={index === draft.length - 1}
+                  onClick={() => moveBlock(index, 1)}
+                >
+                  ↓
+                </button>
+                <button
+                  type="button"
+                  className="memoIcon"
+                  aria-label="この行を削除"
+                  onClick={() => removeBlock(b.id)}
+                >
+                  ×
+                </button>
+              </div>
+              <textarea
+                className={memoBlockClass(b, "plain memoBlockInput")}
+                style={{ textAlign: b.align }}
+                value={b.text}
+                onChange={(e) => updateBlock(b.id, { text: e.target.value.slice(0, MEMO_MAX_BLOCK_LENGTH) })}
+                placeholder="テキストを入力"
+                maxLength={MEMO_MAX_BLOCK_LENGTH}
+                rows={2}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
       <button
-        className="btn sig"
-        disabled={memoBusy || !memoDirty}
-        onClick={saveMemo}
+        type="button"
+        className="btn line"
+        onClick={addBlock}
+        disabled={draft.length >= MEMO_MAX_BLOCKS}
         style={{ marginTop: 12 }}
       >
-        {memoBusy ? "保存中…" : "メモを保存"}
+        ＋ 行を追加
+      </button>
+      <button
+        className="btn sig"
+        disabled={busy || !dirty}
+        onClick={save}
+        style={{ marginTop: 12 }}
+      >
+        {busy ? "保存中…" : "メモを保存"}
       </button>
     </div>
   );
