@@ -64,7 +64,8 @@ export function PublicProfileCard({
   const { handle, profile, channels, pubcal } = data;
   const hasLinks = channels.some((c) => c.type !== HEADING_TYPE && c.status === "live");
   const content = normalizeProfileContent(profile.content);
-  const hasAnyContent = hasLinks || content.photos.length > 0 || pubcal.length > 0;
+  const hasAnyContent =
+    hasLinks || content.photos.length > 0 || pubcal.length > 0 || content.memo.trim().length > 0;
 
   return (
     <div className="xcard">
@@ -168,6 +169,12 @@ export function PublicProfileCard({
       {content.photos.length > 0 && (
         <section className="profileContentSection">
           <ProfilePhotoGallery photos={content.photos} />
+        </section>
+      )}
+
+      {content.memo.trim().length > 0 && (
+        <section className="profileMemoSection">
+          <p className="profileMemo">{content.memo}</p>
         </section>
       )}
     </div>

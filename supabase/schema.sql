@@ -362,6 +362,7 @@ create or replace function update_profile_content(
 returns void language plpgsql security definer set search_path = public, extensions as $$
 declare
   photo jsonb;
+  v_memo text := coalesce(p_content->>'memo', '');
 begin
   if not _check_pass(p_handle,p_pass) then raise exception 'auth'; end if;
   if coalesce(jsonb_typeof(p_content), 'null') <> 'object'
@@ -369,6 +370,10 @@ begin
     raise exception 'invalid content';
   end if;
   if jsonb_array_length(p_content->'photos') > 5 then raise exception 'too many photos'; end if;
+  if p_content ? 'memo' and coalesce(jsonb_typeof(p_content->'memo'), 'null') <> 'string' then
+    raise exception 'invalid memo';
+  end if;
+  if char_length(v_memo) > 800 then raise exception 'memo too long'; end if;
   for photo in select value from jsonb_array_elements(p_content->'photos') loop
     if coalesce(jsonb_typeof(photo), 'null') <> 'object'
        or length(coalesce(photo->>'id','')) not between 1 and 100
@@ -378,7 +383,8 @@ begin
     end if;
   end loop;
   update profiles set content=jsonb_build_object(
-    'photos', p_content->'photos'
+    'photos', p_content->'photos',
+    'memo', v_memo
   ) where handle=lower(p_handle);
   update accounts set updated_at=now() where handle=lower(p_handle);
 end $$;

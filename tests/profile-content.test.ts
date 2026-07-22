@@ -15,6 +15,13 @@ describe("normalizeProfileContent", () => {
   it("不正な画像URLを公開データから除外する", () => {
     expect(normalizeProfileContent({
       photos: [{ id: "x", url: "javascript:alert(1)" }],
-    })).toEqual({ photos: [] });
+    })).toEqual({ photos: [], memo: "" });
+  });
+
+  it("メモを最大800字に丸め、文字列以外は空にする", () => {
+    expect(normalizeProfileContent({ photos: [], memo: "こんにちは" }).memo).toBe("こんにちは");
+    expect(normalizeProfileContent({ photos: [], memo: "あ".repeat(1000) }).memo).toHaveLength(800);
+    expect(normalizeProfileContent({ photos: [], memo: 123 }).memo).toBe("");
+    expect(normalizeProfileContent({ photos: [] }).memo).toBe("");
   });
 });

@@ -602,10 +602,11 @@ export function BeaconApp() {
   );
 
   const persistProfileContent = useCallback(
-    async (next: ProfileContent): Promise<boolean> => {
+    async (patch: Partial<ProfileContent>): Promise<boolean> => {
       if (!session || !me) return false;
-      const normalized = normalizeProfileContent(next);
+      // 部分更新（写真だけ / メモだけ）でも他方を保持するため現状にマージする。
       const previous = normalizeProfileContent(me.profile.content);
+      const normalized = normalizeProfileContent({ ...previous, ...patch });
       setMe((current) => current ? {
         ...current,
         profile: { ...current.profile, content: normalized },

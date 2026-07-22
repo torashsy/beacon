@@ -1042,6 +1042,27 @@ textarea {
 .profileContentSection {
   padding: 8px 0 18px;
 }
+/* 写真の下に表示する自由記述メモ（公開表示） */
+.profileMemoSection {
+  padding: 2px 16px 20px;
+}
+.profileMemo {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.7;
+}
+/* メモ編集（写真タブの下部） */
+.memoEditor {
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.memoTextarea {
+  min-height: 120px;
+}
 .homeQuickAction:last-child:nth-child(odd) {
   grid-column: 1 / -1;
 }
