@@ -87,7 +87,7 @@ type NavDirection = "none" | "from-left" | "from-right";
 type Overlay = "none" | "auth";
 
 const NAV_ORDER: NavTab[] = ["follows", "profile", "help"];
-const ADMIN_ENTRY_HANDLES = new Set(["torashsy"]);
+const ADMIN_ENTRY_HANDLES = new Set(["viami_official"]);
 
 function publicChannelsSignature(channels: Channel[]) {
   return JSON.stringify(channels.filter((channel) => channel.status === "live").map((channel) => ({
