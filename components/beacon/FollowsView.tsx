@@ -25,6 +25,26 @@ function followTime(f: FollowSnapshot, st?: FollowStatus): number {
   return Number.isFinite(parsed) ? parsed : f.updated;
 }
 
+/**
+ * フォロワー一覧の1件から、プレビューを即開くための最小スナップショットを作る。
+ * リンクや自己紹介は持たないが、ProfilePreview が裏で公開ページを取得して
+ * 差し替えるため、フォロー中と同様タップした瞬間にプレビューが立ち上がる。
+ */
+function followerToSnapshot(f: FollowerRow): FollowSnapshot {
+  return {
+    handle: f.handle,
+    name: f.name,
+    emoji: f.emoji,
+    theme: 0,
+    av_theme: f.av_theme,
+    av_url: f.av_url,
+    bn_url: "",
+    channels: [],
+    pubcal: [],
+    updated: Date.now(),
+  };
+}
+
 export function FollowsView({
   follows,
   states,
@@ -58,7 +78,6 @@ export function FollowsView({
   const [followers, setFollowers] = useState<FollowerRow[] | null>(null);
   const [followersLoading, setFollowersLoading] = useState(false);
   const [followersError, setFollowersError] = useState("");
-  const [openingHandle, setOpeningHandle] = useState<string | null>(null);
   const followingSet = new Set(follows.map((f) => f.handle.toLowerCase()));
   const query = q.trim().toLowerCase();
   const filtered = follows.filter(
@@ -114,23 +133,6 @@ export function FollowsView({
       setFollowersLoading(false);
     }
   }, [loggedIn]);
-
-  // フォロワー行のタップで、その相手の公開ページを取得してプレビューを開く。
-  async function openByHandle(handle: string) {
-    setOpeningHandle(handle);
-    try {
-      const response = await fetch(`/api/user-search?handle=${encodeURIComponent(handle)}`, {
-        cache: "no-store",
-      });
-      if (!response.ok) return;
-      const page = (await response.json()) as PublicPage | null;
-      if (page) onOpenProfile(toSnapshot(page.profile, page.channels, page.cal));
-    } catch {
-      // 取得できなければ何もしない（次のタップで再試行できる）。
-    } finally {
-      setOpeningHandle(null);
-    }
-  }
 
   async function searchById(e: React.FormEvent) {
     e.preventDefault();
@@ -189,8 +191,7 @@ export function FollowsView({
           loading={followersLoading}
           error={followersError}
           followingSet={followingSet}
-          openingHandle={openingHandle}
-          onOpen={openByHandle}
+          onOpen={(f) => onOpenProfile(followerToSnapshot(f))}
           onLoginPrompt={onLoginPrompt}
         />
       ) : (
@@ -371,7 +372,6 @@ function FollowersPane({
   loading,
   error,
   followingSet,
-  openingHandle,
   onOpen,
   onLoginPrompt,
 }: {
@@ -380,8 +380,7 @@ function FollowersPane({
   loading: boolean;
   error: string;
   followingSet: Set<string>;
-  openingHandle: string | null;
-  onOpen: (handle: string) => void;
+  onOpen: (f: FollowerRow) => void;
   onLoginPrompt: () => void;
 }) {
   if (!loggedIn) {
@@ -412,19 +411,17 @@ function FollowersPane({
           ) : (
             followers.map((f) => {
               const mutual = followingSet.has(f.handle.toLowerCase());
-              const opening = openingHandle === f.handle;
               return (
                 <div
                   key={f.handle}
                   className="frow"
                   role="link"
                   tabIndex={0}
-                  aria-busy={opening}
-                  onClick={() => onOpen(f.handle)}
+                  onClick={() => onOpen(f)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
-                      onOpen(f.handle);
+                      onOpen(f);
                     }
                   }}
                 >
