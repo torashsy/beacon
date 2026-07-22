@@ -32,8 +32,11 @@ export function PullToRefresh({
   const moveFrame = useRef<number | null>(null);
   const pendingDistance = useRef(0);
   const onRefreshRef = useRef(onRefresh);
-  const [distance, setDistance] = useState(0);
+  const indicatorRef = useRef<HTMLDivElement | null>(null);
+  const progressRef = useRef<HTMLSpanElement | null>(null);
+  const surfaceRef = useRef<HTMLDivElement | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [ready, setReady] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [returning, setReturning] = useState(false);
 
@@ -48,13 +51,34 @@ export function PullToRefresh({
       moveFrame.current = null;
     }
 
+    function paintDistance(nextDistance: number) {
+      const indicatorOffset = Math.max(-38, Math.min(12, nextDistance - 46));
+      if (indicatorRef.current) {
+        indicatorRef.current.style.opacity = nextDistance > 0
+          ? String(Math.min(1, nextDistance / 18))
+          : "";
+        indicatorRef.current.style.transform = `translate3d(-50%, ${indicatorOffset}px, 0)`;
+      }
+      if (surfaceRef.current) {
+        surfaceRef.current.style.transform = nextDistance > 0
+          ? `translate3d(0, ${nextDistance}px, 0)`
+          : "";
+      }
+      if (progressRef.current) {
+        const progress = Math.min(nextDistance / REFRESH_DISTANCE, 1);
+        progressRef.current.style.transform = `rotate(${progress * 260}deg) scale(${0.72 + progress * 0.28})`;
+      }
+    }
+
     function renderDistance(nextDistance: number) {
       distanceRef.current = nextDistance;
       pendingDistance.current = nextDistance;
+      const nextReady = nextDistance >= REFRESH_DISTANCE;
+      setReady((current) => current === nextReady ? current : nextReady);
       if (moveFrame.current !== null) return;
       moveFrame.current = requestAnimationFrame(() => {
         moveFrame.current = null;
-        setDistance(pendingDistance.current);
+        paintDistance(pendingDistance.current);
       });
     }
 
@@ -64,7 +88,8 @@ export function PullToRefresh({
       distanceRef.current = 0;
       pendingDistance.current = 0;
       setDragging(false);
-      setDistance(0);
+      setReady(false);
+      paintDistance(0);
     }
 
     function onTouchStart(event: TouchEvent) {
@@ -114,7 +139,7 @@ export function PullToRefresh({
       refreshingRef.current = true;
       setRefreshing(true);
       distanceRef.current = HOLD_DISTANCE;
-      setDistance(HOLD_DISTANCE);
+      paintDistance(HOLD_DISTANCE);
       const started = performance.now();
       void Promise.resolve(onRefreshRef.current()).catch(() => {}).finally(() => {
         const remaining = Math.max(0, MIN_SPIN_TIME - (performance.now() - started));
@@ -124,7 +149,8 @@ export function PullToRefresh({
           // must not block the next pull gesture.
           refreshingRef.current = false;
           distanceRef.current = 0;
-          setDistance(0);
+          setReady(false);
+          paintDistance(0);
           returnTimer.current = window.setTimeout(() => {
             returnTimer.current = null;
             setRefreshing(false);
@@ -154,20 +180,13 @@ export function PullToRefresh({
     };
   }, [enabled]);
 
-  const ready = distance >= REFRESH_DISTANCE;
-  const progress = Math.min(distance / REFRESH_DISTANCE, 1);
   const phase = returning ? "returning" : refreshing ? "refreshing" : ready ? "ready" : dragging ? "dragging" : "idle";
-  const indicatorDistance = refreshing && !returning ? HOLD_DISTANCE : distance;
-  const indicatorOffset = Math.max(-38, Math.min(12, indicatorDistance - 46));
 
   return (
     <>
       <div
-        className={`pullRefresh ${distance > 0 || refreshing ? "show" : ""} ${phase}`}
-        style={{
-          opacity: returning ? 0 : refreshing ? 1 : distance > 0 ? Math.min(1, distance / 18) : undefined,
-          transform: `translate3d(-50%, ${indicatorOffset}px, 0)`,
-        }}
+        ref={indicatorRef}
+        className={`pullRefresh ${dragging || refreshing || returning ? "show" : ""} ${phase}`}
         role="status"
         aria-live="polite"
         aria-label={refreshing ? "更新中" : ready ? "離して更新" : "引っ張って更新"}
@@ -176,17 +195,17 @@ export function PullToRefresh({
           <span className="pullRefreshSpinner" aria-hidden="true" />
         ) : (
           <span
+            ref={progressRef}
             className="pullRefreshProgress"
             aria-hidden="true"
-            style={{ transform: `rotate(${progress * 260}deg) scale(${0.72 + progress * 0.28})` }}
           />
         )}
       </div>
       <div
+        ref={surfaceRef}
         className={`pullRefreshSurface ${phase}`}
         // distance 0 のとき transform を残すと、恒等変換でも子孫の position: fixed の
         // 基準がこの要素になり、モーダルが画面外(ページ下端)に配置されてしまう。
-        style={distance > 0 ? { transform: `translate3d(0, ${distance}px, 0)` } : undefined}
       >
         {children}
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { createClient } from "@/lib/supabase/client";
 import {
   createPasskeySession,
@@ -56,19 +57,21 @@ import {
   type Me,
   type Session,
 } from "./appTypes";
-import { AppearanceSettings } from "./AppearanceSettings";
-import { AuthView } from "./AuthView";
 import { LandingView } from "./LandingView";
 import { ProfileView } from "./ProfileView";
-import { ProfileEdit, type EditResult } from "./ProfileEdit";
-import { FollowsView } from "./FollowsView";
-import { ProfilePreview } from "./ProfilePreview";
-import { HowtoView } from "./HowtoView";
-import { RecoverySetup } from "./RecoverySetup";
+import type { EditResult } from "./ProfileEdit";
 import { PullToRefresh } from "./PullToRefresh";
-import { PushNotificationSetting } from "./PushNotificationSetting";
 import { notifyFollowers, removeCurrentDevicePushSubscription } from "@/lib/beacon/push";
 import { NavIcon } from "./NavIcon";
+
+const AuthView = dynamic(() => import("./AuthView").then((module) => module.AuthView));
+const ProfileEdit = dynamic(() => import("./ProfileEdit").then((module) => module.ProfileEdit));
+const FollowsView = dynamic(() => import("./FollowsView").then((module) => module.FollowsView));
+const ProfilePreview = dynamic(() => import("./ProfilePreview").then((module) => module.ProfilePreview));
+const HowtoView = dynamic(() => import("./HowtoView").then((module) => module.HowtoView));
+const AppearanceSettings = dynamic(() => import("./AppearanceSettings").then((module) => module.AppearanceSettings));
+const RecoverySetup = dynamic(() => import("./RecoverySetup").then((module) => module.RecoverySetup));
+const PushNotificationSetting = dynamic(() => import("./PushNotificationSetting").then((module) => module.PushNotificationSetting));
 
 /**
  * Beacon クライアントアプリ本体。beacon.html の SPA を Next.js のクライアント
@@ -142,6 +145,7 @@ export function BeaconApp() {
   const [followStates, setFollowStates] = useState<
     Record<string, FollowStatus>
   >({});
+  const followCheckInFlight = useRef<{ key: string; promise: Promise<void> } | null>(null);
   const followUpdates = useMemo(
     () =>
       follows.filter((follow) => {
@@ -185,6 +189,33 @@ export function BeaconApp() {
       /* noop */
     }
   }, [navTab]);
+
+  // Keep the first screen small, then warm the secondary screens while the
+  // browser is idle so the first tab/open action does not wait on a new chunk.
+  useEffect(() => {
+    const preload = () => {
+      void Promise.all([
+        import("./AuthView"),
+        import("./ProfileEdit"),
+        import("./FollowsView"),
+        import("./ProfilePreview"),
+        import("./HowtoView"),
+        import("./AppearanceSettings"),
+        import("./RecoverySetup"),
+        import("./PushNotificationSetting"),
+      ]);
+    };
+    const idleWindow = window as Window & {
+      requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    if (idleWindow.requestIdleCallback) {
+      const idleId = idleWindow.requestIdleCallback(preload, { timeout: 1_500 });
+      return () => idleWindow.cancelIdleCallback?.(idleId);
+    }
+    const timer = window.setTimeout(preload, 600);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const [authInitialHandle, setAuthInitialHandle] = useState("");
   const [authInitialPane, setAuthInitialPane] = useState<"create" | "login" | "recover">(
@@ -341,10 +372,10 @@ export function BeaconApp() {
 
   /** ログイン直後にサーバーのID一覧を正本として取り込み、アカウント別キャッシュを作る。 */
   const syncFollowsFromServer = useCallback(
-    async (handle: string, pass: string) => {
+    async (handle: string, pass: string): Promise<FollowSnapshot[]> => {
+      const local = loadFollows(handle);
       try {
         const targets = await getMyFollows(db, handle, pass);
-        const local = loadFollows(handle);
         const cached = new Map(local.map((item) => [item.handle, item]));
         const resolved = await mapWithConcurrency(
           targets,
@@ -367,8 +398,10 @@ export function BeaconApp() {
         );
         replaceFollows(handle, accountFollows);
         setFollows(accountFollows);
+        return accountFollows;
       } catch {
         /* サーバー同期に失敗しても端末のローカル一覧はそのまま使える */
+        return local;
       }
     },
     [db],
@@ -724,7 +757,7 @@ export function BeaconApp() {
   }, [db, session, runWrite, toast]);
 
   // ---- フォローの変化検知（ナビの更新ドットと一覧のバッジを共有）----
-  const checkFollows = useCallback(
+  const checkFollowsNow = useCallback(
     async (list: FollowSnapshot[]) => {
       if (!list.length) return;
       setFollowStates((prev) => {
@@ -791,6 +824,26 @@ export function BeaconApp() {
     [db, session, toast],
   );
 
+  // Visibility, tab open and pull-to-refresh can happen almost together on
+  // mobile. Share the same request instead of sending identical RPC batches.
+  const checkFollows = useCallback((list: FollowSnapshot[]): Promise<void> => {
+    if (!list.length) return Promise.resolve();
+    const key = `${session?.handle ?? "guest"}:${list
+      .map((follow) => `${follow.handle}:${follow.pageUpdated ?? ""}`)
+      .sort()
+      .join("|")}`;
+    if (followCheckInFlight.current?.key === key) {
+      return followCheckInFlight.current.promise;
+    }
+    const promise = checkFollowsNow(list).finally(() => {
+      if (followCheckInFlight.current?.promise === promise) {
+        followCheckInFlight.current = null;
+      }
+    });
+    followCheckInFlight.current = { key, promise };
+    return promise;
+  }, [checkFollowsNow, session]);
+
   // フォロー一覧の正本は端末のlocalStorage。公開ページ(/@handle)でフォローすると
   // そちらのFollowButtonがlocalStorageを更新するが、アプリ側のReact状態は起動時の
   // ままになる。アプリに戻った・再表示したタイミングでlocalStorageから読み直す。
@@ -819,12 +872,14 @@ export function BeaconApp() {
     const current = loadFollows(session?.handle ?? null);
     setFollows(current);
     try {
+      const syncedFollows = session
+        ? syncFollowsFromServer(session.handle, session.pass)
+        : Promise.resolve(current);
       await Promise.all([
         session
           ? loadMe(session.handle, session.pass).then((latest) => setMe(latest))
           : Promise.resolve(),
-        current.length ? checkFollows(current) : Promise.resolve(),
-        session ? syncFollowsFromServer(session.handle, session.pass) : Promise.resolve(),
+        syncedFollows.then((latest) => checkFollows(latest)),
       ]);
     } catch {
       toast("更新できませんでした");

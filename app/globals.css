@@ -416,6 +416,7 @@ body {
   transition-duration: 120ms, 280ms, 90ms, 90ms;
 }
 .pullRefresh.returning {
+  opacity: 0 !important;
   transition-duration: 280ms, 420ms, 90ms, 90ms;
   transition-timing-function: var(--ease-state), var(--ease-pull-settle), var(--ease-state), var(--ease-state);
 }
