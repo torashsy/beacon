@@ -362,7 +362,9 @@ create or replace function update_profile_content(
 returns void language plpgsql security definer set search_path = public, extensions as $$
 declare
   photo jsonb;
-  v_memo text := coalesce(p_content->>'memo', '');
+  block jsonb;
+  v_memo jsonb := coalesce(p_content->'memo', '[]'::jsonb);
+  v_total int := 0;
 begin
   if not _check_pass(p_handle,p_pass) then raise exception 'auth'; end if;
   if coalesce(jsonb_typeof(p_content), 'null') <> 'object'
@@ -370,10 +372,6 @@ begin
     raise exception 'invalid content';
   end if;
   if jsonb_array_length(p_content->'photos') > 5 then raise exception 'too many photos'; end if;
-  if p_content ? 'memo' and coalesce(jsonb_typeof(p_content->'memo'), 'null') <> 'string' then
-    raise exception 'invalid memo';
-  end if;
-  if char_length(v_memo) > 800 then raise exception 'memo too long'; end if;
   for photo in select value from jsonb_array_elements(p_content->'photos') loop
     if coalesce(jsonb_typeof(photo), 'null') <> 'object'
        or length(coalesce(photo->>'id','')) not between 1 and 100
@@ -382,6 +380,35 @@ begin
       raise exception 'invalid photo';
     end if;
   end loop;
+  -- メモ（iOSメモ風ブロック配列）。書式はキーで持ち、HTMLは保存しない。
+  -- 旧クライアント（メモを文字列で送る版）との互換: 文字列は1ブロックへ移行する。
+  if jsonb_typeof(v_memo) = 'string' then
+    if btrim(p_content->>'memo') = '' then
+      v_memo := '[]'::jsonb;
+    else
+      v_memo := jsonb_build_array(jsonb_build_object(
+        'id', 'memo-0', 'text', left(p_content->>'memo', 300),
+        'heading', false, 'bold', false, 'underline', false,
+        'align', 'left', 'color', ''));
+    end if;
+  end if;
+  if jsonb_typeof(v_memo) <> 'array' then raise exception 'invalid memo'; end if;
+  if jsonb_array_length(v_memo) > 20 then raise exception 'too many memo blocks'; end if;
+  for block in select value from jsonb_array_elements(v_memo) loop
+    if coalesce(jsonb_typeof(block), 'null') <> 'object'
+       or coalesce(jsonb_typeof(block->'text'), 'null') <> 'string'
+       or char_length(block->>'text') > 300
+       or coalesce(jsonb_typeof(block->'heading'), 'null') <> 'boolean'
+       or coalesce(jsonb_typeof(block->'bold'), 'null') <> 'boolean'
+       or coalesce(jsonb_typeof(block->'underline'), 'null') <> 'boolean'
+       or coalesce(block->>'align','') not in ('left','center','right')
+       or coalesce(block->>'color','') not in ('','red','orange','green','blue','purple')
+       or length(coalesce(block->>'id','')) > 100 then
+      raise exception 'invalid memo block';
+    end if;
+    v_total := v_total + char_length(block->>'text');
+  end loop;
+  if v_total > 2000 then raise exception 'memo too long'; end if;
   update profiles set content=jsonb_build_object(
     'photos', p_content->'photos',
     'memo', v_memo

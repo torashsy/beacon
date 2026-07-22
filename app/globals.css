@@ -1042,11 +1042,17 @@ textarea {
 .profileContentSection {
   padding: 8px 0 18px;
 }
-/* 写真の下に表示する自由記述メモ（公開表示） */
+/* 写真の下に表示するメモ（公開表示・iOSメモ風ブロック） */
 .profileMemoSection {
   padding: 2px 16px 20px;
 }
-.profileMemo {
+.profileMemoCard {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 14px 16px;
+}
+.memoBlock {
   margin: 0;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -1054,9 +1060,109 @@ textarea {
   font-size: 14px;
   line-height: 1.7;
 }
-/* メモ編集（独立タブ） */
-.memoTextarea {
-  min-height: 140px;
+.memoBlock + .memoBlock {
+  margin-top: 6px;
+}
+.memoBlock.heading {
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+.memoBlock.heading + .memoBlock {
+  margin-top: 4px;
+}
+.memoBlock.bold {
+  font-weight: 800;
+}
+.memoBlock.underline {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+/* メモ文字色（ライト/ダーク両対応の中間トーン） */
+.memoColor-red { color: #e0576b; }
+.memoColor-orange { color: #d5811f; }
+.memoColor-green { color: #2f9d63; }
+.memoColor-blue { color: #3a8fd4; }
+.memoColor-purple { color: #9b6ae0; }
+
+/* メモ編集（独立タブ・ブロックエディタ） */
+.memoBlockList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 4px;
+}
+.memoBlockEditor {
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 8px;
+}
+.memoBlockBar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.memoFmt {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px 8px;
+  cursor: pointer;
+  line-height: 1;
+}
+.memoFmt.on {
+  background: var(--em);
+  color: var(--on-em);
+  border-color: var(--em);
+}
+.memoColorRow {
+  display: inline-flex;
+  gap: 3px;
+  padding: 0 2px;
+}
+.memoSwatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  background: currentColor;
+  cursor: pointer;
+  padding: 0;
+}
+.memoSwatch.isDefault {
+  color: var(--text);
+}
+.memoSwatch.on {
+  outline: 2px solid var(--em);
+  outline-offset: 1px;
+}
+.memoBarSpacer {
+  flex: 1 1 auto;
+}
+.memoIcon {
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  cursor: pointer;
+  padding: 2px 6px;
+  line-height: 1;
+}
+.memoIcon:disabled {
+  opacity: .35;
+  cursor: default;
+}
+.memoBlockInput {
+  width: 100%;
+  min-height: 52px;
 }
 .homeQuickAction:last-child:nth-child(odd) {
   grid-column: 1 / -1;
