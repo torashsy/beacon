@@ -309,7 +309,7 @@ test("profile photos keep their ratio, enlarge on tap, and expose a horizontal e
 
   await page.goto("/");
   await expect(page.getByRole("button", { name: "写真を追加" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "メモを追加" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "メモを追加" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "写真", exact: true })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "メモ", exact: true })).toHaveCount(0);
   const items = page.locator(".profilePhotoItem");

@@ -26,7 +26,7 @@ import {
   type ProfilePhoto,
 } from "@/lib/beacon/profile-content";
 
-type EditSection = "profile" | "links" | "cal" | "photos";
+type EditSection = "profile" | "links" | "cal" | "photos" | "memo";
 type ContentTab = Exclude<EditSection, "profile">;
 
 /**
@@ -180,6 +180,12 @@ export function ProfileView({
             </svg>
             <span>写真を追加</span>
           </button>
+          <button className="homeQuickAction" onClick={() => onEdit("memo")}>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 5h16M4 10h16M4 15h10M4 20h6" />
+            </svg>
+            <span>メモを追加</span>
+          </button>
         </div>
         {qrCard && (
           <QrShareModal
@@ -220,6 +226,12 @@ export function ProfileView({
             >
               写真
             </button>
+            <button
+              className={`xtab ${tab === "memo" ? "on" : ""}`}
+              onClick={() => setTab("memo")}
+            >
+              メモ
+            </button>
           </div>
 
         {tab === "links" ? (
@@ -231,13 +243,15 @@ export function ProfileView({
           />
         ) : tab === "cal" ? (
           <CalendarPane me={me} onSaveCal={onSaveCal} toast={toast} />
-        ) : (
+        ) : tab === "photos" ? (
           <PhotosPane
             me={me}
             onSaveContent={onSaveContent}
             onUploadPhoto={onUploadPhoto}
             toast={toast}
           />
+        ) : (
+          <MemoPane me={me} onSaveContent={onSaveContent} toast={toast} />
         )}
       </div>
 
@@ -567,32 +581,12 @@ function PhotosPane({
   const [draftPhotos, setDraftPhotos] = useState<ProfilePhoto[]>(content.photos);
   const draftPhotosRef = useRef(draftPhotos);
   const inputRef = useRef<HTMLInputElement>(null);
-  const [memoDraft, setMemoDraft] = useState(content.memo);
-  const [memoBusy, setMemoBusy] = useState(false);
 
   useEffect(() => {
     const next = normalizeProfileContent(me.profile.content).photos;
     draftPhotosRef.current = next;
     setDraftPhotos(next);
   }, [me.profile.content]);
-
-  const savedMemo = content.memo;
-  // 保存済みメモが変わったときだけ入力欄へ反映（写真の追加等で入力中メモを消さない）。
-  useEffect(() => {
-    setMemoDraft(savedMemo);
-  }, [savedMemo]);
-
-  const memoDirty = memoDraft.trim() !== savedMemo;
-
-  async function saveMemo() {
-    if (!memoDirty || memoBusy) return;
-    setMemoBusy(true);
-    try {
-      if (await onSaveContent({ memo: memoDraft.trim() })) toast("メモを保存しました");
-    } finally {
-      setMemoBusy(false);
-    }
-  }
 
   function setPhotoDraft(next: ProfilePhoto[]) {
     draftPhotosRef.current = next;
@@ -713,29 +707,64 @@ function PhotosPane({
       >
         {busy ? "追加中…" : draftPhotos.length >= 5 ? "5枚追加済み" : "写真を選ぶ"}
       </button>
+    </div>
+  );
+}
 
-      <div className="memoEditor">
-        <div className="editorPaneHeading">
-          <p>メモ（写真の下に表示）</p>
-          <span>{memoDraft.length} / {MEMO_MAX_LENGTH}</span>
-        </div>
-        <textarea
-          className="plain memoTextarea"
-          value={memoDraft}
-          onChange={(e) => setMemoDraft(e.target.value)}
-          placeholder="自己紹介や補足など、自由に書けます"
-          maxLength={MEMO_MAX_LENGTH}
-          rows={5}
-        />
-        <button
-          className="btn sig"
-          disabled={memoBusy || !memoDirty}
-          onClick={saveMemo}
-          style={{ marginTop: 12 }}
-        >
-          {memoBusy ? "保存中…" : "メモを保存"}
-        </button>
+// ---------- メモタブ（写真とは独立。表示はプロフィールの写真の下）----------
+
+function MemoPane({
+  me,
+  onSaveContent,
+  toast,
+}: {
+  me: Me;
+  onSaveContent: (next: Partial<ProfileContent>) => Promise<boolean>;
+  toast: ToastFn;
+}) {
+  const savedMemo = normalizeProfileContent(me.profile.content).memo;
+  const [memoDraft, setMemoDraft] = useState(savedMemo);
+  const [memoBusy, setMemoBusy] = useState(false);
+
+  // 保存済みメモが変わったら入力欄へ反映する。
+  useEffect(() => {
+    setMemoDraft(savedMemo);
+  }, [savedMemo]);
+
+  const memoDirty = memoDraft.trim() !== savedMemo;
+
+  async function saveMemo() {
+    if (!memoDirty || memoBusy) return;
+    setMemoBusy(true);
+    try {
+      if (await onSaveContent({ memo: memoDraft.trim() })) toast("メモを保存しました");
+    } finally {
+      setMemoBusy(false);
+    }
+  }
+
+  return (
+    <div className="xpane contentEditorPane">
+      <div className="editorPaneHeading">
+        <p>プロフィールの写真の下に表示されます</p>
+        <span>{memoDraft.length} / {MEMO_MAX_LENGTH}</span>
       </div>
+      <textarea
+        className="plain memoTextarea"
+        value={memoDraft}
+        onChange={(e) => setMemoDraft(e.target.value)}
+        placeholder="自己紹介や補足など、自由に書けます"
+        maxLength={MEMO_MAX_LENGTH}
+        rows={7}
+      />
+      <button
+        className="btn sig"
+        disabled={memoBusy || !memoDirty}
+        onClick={saveMemo}
+        style={{ marginTop: 12 }}
+      >
+        {memoBusy ? "保存中…" : "メモを保存"}
+      </button>
     </div>
   );
 }

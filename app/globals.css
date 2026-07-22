@@ -1054,14 +1054,9 @@ textarea {
   font-size: 14px;
   line-height: 1.7;
 }
-/* メモ編集（写真タブの下部） */
-.memoEditor {
-  margin-top: 22px;
-  padding-top: 20px;
-  border-top: 1px solid var(--border);
-}
+/* メモ編集（独立タブ） */
 .memoTextarea {
-  min-height: 120px;
+  min-height: 140px;
 }
 .homeQuickAction:last-child:nth-child(odd) {
   grid-column: 1 / -1;
