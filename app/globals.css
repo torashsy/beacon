@@ -2060,6 +2060,35 @@ textarea {
   background: var(--em);
   color: var(--on-em);
 }
+/* フォロー中 / フォロワー の切替タブ */
+.followModeTabs {
+  display: flex;
+  gap: 6px;
+  margin: 0 4px 14px;
+}
+.followModeTabs button {
+  flex: 1 1 0;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  padding: 9px 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background-color var(--motion-quick) var(--ease-state),
+    color var(--motion-quick) var(--ease-state),
+    border-color var(--motion-quick) var(--ease-state);
+}
+.followModeTabs button.on {
+  background: var(--em);
+  color: var(--on-em);
+  border-color: var(--em);
+}
+.followLamp.mutual {
+  color: var(--em);
+}
 .publicProfileLoading {
   padding-top: 8px;
 }

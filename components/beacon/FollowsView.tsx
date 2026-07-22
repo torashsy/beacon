@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ago } from "@/lib/beacon/format";
 import { grad, HEADING_TYPE } from "@/lib/beacon/constants";
 import { toSnapshot, type FollowSnapshot, type FollowStatus } from "@/lib/beacon/follows";
-import type { PublicPage } from "@/lib/beacon/rpc";
+import type { FollowerRow, PublicPage } from "@/lib/beacon/rpc";
 
 /**
  * フォロー中一覧（表示専用）。表示用データは端末ローカル、ID一覧はログイン時にサーバー同期する。
@@ -30,6 +30,7 @@ export function FollowsView({
   states,
   onUnfollow,
   onOpenProfile,
+  onLoadFollowers,
   loggedIn,
   onLoginPrompt,
 }: {
@@ -38,14 +39,23 @@ export function FollowsView({
   onUnfollow: (handle: string) => void;
   /** タップで遷移せずアプリ内プレビューを開く。 */
   onOpenProfile: (snap: FollowSnapshot) => void;
+  /** 自分をフォローしている相手の一覧を取得（本人のみ）。 */
+  onLoadFollowers: () => Promise<FollowerRow[]>;
   loggedIn: boolean;
   onLoginPrompt: () => void;
 }) {
+  const [mode, setMode] = useState<"following" | "followers">("following");
   const [q, setQ] = useState("");
   const [found, setFound] = useState<{ handle: string; page: PublicPage } | null>(null);
   const [searching, setSearching] = useState(false);
   const [searchMessage, setSearchMessage] = useState("");
   const [sort, setSort] = useState<"added" | "updated">("added");
+  // フォロワー一覧（本人のみ・要ログイン）。「フォロワー」タブを開いた時に取得する。
+  const [followers, setFollowers] = useState<FollowerRow[] | null>(null);
+  const [followersLoading, setFollowersLoading] = useState(false);
+  const [followersError, setFollowersError] = useState("");
+  const [openingHandle, setOpeningHandle] = useState<string | null>(null);
+  const followingSet = new Set(follows.map((f) => f.handle.toLowerCase()));
   const query = q.trim().toLowerCase();
   const filtered = follows.filter(
     (f) =>
@@ -65,6 +75,44 @@ export function FollowsView({
     const st = states[f.handle]?.state;
     return st === "new" || st === "changed" || st === "deleted";
   }).length;
+
+  // 「フォロワー」タブを開き、かつログイン済みで未取得のときに一覧を読み込む。
+  useEffect(() => {
+    if (mode !== "followers" || !loggedIn || followers !== null || followersLoading) return;
+    let cancelled = false;
+    setFollowersLoading(true);
+    setFollowersError("");
+    onLoadFollowers()
+      .then((rows) => {
+        if (!cancelled) setFollowers(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setFollowersError("フォロワーを読み込めませんでした。通信状況をご確認ください");
+      })
+      .finally(() => {
+        if (!cancelled) setFollowersLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [mode, loggedIn, followers, followersLoading, onLoadFollowers]);
+
+  // フォロワー行のタップで、その相手の公開ページを取得してプレビューを開く。
+  async function openByHandle(handle: string) {
+    setOpeningHandle(handle);
+    try {
+      const response = await fetch(`/api/user-search?handle=${encodeURIComponent(handle)}`, {
+        cache: "no-store",
+      });
+      if (!response.ok) return;
+      const page = (await response.json()) as PublicPage | null;
+      if (page) onOpenProfile(toSnapshot(page.profile, page.channels, page.cal));
+    } catch {
+      // 取得できなければ何もしない（次のタップで再試行できる）。
+    } finally {
+      setOpeningHandle(null);
+    }
+  }
 
   async function searchById(e: React.FormEvent) {
     e.preventDefault();
@@ -97,7 +145,38 @@ export function FollowsView({
 
   return (
     <section className="view">
-      <h1>フォロー中</h1>
+      <h1>フォロー</h1>
+      <div className="followModeTabs" role="group" aria-label="表示切替">
+        <button
+          type="button"
+          className={mode === "following" ? "on" : ""}
+          onClick={() => setMode("following")}
+          aria-pressed={mode === "following"}
+        >
+          フォロー中
+        </button>
+        <button
+          type="button"
+          className={mode === "followers" ? "on" : ""}
+          onClick={() => setMode("followers")}
+          aria-pressed={mode === "followers"}
+        >
+          フォロワー
+        </button>
+      </div>
+      {mode === "followers" ? (
+        <FollowersPane
+          loggedIn={loggedIn}
+          followers={followers}
+          loading={followersLoading}
+          error={followersError}
+          followingSet={followingSet}
+          openingHandle={openingHandle}
+          onOpen={openByHandle}
+          onLoginPrompt={onLoginPrompt}
+        />
+      ) : (
+      <>
       {!loggedIn && (
         <div className="note" style={{ marginBottom: 12 }}>
           ゲストのフォローはこの端末に保存されます。{' '}
@@ -261,7 +340,102 @@ export function FollowsView({
           )}
         </div>
       </div>
+      </>
+      )}
     </section>
+  );
+}
+
+/** フォロワー一覧タブ。本人だけが自分のフォロワーを見られる。 */
+function FollowersPane({
+  loggedIn,
+  followers,
+  loading,
+  error,
+  followingSet,
+  openingHandle,
+  onOpen,
+  onLoginPrompt,
+}: {
+  loggedIn: boolean;
+  followers: FollowerRow[] | null;
+  loading: boolean;
+  error: string;
+  followingSet: Set<string>;
+  openingHandle: string | null;
+  onOpen: (handle: string) => void;
+  onLoginPrompt: () => void;
+}) {
+  if (!loggedIn) {
+    return (
+      <div className="note" style={{ marginTop: 12 }}>
+        フォロワーの一覧はログインすると表示できます。{' '}
+        <button type="button" className="textlink" onClick={onLoginPrompt}>
+          ログイン
+        </button>
+      </div>
+    );
+  }
+  return (
+    <>
+      <div className="followListHead">
+        <div className="count">
+          {followers && followers.length ? `${followers.length}人のフォロワー` : ""}
+        </div>
+      </div>
+      <div className="card" style={{ padding: "4px 14px" }}>
+        <div>
+          {loading && followers === null ? (
+            <div className="empty">読み込み中…</div>
+          ) : error ? (
+            <div className="empty">{error}</div>
+          ) : !followers || !followers.length ? (
+            <div className="empty">まだフォロワーはいません。</div>
+          ) : (
+            followers.map((f) => {
+              const mutual = followingSet.has(f.handle.toLowerCase());
+              const opening = openingHandle === f.handle;
+              return (
+                <div
+                  key={f.handle}
+                  className="frow"
+                  role="link"
+                  tabIndex={0}
+                  aria-busy={opening}
+                  onClick={() => onOpen(f.handle)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      onOpen(f.handle);
+                    }
+                  }}
+                >
+                  <div className="avWrap">
+                    <div
+                      className="av"
+                      style={!f.av_url ? { background: grad(f.av_theme ?? 0) } : undefined}
+                    >
+                      {f.av_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={f.av_url} alt="" loading="lazy" decoding="async" />
+                      ) : (
+                        f.emoji || f.handle[0]?.toUpperCase()
+                      )}
+                    </div>
+                  </div>
+                  <div className="who">
+                    <div className="nm">{f.name || `@${f.handle}`}</div>
+                    <div className="id">@{f.handle}</div>
+                    {mutual && <span className="followLamp mutual">相互フォロー</span>}
+                  </div>
+                  <span className="searchResultArrow">→</span>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+    </>
   );
 }
 

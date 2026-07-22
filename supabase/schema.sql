@@ -3,7 +3,8 @@
 -- Supabase SQL Editor に貼って Run。
 -- 設計原則:
 --   1) パスコード検証はすべてサーバー側(RPC)で行う
---   2) followers/検索/一覧APIは作らない（異性紹介事業の回避）
+--   2) 他人のフォロワー一覧・ユーザー検索・おすすめ（横断的な発見機能）は作らない。
+--      フォロワー一覧は本人だけが自分の分を閲覧できる（get_my_followers、要パスコード）
 --   3) 画像はDBに入れず Supabase Storage を使う（URLのみ保存）
 -- ============================================================
 
@@ -955,3 +956,21 @@ revoke all on function get_public_page(text) from public, authenticated;
 grant execute on function get_public_page(text) to anon;
 revoke all on function get_follower_count(text) from public, authenticated;
 grant execute on function get_follower_count(text) to anon;
+
+-- フォロワー一覧は本人だけが自分の分を閲覧できる（要パスコード）。他人のフォロワー
+-- 一覧・検索・おすすめは作らない。fs.handle=フォロワー、fs.target=フォロー先。
+create or replace function get_my_followers(p_handle text, p_pass text)
+returns table(handle text, name text, emoji text, av_url text, av_theme int)
+language plpgsql security definer set search_path = public as $$
+begin
+  if not _check_pass(p_handle, p_pass) then raise exception 'auth'; end if;
+  return query
+    select fs.handle, p.name, p.emoji, p.av_url, p.av_theme
+    from follows_server fs
+    left join profiles p on p.handle = fs.handle
+    where fs.target = lower(p_handle)
+    order by fs.handle
+    limit 1000;
+end $$;
+revoke all on function get_my_followers(text,text) from public, anon, authenticated;
+grant execute on function get_my_followers(text,text) to anon;
