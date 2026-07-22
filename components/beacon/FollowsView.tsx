@@ -55,6 +55,7 @@ export function FollowsView({
   onModeChange,
   loggedIn,
   onLoginPrompt,
+  initialSearch,
 }: {
   follows: FollowSnapshot[];
   states: Record<string, FollowStatus>;
@@ -68,9 +69,11 @@ export function FollowsView({
   onModeChange: (mode: "following" | "followers") => void;
   loggedIn: boolean;
   onLoginPrompt: () => void;
+  initialSearch?: string;
 }) {
   const [q, setQ] = useState("");
   const [found, setFound] = useState<{ handle: string; page: PublicPage } | null>(null);
+  const [tagResults, setTagResults] = useState<FollowerRow[]>([]);
   const [searching, setSearching] = useState(false);
   const [searchMessage, setSearchMessage] = useState("");
   const [sort, setSort] = useState<"added" | "updated">("added");
@@ -134,12 +137,39 @@ export function FollowsView({
     }
   }, [loggedIn]);
 
-  async function searchById(e: React.FormEvent) {
-    e.preventDefault();
-    const handle = q.trim().replace(/^@/, "").toLowerCase();
+  async function runSearch(raw: string) {
+    const input = raw.trim();
     setFound(null);
+    setTagResults([]);
+    if (input.startsWith("#")) {
+      const tag = input.replace(/^#+/, "");
+      if (!/^[\p{L}\p{N}_]{1,20}$/u.test(tag)) {
+        setSearchMessage("タグを1〜20文字で入力してください");
+        return;
+      }
+      setSearching(true);
+      setSearchMessage("");
+      try {
+        const response = await fetch(`/api/user-search?tag=${encodeURIComponent(tag)}`, { cache: "no-store" });
+        if (response.status === 429) {
+          setSearchMessage("検索回数が多すぎます。しばらく待ってからお試しください");
+          return;
+        }
+        if (!response.ok) throw new Error("search failed");
+        const rows = (await response.json()) as FollowerRow[];
+        setTagResults(rows);
+        if (!rows.length) setSearchMessage("このタグのユーザーはまだいません");
+      } catch {
+        setSearchMessage("検索できませんでした。通信状況をご確認ください");
+      } finally {
+        setSearching(false);
+      }
+      return;
+    }
+
+    const handle = input.replace(/^@/, "").toLowerCase();
     if (!/^[a-z0-9_]{3,20}$/.test(handle)) {
-      setSearchMessage("半角英数字と _ でIDを入力してください");
+      setSearchMessage("ユーザーID、または #タグを入力してください");
       return;
     }
     setSearching(true);
@@ -162,6 +192,17 @@ export function FollowsView({
       setSearching(false);
     }
   }
+
+  function searchById(e: React.FormEvent) {
+    e.preventDefault();
+    void runSearch(q);
+  }
+
+  useEffect(() => {
+    if (!initialSearch) return;
+    setQ(initialSearch);
+    void runSearch(initialSearch);
+  }, [initialSearch]);
 
   return (
     <section className="view">
@@ -218,15 +259,16 @@ export function FollowsView({
           onChange={(e) => {
             setQ(e.target.value);
             setFound(null);
+            setTagResults([]);
             setSearchMessage("");
           }}
-          placeholder="フォロー中の名前 / ユーザーID"
+          placeholder="ユーザーID / #ハッシュタグ"
         />
         <button type="submit" disabled={searching}>
-          {searching ? "検索中" : "ID検索"}
+          {searching ? "検索中" : "検索"}
         </button>
       </form>
-      <div className="searchHint">ユーザーIDを入力して検索できます。</div>
+      <div className="searchHint">IDの完全一致、または #タグで検索できます。</div>
       {searchMessage && <div className="searchMessage">{searchMessage}</div>}
       {found && (
         <div
@@ -258,6 +300,39 @@ export function FollowsView({
             <div className="st">{found.page.follower_count.toLocaleString("ja-JP")} フォロワー</div>
           </div>
           <span className="searchResultArrow">→</span>
+        </div>
+      )}
+      {tagResults.length > 0 && (
+        <div className="tagSearchResults">
+          {tagResults.map((row) => (
+            <div
+              key={row.handle}
+              className="card userSearchResult"
+              role="link"
+              tabIndex={0}
+              onClick={() => onOpenProfile(followerToSnapshot(row))}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onOpenProfile(followerToSnapshot(row));
+                }
+              }}
+            >
+              <div className="av" style={!row.av_url ? { background: grad(row.av_theme ?? 0) } : undefined}>
+                {row.av_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={row.av_url} alt="" loading="lazy" decoding="async" />
+                ) : (
+                  row.emoji || row.handle[0]?.toUpperCase()
+                )}
+              </div>
+              <div className="who">
+                <div className="nm">{row.name || `@${row.handle}`}</div>
+                <div className="id">@{row.handle}</div>
+              </div>
+              <span className="searchResultArrow">→</span>
+            </div>
+          ))}
         </div>
       )}
       <div className="followListHead">

@@ -6,6 +6,7 @@ import { COLORS, grad } from "@/lib/beacon/constants";
 import { COLOR_THEMES, normalizeColorTheme } from "@/lib/beacon/appearance";
 import { CameraIcon } from "./icons";
 import { ImageCropper } from "./ImageCropper";
+import { normalizeHashtags } from "@/lib/beacon/hashtags";
 
 /**
  * X風のプロフィール編集。beacon.html の prof-edit を移植。
@@ -34,6 +35,7 @@ export interface EditResult {
   avTheme: number;
   colorTheme: string;
   status: string;
+  tags: string[];
   av: ImageEdit;
   bn: ImageEdit;
 }
@@ -70,6 +72,7 @@ export function ProfileEdit({
   const [avTheme, setAvTheme] = useState(profile.av_theme ?? 0);
   const [colorTheme, setColorTheme] = useState(normalizeColorTheme(profile.color_theme));
   const [status, setStatus] = useState(profile.status ?? "");
+  const [tagsText, setTagsText] = useState((profile.tags ?? []).map((tag) => `#${tag}`).join(" "));
   const [av, setAv] = useState<ImageEdit>({ mode: "keep" });
   const [bn, setBn] = useState<ImageEdit>({ mode: "keep" });
   const [busy, setBusy] = useState(false);
@@ -144,6 +147,7 @@ export function ProfileEdit({
         avTheme,
         colorTheme,
         status: status.trim(),
+        tags: normalizeHashtags(tagsText),
         av,
         bn,
       });
@@ -239,6 +243,17 @@ export function ProfileEdit({
               placeholder="自己紹介を追加"
             />
             <div className="ecount">{bio.length} / 800</div>
+          </div>
+          <div className="efield">
+            <div className="el">ハッシュタグ</div>
+            <input
+              value={tagsText}
+              onChange={(e) => setTagsText(e.target.value)}
+              onBlur={() => setTagsText(normalizeHashtags(tagsText).map((tag) => `#${tag}`).join(" "))}
+              maxLength={120}
+              placeholder="例：#カメラ #サウナ"
+            />
+            <div className="fieldHint">最大5個。タップすると同じタグの人を探せます。</div>
           </div>
           <div className="efield">
             <div className="el">カラーテーマ</div>

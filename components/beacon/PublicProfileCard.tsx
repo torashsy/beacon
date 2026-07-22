@@ -21,7 +21,7 @@ export interface PublicCardData {
   followerCount?: number;
   profile: Pick<
     Profile,
-    "name" | "bio" | "emoji" | "theme" | "av_theme" | "av_url" | "bn_url" | "status" | "verified" | "content" | "color_theme"
+    "name" | "bio" | "emoji" | "theme" | "av_theme" | "av_url" | "bn_url" | "status" | "verified" | "content" | "color_theme" | "tags"
   >;
   channels: Channel[]; // 非表示リンクも含む。ここで公開対象だけに絞る
   pubcal: CalMemo[]; // 公開メモのみ
@@ -113,6 +113,13 @@ export function PublicProfileCard({
           )
         )}
         {profile.bio && <CollapsibleBio bio={profile.bio} />}
+        {(profile.tags?.length ?? 0) > 0 && (
+          <div className="profileTags" aria-label="ハッシュタグ">
+            {profile.tags!.map((tag) => (
+              <a key={tag} href={`/?tab=follows&tag=${encodeURIComponent(tag)}`}>#{tag}</a>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="xpane" style={{ paddingTop: 4, paddingBottom: 0 }}>

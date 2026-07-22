@@ -133,6 +133,7 @@ export function BeaconApp() {
   const [me, setMe] = useState<Me | null>(null);
   const [navTab, setNavTab] = useState<NavTab>("profile");
   const [followsMode, setFollowsMode] = useState<"following" | "followers">("following");
+  const [initialFollowSearch, setInitialFollowSearch] = useState("");
   const [navDirection, setNavDirection] = useState<NavDirection>("none");
   // 全画面オーバーレイ（ナビを隠す）: 認証フォーム / 公開プレビュー
   const [overlay, setOverlay] = useState<Overlay>("none");
@@ -166,7 +167,10 @@ export function BeaconApp() {
   // 公開ページ(/@handle)へ遷移して戻るとBeaconAppは作り直されnavTabが既定の
   // "profile"（自分のページ）に戻ってしまうため、sessionStorageで元のタブへ戻す。
   useEffect(() => {
-    const requested = new URLSearchParams(window.location.search).get("tab");
+    const params = new URLSearchParams(window.location.search);
+    const requested = params.get("tab");
+    const tag = params.get("tag");
+    if (tag) setInitialFollowSearch(`#${tag}`);
     if (requested === "howto" || requested === "settings") {
       setNavTab("help");
       return;
@@ -710,6 +714,7 @@ export function BeaconApp() {
           av_theme: edit.avTheme,
           color_theme: edit.colorTheme,
           status: edit.status,
+          tags: edit.tags,
           status_at:
             edit.status !== (prof.status ?? "")
               ? new Date().toISOString()
@@ -1159,6 +1164,7 @@ export function BeaconApp() {
             onModeChange={setFollowsMode}
             loggedIn={!!session}
             onLoginPrompt={() => openAuth("login")}
+            initialSearch={initialFollowSearch}
           />
         )}
 

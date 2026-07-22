@@ -1815,6 +1815,22 @@ button.followerCountButton:hover strong,
 button.followerCountButton:focus-visible strong {
   text-decoration: underline;
 }
+.profileTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.profileTags a {
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--em) 10%, transparent);
+  color: var(--emd);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.profileTags a:active { transform: scale(.97); }
 input:focus,
 select:focus,
 textarea:focus {
@@ -3164,6 +3180,8 @@ textarea {
 .userSearchResult .nm { font-size: 14px; font-weight: 800; }
 .userSearchResult .id,
 .userSearchResult .st { color: var(--muted); font-size: 11.5px; }
+.tagSearchResults { margin-bottom: 12px; }
+.tagSearchResults .userSearchResult { margin-bottom: 7px; }
 .searchResultArrow { color: var(--emd); font-size: 20px; }
 .iconChoiceModal {
   width: 100%;

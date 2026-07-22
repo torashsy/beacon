@@ -30,6 +30,7 @@ export interface Profile {
   verified?: boolean; // 復旧用メールアドレスを確認済み
   content?: ProfileContent; // 写真（旧プロフィールでは未設定）
   color_theme?: string; // カード固有のカラーテーマ（6テーマ・他人にも見える）
+  tags?: string[]; // プロフィールのハッシュタグ（#なし・最大5個）
 }
 
 /** カレンダーメモ 1 件 */
