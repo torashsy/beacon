@@ -997,6 +997,26 @@ grant execute on function get_public_page(text) to anon;
 revoke all on function get_follower_count(text) from public, authenticated;
 grant execute on function get_follower_count(text) to anon;
 
+-- フォロー更新チェックの一括化用。指定ハンドル群の accounts.updated_at をまとめて返す
+-- （変化のない相手は本体取得を省ける）。停止アカウントは除外・最大500件。
+create or replace function get_pages_updated(p_handles text[])
+returns table(handle text, updated_at timestamptz)
+language sql security definer stable set search_path = public as $$
+  select a.handle, a.updated_at
+  from accounts a
+  where a.handle in (
+      select distinct lower(h)
+      from unnest(coalesce(p_handles, '{}'::text[])) as h
+      where lower(h) ~ '^[a-z0-9_]{1,30}$'
+      limit 500
+    )
+    and not exists (
+      select 1 from account_moderation m where m.handle = a.handle and m.suspended
+    );
+$$;
+revoke all on function get_pages_updated(text[]) from public, authenticated;
+grant execute on function get_pages_updated(text[]) to anon;
+
 -- フォロワー一覧は本人だけが自分の分を閲覧できる（要パスコード）。他人のフォロワー
 -- 一覧・検索・おすすめは作らない。fs.handle=フォロワー、fs.target=フォロー先。
 create or replace function get_my_followers(p_handle text, p_pass text)

@@ -293,6 +293,24 @@ export async function getPublicPageCore(
 }
 
 /**
+ * 指定ハンドル群の最終更新時刻(accounts.updated_at)を1RPCでまとめて取得。
+ * フォロー更新チェックで「変化のない相手は本体取得を省く」ために使う。
+ * 戻り値は handle→ISO文字列のマップ（存在しない/停止アカウントは含まれない）。
+ */
+export async function getPagesUpdated(
+  db: DB,
+  handles: string[],
+): Promise<Record<string, string>> {
+  if (!handles.length) return {};
+  const rows = (unwrap(
+    await db.rpc("get_pages_updated", { p_handles: handles }),
+  ) ?? []) as { handle: string; updated_at: string | null }[];
+  const out: Record<string, string> = {};
+  for (const r of rows) if (r.handle && r.updated_at) out[r.handle] = r.updated_at;
+  return out;
+}
+
+/**
  * 公開ページ1件分＋フォロワー数を取得。存在しなければ null。
  * profiles/channels/cal_public への直接 select は許可されておらず、必ずこの
  * ハンドル指定 RPC 経由で読む（anon キーによる全ユーザー列挙を防ぐ）。
