@@ -123,7 +123,6 @@ export default async function Image({
           }}
         >
           {avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
             <img src={avatarUrl} alt="" width="210" height="210" style={{ objectFit: "cover" }} />
           ) : (
             (handle?.[0] ?? "v").toUpperCase()
