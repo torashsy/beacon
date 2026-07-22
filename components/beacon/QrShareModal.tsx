@@ -36,8 +36,11 @@ export function QrShareModal({
   const [canShareFiles, setCanShareFiles] = useState(false);
   const [closing, setClosing] = useState(false);
   const closeTimer = useRef<number | undefined>(undefined);
-  const shareTitle = `${name.trim().replace(/^@+/, "") || handle} | via-mi`;
-  const shareText = "SNS・リンク・予定を、ひとつに。自分らしいプロフィールをvia-miで。";
+  const nickname = name.trim().replace(/^@+/, "");
+  const shareTitle = `${nickname || handle} | via-mi`;
+  const shareText = nickname
+    ? `${nickname}（${handle}）のvia-miページ`
+    : `${handle}のvia-miページ`;
 
   function requestClose() {
     if (closing) return;

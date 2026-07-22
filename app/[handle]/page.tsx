@@ -68,7 +68,10 @@ export async function generateMetadata({
   const title = profile.name
     ? `${profile.name.replace(/^@+/, "")} | via-mi`
     : `${handle} | via-mi`;
-  const description = "SNS・リンク・予定を、ひとつに。自分らしいプロフィールをvia-miで。";
+  const nickname = profile.name.trim().replace(/^@+/, "");
+  const description = nickname
+    ? `${nickname}（${handle}）のvia-miページ`
+    : `${handle}のvia-miページ`;
   return {
     title,
     description,

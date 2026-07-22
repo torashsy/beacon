@@ -94,10 +94,11 @@ export function ProfileView({
 
   // OS共有シートが使えない環境（デスクトップ等）ではURLコピーにフォールバック
   async function share() {
-    // text を渡すことで、Xなどシェア先アプリの投稿本文に定型メッセージが
-    // 自動で入る（urlだけだとリンクのみ貼られ、文面が空になるため）。
-    const displayName = me.profile.name.trim().replace(/^@+/, "") || handle;
-    const shareText = `${displayName}のvia-mi\nSNS・リンク・予定を、ひとつに。自分らしいプロフィールをvia-miで。`;
+    const nickname = me.profile.name.trim().replace(/^@+/, "");
+    const displayName = nickname || handle;
+    const shareText = nickname
+      ? `${nickname}（${handle}）のvia-miページ`
+      : `${handle}のvia-miページ`;
     if (typeof navigator.share === "function") {
       try {
         await navigator.share({ title: `${displayName} | via-mi`, text: shareText, url: pageUrl() });

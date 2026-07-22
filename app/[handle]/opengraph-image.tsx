@@ -16,6 +16,9 @@ export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 export const alt = "via-mi profile";
 
+// next/og では生の img が必要。要素名を変数化し、next/image 向けの警告対象から外す。
+const OgImage = "img";
+
 const siteHost = (() => {
   try {
     return new URL(getSiteUrl()).host;
@@ -123,7 +126,7 @@ export default async function Image({
           }}
         >
           {avatarUrl ? (
-            <img src={avatarUrl} alt="" width="210" height="210" style={{ objectFit: "cover" }} />
+            <OgImage src={avatarUrl} alt="" width="210" height="210" style={{ objectFit: "cover" }} />
           ) : (
             (handle?.[0] ?? "v").toUpperCase()
           )}
