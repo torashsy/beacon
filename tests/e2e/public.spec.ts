@@ -119,6 +119,7 @@ test("a profile QR is personalized and shareable as an image", async ({ page }) 
         av_url: "",
         bn_url: "",
         verified: false,
+        color_theme: "peach",
       },
       channels: [],
       cal: [],
@@ -161,13 +162,13 @@ test("a profile QR is personalized and shareable as an image", async ({ page }) 
     qrCard.evaluate((element) =>
       getComputedStyle(element).getPropertyValue("--qr-accent").trim(),
     ),
-  ).toBe("#e4f7fd");
-  await expect(qrCard).toHaveCSS("color", "rgb(23, 50, 62)");
+  ).toBe("#fff0f5");
+  await expect(qrCard).toHaveCSS("color", "rgb(87, 34, 56)");
   const qrImage = dialog.getByRole("img", { name: "@qr_user のQRコード" });
   await expect(qrImage).toHaveAttribute("src", /^data:image\/svg\+xml/);
   const svg = decodeURIComponent((await qrImage.getAttribute("src")) ?? "");
   expect(svg).toContain('rx=".32"');
-  expect(svg).toContain('fill="#066886"');
+  expect(svg).toContain('fill="#a92f5d"');
   expect(svg.match(/<g><rect/g)).toHaveLength(3);
 
   await dialog.getByRole("button", { name: "共有", exact: true }).click();
@@ -176,8 +177,8 @@ test("a profile QR is personalized and shareable as an image", async ({ page }) 
       __qrShare?: { name?: string; size?: number; type?: string };
     }).__qrShare),
   ).toMatchObject({
-    name: "via-mi-qr_user.png",
-    type: "image/png",
+    name: "via-mi-qr_user.jpg",
+    type: "image/jpeg",
   });
   const sharedSize = await page.evaluate(() => (window as typeof window & {
     __qrShare?: { size?: number };

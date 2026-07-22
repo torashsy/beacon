@@ -19,11 +19,13 @@ import { createClient } from "@/lib/supabase/client";
  */
 export function FollowButton({ snapshot }: { snapshot: FollowSnapshot }) {
   const [followed, setFollowed] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const refresh = () => {
       const owner = loadStoredSession()?.handle ?? null;
+      setLoggedIn(Boolean(owner));
       setFollowed(isFollowing(snapshot.handle, owner));
     };
     refresh();
@@ -34,7 +36,12 @@ export function FollowButton({ snapshot }: { snapshot: FollowSnapshot }) {
 
   function toggle() {
     const saved = loadStoredSession();
-    const owner = saved?.handle ?? null;
+    if (!saved) {
+      const next = `${window.location.pathname}${window.location.search}`;
+      window.location.assign(`/?login=1&next=${encodeURIComponent(next)}`);
+      return;
+    }
+    const owner = saved.handle;
     let next: FollowSnapshot[];
     if (followed) {
       next = removeFollow(snapshot.handle, owner);
@@ -44,25 +51,23 @@ export function FollowButton({ snapshot }: { snapshot: FollowSnapshot }) {
       next = addFollow({ ...snapshot, updated: Date.now() }, owner);
       setFollowed(true);
     }
-    if (saved) {
-      void saveMyFollows(
-        createClient(),
-        saved.handle,
-        saved.token,
-        next.map((item) => item.handle),
-      ).catch(() => {});
-    }
+    void saveMyFollows(
+      createClient(),
+      saved.handle,
+      saved.token,
+      next.map((item) => item.handle),
+    ).catch(() => {});
   }
 
   return (
     <button
       className={`pill followAction ${followed ? "line" : "solid"}`}
       onClick={toggle}
-      aria-pressed={followed}
+      aria-pressed={loggedIn ? followed : undefined}
       // ハイドレーション完了までは押下不可（SSRと初期状態を一致させる）
       disabled={!ready}
     >
-      {followed ? "フォロー中" : "フォローする"}
+      {!loggedIn ? "ログインしてフォロー" : followed ? "フォロー中" : "フォローする"}
     </button>
   );
 }

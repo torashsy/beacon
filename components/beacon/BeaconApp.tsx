@@ -313,6 +313,12 @@ export function BeaconApp() {
     });
   }, [db]);
 
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("login") !== "1") return;
+    setAuthInitialPane("login");
+    setOverlay("auth");
+  }, []);
+
   // ---- データ読み込み ----
   const loadMe = useCallback(
     async (handle: string, pass: string): Promise<Me> => {
@@ -422,6 +428,10 @@ export function BeaconApp() {
       setNavTab("profile");
       setEditing(false);
       if (!silent) toast("ログインしました");
+      const next = new URLSearchParams(window.location.search).get("next");
+      if (next && /^\/@[a-z0-9_]{3,20}(?:[/?#]|$)/.test(next)) {
+        window.location.assign(next);
+      }
     },
     [loadMe, syncFollowsFromServer, toast],
   );
