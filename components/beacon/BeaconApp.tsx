@@ -131,7 +131,7 @@ export function BeaconApp() {
   // 全画面オーバーレイ（ナビを隠す）: 認証フォーム / 公開プレビュー
   const [overlay, setOverlay] = useState<Overlay>("none");
   const [editing, setEditing] = useState(false);
-  const [editTarget, setEditTarget] = useState<"profile" | "links" | "cal" | "photos">("profile");
+  const [editTarget, setEditTarget] = useState<"profile" | "links" | "cal" | "photos" | "memo">("profile");
   const [recoveryFocusRequest, setRecoveryFocusRequest] = useState(0);
   const [recoveryHighlighted, setRecoveryHighlighted] = useState(false);
   const recoverySetupRef = useRef<HTMLDivElement | null>(null);
@@ -150,7 +150,7 @@ export function BeaconApp() {
     [follows, followStates],
   );
 
-  function openEditor(target: "profile" | "links" | "cal" | "photos" = "profile") {
+  function openEditor(target: "profile" | "links" | "cal" | "photos" | "memo" = "profile") {
     setEditTarget(target);
     setEditing(true);
   }
