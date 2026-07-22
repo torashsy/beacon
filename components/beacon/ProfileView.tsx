@@ -894,7 +894,7 @@ function MemoPane({
                 onChange={(e) => updateBlock(b.id, { text: e.target.value.slice(0, MEMO_MAX_BLOCK_LENGTH) })}
                 placeholder="テキストを入力"
                 maxLength={MEMO_MAX_BLOCK_LENGTH}
-                rows={2}
+                rows={4}
               />
             </div>
           ))}
