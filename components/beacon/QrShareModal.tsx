@@ -32,7 +32,8 @@ export function QrShareModal({
   onClose: () => void;
   toast: ToastFn;
 }) {
-  const [sharing, setSharing] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [canShare, setCanShare] = useState(false);
   const [closing, setClosing] = useState(false);
   const closeTimer = useRef<number | undefined>(undefined);
 
@@ -44,53 +45,80 @@ export function QrShareModal({
 
   useEffect(() => () => window.clearTimeout(closeTimer.current), []);
 
-  async function shareImage() {
-    if (sharing) return;
-    setSharing(true);
+  // 端末が画像ファイルの共有に対応しているときだけ「共有」ボタンを出す。
+  useEffect(() => {
+    setCanShare(
+      typeof navigator !== "undefined" &&
+        typeof navigator.share === "function" &&
+        typeof navigator.canShare === "function",
+    );
+  }, []);
+
+  function buildPng() {
+    return renderQrSharePng({
+      qrDataUrl: qr.dataUrl,
+      handle,
+      name,
+      accent: qr.accent,
+      accent2: qr.accent2,
+      onAccent: qr.onAccent,
+      avatarUrl,
+      emoji,
+      avatarAccent,
+      avatarAccent2,
+    });
+  }
+
+  function downloadBlob(blob: Blob) {
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `via-mi-${handle}.png`;
+    anchor.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
+  }
+
+  async function saveImage() {
+    if (busy) return;
+    setBusy(true);
     try {
-      const blob = await renderQrSharePng({
-        qrDataUrl: qr.dataUrl,
-        handle,
-        name,
-        accent: qr.accent,
-        accent2: qr.accent2,
-        onAccent: qr.onAccent,
-        avatarUrl,
-        emoji,
-        avatarAccent,
-        avatarAccent2,
-      });
-      const file = new File([blob], `via-mi-${handle}.png`, {
-        type: "image/png",
-      });
+      downloadBlob(await buildPng());
+      toast("QR画像を保存しました");
+    } catch {
+      toast("QR画像を保存できませんでした");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function shareImage() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const blob = await buildPng();
+      const file = new File([blob], `via-mi-${handle}.png`, { type: "image/png" });
       const shareData = {
         title: `@${handle} · via-mi`,
         text: `@${handle} のvia-mi`,
         files: [file],
       };
-
       if (
         typeof navigator.share === "function" &&
         typeof navigator.canShare === "function" &&
         navigator.canShare(shareData)
       ) {
         await navigator.share(shareData);
-        return;
+      } else {
+        // 共有できない端末では保存にフォールバック。
+        downloadBlob(blob);
+        toast("QR画像を保存しました");
       }
-
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = file.name;
-      anchor.click();
-      window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
-      toast("QR画像を保存しました");
     } catch (error) {
       if ((error as { name?: string }).name !== "AbortError") {
         toast("QR画像を共有できませんでした");
       }
     } finally {
-      setSharing(false);
+      setBusy(false);
     }
   }
 
@@ -159,14 +187,27 @@ export function QrShareModal({
           <button
             type="button"
             className="btn sig qrShareButton"
-            onClick={shareImage}
-            disabled={sharing}
+            onClick={saveImage}
+            disabled={busy}
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 16V3m0 0L7 8m5-5 5 5M5 13v7h14v-7" />
+              <path d="M12 3v12m0 0 4-4m-4 4-4-4M5 15v4a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-4" />
             </svg>
-            <span>{sharing ? "画像を作成中…" : "QR画像を共有"}</span>
+            <span>{busy ? "画像を作成中…" : "画像を保存"}</span>
           </button>
+          {canShare && (
+            <button
+              type="button"
+              className="btn line qrShareSecondary"
+              onClick={shareImage}
+              disabled={busy}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 16V3m0 0L7 8m5-5 5 5M5 13v7h14v-7" />
+              </svg>
+              <span>共有</span>
+            </button>
+          )}
           <button type="button" className="btn ghost qrCloseButton" onClick={requestClose}>
             閉じる
           </button>
