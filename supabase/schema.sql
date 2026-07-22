@@ -961,7 +961,7 @@ grant execute on function get_follower_count(text) to anon;
 -- 一覧・検索・おすすめは作らない。fs.handle=フォロワー、fs.target=フォロー先。
 create or replace function get_my_followers(p_handle text, p_pass text)
 returns table(handle text, name text, emoji text, av_url text, av_theme int)
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = public, extensions as $$
 begin
   if not _check_pass(p_handle, p_pass) then raise exception 'auth'; end if;
   return query
