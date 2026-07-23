@@ -467,7 +467,9 @@ export function BeaconApp() {
         const reason = (data as { error?: string } | null)?.error ?? error?.message ?? "bootstrap failed";
         throw new Error(reason);
       }
-      const verified = await db.auth.verifyOtp({ token_hash: tokenHash, type: "signup" });
+      // `email` accepts both a fresh signup token and the magic-link token used
+      // when an interrupted registration is retried with the same ID.
+      const verified = await db.auth.verifyOtp({ token_hash: tokenHash, type: "email" });
       if (verified.error) throw verified.error;
       try {
         await registerPasskeyForHandle(db, handle);

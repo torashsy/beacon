@@ -74,7 +74,7 @@ Deno.serve(async (request) => {
   }
 
   const email = `${handle}@${SYNTHETIC_DOMAIN}`;
-  const { data, error } = await admin.auth.admin.generateLink({
+  let { data, error } = await admin.auth.admin.generateLink({
     type: "signup",
     email,
     password: randomSecret(),
@@ -87,6 +87,20 @@ Deno.serve(async (request) => {
       redirectTo: "https://via-mi.com",
     },
   });
+
+  // A cancelled/failed WebAuthn ceremony can leave the synthetic Auth user behind
+  // before finalize_passkey_account creates the public account. In that case a
+  // second signup link is rejected as "already registered". Generate a magic link
+  // for the same unfinished user so the user can safely retry with the same ID.
+  if (error || !data?.properties?.hashed_token) {
+    const retry = await admin.auth.admin.generateLink({
+      type: "magiclink",
+      email,
+      options: { redirectTo: "https://via-mi.com" },
+    });
+    data = retry.data;
+    error = retry.error;
+  }
   if (error || !data?.properties?.hashed_token) {
     return json(request, { error: "bootstrap failed" }, 500);
   }
