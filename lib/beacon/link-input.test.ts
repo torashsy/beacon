@@ -18,6 +18,11 @@ describe("normalizeLinkInput", () => {
     expect(normalizeLinkInput("@ideal_user", "tiktok")?.url).toBe(
       "https://www.tiktok.com/@ideal_user",
     );
+    expect(normalizeLinkInput("viami_official", "note")).toEqual({
+      type: "note",
+      url: "https://note.com/viami_official",
+      source: "user-id",
+    });
   });
 
   it("lets a pasted URL override the selected platform", () => {
@@ -30,6 +35,7 @@ describe("normalizeLinkInput", () => {
   it("detects URL-only platforms and keeps generic website links", () => {
     expect(normalizeLinkInput("discord.gg/example", "discord")?.type).toBe("discord");
     expect(normalizeLinkInput("https://example.com", "website")?.type).toBe("website");
+    expect(normalizeLinkInput("https://note.com/info", "website")?.type).toBe("note");
     expect(normalizeLinkInput("hello@example.com", "mail")).toEqual({
       type: "mail",
       url: "mailto:hello@example.com",

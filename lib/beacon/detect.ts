@@ -19,7 +19,7 @@ const HOST_RULES: [RegExp, string][] = [
   [/(^|\.)bsky\.app$/i, "bluesky"],
   [/(^|\.)pixiv\.net$/i, "pixiv"],
   [/(^|\.)booth\.pm$/i, "booth"],
-  [/(^|\.)note\.com$/i, "other"],
+  [/(^|\.)note\.com$/i, "note"],
   [/(^|\.)maps\.google\.[a-z.]+$/i, "map"],
   [/(^|\.)goo\.gl$/i, "map"],
   [/(^|\.)maps\.app\.goo\.gl$/i, "map"],

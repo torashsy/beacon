@@ -29,6 +29,11 @@ const USER_ID_PLATFORMS: Record<string, UserIdPlatform> = {
     example: "@ハンドル",
     toUrl: (id) => `https://www.youtube.com/@${id}`,
   },
+  note: {
+    pattern: /^[a-z0-9_]{3,30}$/i,
+    example: "note ID",
+    toUrl: (id) => `https://note.com/${id}`,
+  },
   twitch: {
     pattern: /^[a-z0-9_]{4,25}$/i,
     example: "ユーザーID",
@@ -51,7 +56,7 @@ const USER_ID_PLATFORMS: Record<string, UserIdPlatform> = {
   },
 };
 
-const KNOWN_HOST = /^(?:www\.)?(?:x\.com|twitter\.com|instagram\.com|tiktok\.com|youtube\.com|youtu\.be|twitch\.tv|bsky\.app|pixiv\.net)(?:\/|$)|^(?:[a-z0-9-]+\.)?booth\.pm(?:\/|$)/i;
+const KNOWN_HOST = /^(?:www\.)?(?:x\.com|twitter\.com|instagram\.com|tiktok\.com|youtube\.com|youtu\.be|twitch\.tv|bsky\.app|pixiv\.net|note\.com)(?:\/|$)|^(?:[a-z0-9-]+\.)?booth\.pm(?:\/|$)/i;
 
 export type NormalizedLinkInput = {
   type: string;
