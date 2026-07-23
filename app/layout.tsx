@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { AppearanceController } from "@/components/AppearanceController";
 import { PwaRegister } from "@/components/PwaRegister";
+import { NativeRuntime } from "@/components/NativeRuntime";
 import { UiTuningPanel } from "@/components/dev/UiTuningPanel";
 import {
   APPEARANCE_STORAGE_KEY,
@@ -92,6 +93,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: appearanceBootstrap }} />
       </head>
       <body>
+        <NativeRuntime />
         <AppearanceController />
         {children}
         {process.env.NODE_ENV === "development" && <UiTuningPanel />}
