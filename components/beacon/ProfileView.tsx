@@ -83,6 +83,12 @@ export function ProfileView({
     .map(([d, value]) => ({ d, memo: value.memo }))
     .sort((a, b) => a.d.localeCompare(b.d));
 
+  // 成長施策: ページに共有できる中身（表示中リンク・今後の予定）ができたら、
+  // 所有者に「共有→閲覧→登録」ループの起点となるシェアを促す。閉じたら記憶する。
+  const hasShareableContent =
+    me.channels.some((c) => c.status === "live" && c.type !== HEADING_TYPE) ||
+    publicCal.length > 0;
+
   useEffect(() => {
     if (!editing || !focusSection) return;
     setTab(focusSection);
@@ -195,6 +201,9 @@ export function ProfileView({
             <span>メモを追加</span>
           </button>
         </div>
+        {hasShareableContent && (
+          <ShareNudge handle={handle} onShare={share} onQr={openQr} />
+        )}
         {qrCard && (
           <QrShareModal
             qr={qrCard}
@@ -263,6 +272,72 @@ export function ProfileView({
         )}
       </div>
 
+    </div>
+  );
+}
+
+// ---------- シェア導線（作成/更新後に所有者へ共有を促す）----------
+
+const SHARE_NUDGE_KEY = "via-mi:share-nudge:v1:";
+
+/**
+ * 自分のページに共有できる中身ができたら、所有者に共有（URL/QR）を促す。
+ * このアプリの成長は「共有→閲覧→登録」ループに依存するため、その起点を後押しする。
+ * 「後で」で閉じると端末に記憶し、以降そのハンドルでは出さない。
+ */
+function ShareNudge({
+  handle,
+  onShare,
+  onQr,
+}: {
+  handle: string;
+  onShare: () => void;
+  onQr: () => void;
+}) {
+  // localStorage 判定前のちらつきを避けるため、初期は隠しておく。
+  const [dismissed, setDismissed] = useState(true);
+
+  useEffect(() => {
+    try {
+      setDismissed(localStorage.getItem(SHARE_NUDGE_KEY + handle) === "1");
+    } catch {
+      setDismissed(false);
+    }
+  }, [handle]);
+
+  if (dismissed) return null;
+
+  function dismiss() {
+    setDismissed(true);
+    try {
+      localStorage.setItem(SHARE_NUDGE_KEY + handle, "1");
+    } catch {
+      /* ストレージ不可でも当セッションでは閉じたままにする */
+    }
+  }
+
+  return (
+    <div className="shareNudge">
+      <div className="shareNudgeText">
+        <strong>ページを共有しましょう</strong>
+        <span>URLやQRを渡すと、相手のスマホですぐに開けます。</span>
+      </div>
+      <div className="shareNudgeActions">
+        <button type="button" className="shareNudgeShare" onClick={onShare}>
+          共有する
+        </button>
+        <button type="button" className="shareNudgeQr" onClick={onQr}>
+          QRを表示
+        </button>
+        <button
+          type="button"
+          className="shareNudgeDismiss"
+          onClick={dismiss}
+          aria-label="この案内を閉じる"
+        >
+          後で
+        </button>
+      </div>
     </div>
   );
 }

@@ -602,6 +602,81 @@ html[data-color-mode="dark"] .logo {
   white-space: nowrap;
 }
 
+/* 作成/更新後のシェア導線（所有者に自分のページ共有を促す） */
+.shareNudge {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 13px 15px;
+  border: 1.5px solid var(--em);
+  border-radius: var(--radius);
+  background: var(--eml);
+}
+.shareNudgeText {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.shareNudgeText strong {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--emd);
+}
+.shareNudgeText span {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.shareNudgeActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.shareNudgeShare {
+  flex: 1 1 auto;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--on-em);
+  background: var(--em);
+  padding: 10px 14px;
+  border-radius: 999px;
+  white-space: nowrap;
+  transition: transform var(--motion-press) var(--ease-ui);
+}
+.shareNudgeShare:active {
+  transform: scale(0.98);
+}
+.shareNudgeQr {
+  flex: 0 0 auto;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--emd);
+  background: transparent;
+  border: 1.5px solid var(--border);
+  padding: 10px 14px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.shareNudgeQr:hover,
+.shareNudgeQr:focus-visible {
+  border-color: var(--em);
+}
+.shareNudgeDismiss {
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  background: transparent;
+  padding: 10px 6px;
+  white-space: nowrap;
+}
+.shareNudgeDismiss:hover,
+.shareNudgeDismiss:focus-visible {
+  color: var(--text);
+}
+
 .checkRow {
   display: flex;
   align-items: flex-start;
